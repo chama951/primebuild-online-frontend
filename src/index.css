@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Base element styles */
+  h3 {
+    @apply text-xl font-semibold text-gray-800 mb-4 mt-6;
+  }
+
+  button {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200 
+           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  input[type="text"] {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none 
+           focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all;
+  }
+
+  ul {
+    @apply space-y-3;
+  }
+
+  p[style*="color: red"] {
+    @apply p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg mb-4;
+  }
+}
+
+@layer components {
+  /* Card components */
+  .card {
+    @apply bg-white border border-gray-200 rounded-lg shadow-sm p-4;
+  }
+
+  .card-hover {
+    @apply hover:shadow-md transition-shadow;
+  }
+
+  /* Button variants */
+  .btn-primary {
+    @apply px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply px-4 py-2 border border-gray-300 rounded hover:bg-gray-50;
+  }
+  .btn-danger {
+    @apply px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700;
+  }
+
+  /* List item components */
+  .list-item {
+    @apply flex items-center justify-between p-4 bg-white border border-gray-200 
+           rounded-lg shadow-sm hover:shadow-md transition-shadow;
+  }
+
+  /* Form components */
+  .form-group {
+    @apply mb-6;
+  }
+
+  .form-input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500;
+  }
+
+  /* Error states */
+  .error-message {
+    @apply p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg mb-4;
+  }
+
+  .success-message {
+    @apply p-3 bg-green-50 text-green-700 border border-green-200 rounded-lg mb-4;
+  }
+
+  .warning-message {
+    @apply p-3 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-lg mb-4;
+  }
+}
+
+@layer utilities {
+  /* Card auto-apply - optional */
+  .auto-card
+    > div:not(.no-card):not([class*="flex"]):not([class*="grid"]):not([class*="inline"]):not([class*="absolute"]):not(
+      [class*="fixed"]
+    ) {
+    @apply bg-white p-4 border border-gray-200 rounded-lg shadow-sm mb-4;
+  }
+
+  /* Remove card styles from layout divs */
+  .layout-div {
+    @apply bg-transparent p-0 border-0 shadow-none;
+  }
+}
