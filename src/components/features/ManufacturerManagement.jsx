@@ -199,6 +199,15 @@ export default function ManufacturerManagement() {
                                 >
                                     {isSubmitting ? "..." : selectedManufacturer ? "Update" : "Create"}
                                 </button>
+                                {!selectedManufacturer && (manufacturerName.trim()) && (
+                                    <button
+                                        type="button"
+                                        onClick={handleResetForm}
+                                        className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
                                 {selectedManufacturer && (
                                     <button
                                         type="button"
