@@ -200,6 +200,7 @@ export default function ComponentManagement() {
     const handleDeleteFeatureType = (featureType) => {
         showNotification("error", `Are you sure you want to delete "${featureType.featureTypeName}"?`, {
             callback: async () => {
+                console.log(featureType.id);
                 await deleteFeatureType(featureType.id).unwrap();
                 await refetchAllFeatureTypes();
             },

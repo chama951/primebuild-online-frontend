@@ -41,7 +41,7 @@ export const featureTypeApi = baseApi.injectEndpoints({
         }),
 
         deleteFeatureType: builder.mutation({
-            query: ({id}) => ({
+            query: (id) => ({
                 url: `/feature_type/${id}`,
                 method: "DELETE",
             }),
