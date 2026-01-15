@@ -534,18 +534,21 @@ const ItemManagement = () => {
                             <div className="flex gap-2">
                                 <button
                                     type="submit"
-                                    disabled={
-                                        isSubmitting ||
-                                        !formData.itemName.trim() ||
-                                        !formData.componentId ||
-                                        !formData.price ||
-                                        !formData.quantity ||
-                                        !formData.manufacturerId
+                                    disabled={isSubmitting || !formData.itemName.trim() || !formData.componentId || !formData.price || !formData.quantity || !formData.manufacturerId
                                     }
                                     className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                                 >
                                     {isSubmitting ? "..." : selectedItem ? "Update" : "Create"}
                                 </button>
+                                {(formData.itemName.trim() || formData.componentId || formData.price || formData.quantity || formData.manufacturerId) && (
+                                    <button
+                                        type="button"
+                                        onClick={handleResetForm}
+                                        className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
                                 {selectedItem && (
                                     <button
                                         type="button"
