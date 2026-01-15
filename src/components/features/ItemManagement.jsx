@@ -540,7 +540,7 @@ const ItemManagement = () => {
                                 >
                                     {isSubmitting ? "..." : selectedItem ? "Update" : "Create"}
                                 </button>
-                                {(formData.itemName.trim() || formData.componentId || formData.price || formData.quantity || formData.manufacturerId) && (
+                                {!selectedItem && (formData.itemName.trim() || formData.componentId || formData.price || formData.quantity || formData.manufacturerId) && (
                                     <button
                                         type="button"
                                         onClick={handleResetForm}
