@@ -10,7 +10,7 @@ import {
 import {useGetComponentsQuery} from "../../features/components/componentApi.js";
 import {useGetManufacturersQuery} from "../../features/components/manufacturerApi.js";
 import {useGetFeaturesQuery} from "../../features/components/featureApi.js";
-import {useCreateItemFeatureMutation, useDeleteItemFeatureMutation} from "../../features/components/itemFeatureApi.js";
+import {useCreateItemFeatureMutation, useDeleteItemFeatureMutation, useUpdateItemFeatureMutation} from "../../features/components/itemFeatureApi.js";
 import {
     useCreateFeatureMutation,
     useUpdateFeatureMutation,
@@ -57,6 +57,7 @@ const ItemManagement = () => {
     const [updateItem] = useUpdateItemMutation();
     const [deleteItem] = useDeleteItemMutation();
     const [createItemFeature] = useCreateItemFeatureMutation();
+    const [updateItemFeature] = useUpdateItemFeatureMutation();
     const [deleteItemFeature] = useDeleteItemFeatureMutation();
     const [createFeature] = useCreateFeatureMutation();
     const [updateFeature] = useUpdateFeatureMutation();
@@ -117,6 +118,7 @@ const ItemManagement = () => {
                         featureId: feature.id,
                         itemFeatureId: itemFeature.id,
                         featureName: feature.featureName,
+                        slotCount: itemFeature.slotCount || 0, // Get slot count from itemFeature
                     };
                 }
             });
@@ -164,6 +166,16 @@ const ItemManagement = () => {
         }
     };
 
+    // Validation function
+    const validateSlotCount = (slotCountValue) => {
+        const slotCount = parseInt(slotCountValue);
+        if (isNaN(slotCount) || slotCount < 0) {
+            showNotification("error", "Slot count must be at least 0");
+            return null;
+        }
+        return slotCount;
+    };
+
     // handlers
     const handleInputChange = (e) => {
         const {name, value} = e.target;
@@ -207,10 +219,14 @@ const ItemManagement = () => {
             } else {
                 result = await createItem(itemData).unwrap();
 
-                // Create item-feature relationships
+                // Create item-feature with slot count
                 const featurePromises = Object.values(selectedFeatures).flatMap((featureType) =>
                     Object.values(featureType).map((feature) =>
-                        createItemFeature({itemId: result.id, featureId: feature.featureId})
+                        createItemFeature({
+                            itemId: result.id,
+                            featureId: feature.featureId,
+                            slotCount: feature.slotCount || 1
+                        })
                     )
                 );
                 await Promise.all(featurePromises);
@@ -250,11 +266,12 @@ const ItemManagement = () => {
 
             showNotification("success", "Feature removed!");
         } else {
-            // Add feature
+            // Add feature with default slot count of 1
             if (selectedItem) {
                 const result = await createItemFeature({
                     itemId: selectedItem.id,
                     featureId: featureId,
+                    slotCount: 0, // Default slot count
                 }).unwrap();
 
                 setSelectedFeatures((prev) => ({
@@ -265,6 +282,7 @@ const ItemManagement = () => {
                             featureId,
                             itemFeatureId: result.id,
                             featureName: feature.featureName,
+                            slotCount: 1, // Default slot count
                         },
                     },
                 }));
@@ -278,10 +296,61 @@ const ItemManagement = () => {
                         [featureId]: {
                             featureId,
                             featureName: feature.featureName,
+                            slotCount: 0, // Default slot count
                         },
                     },
                 }));
             }
+        }
+    };
+
+    const handleUpdateSlotCount = async (featureId, typeId, slotCount) => {
+        const validatedSlotCount = validateSlotCount(slotCount);
+        if (validatedSlotCount === null) return;
+
+        const itemFeatureId = selectedFeatures[typeId]?.[featureId]?.itemFeatureId;
+
+        if (selectedItem && itemFeatureId) {
+            setIsSubmitting(true);
+            try {
+                await updateItemFeature({
+                    id: itemFeatureId,
+                    itemId: selectedItem.id,
+                    featureId: featureId,
+                    slotCount: validatedSlotCount,
+                }).unwrap();
+
+                // Update local state
+                setSelectedFeatures((prev) => ({
+                    ...prev,
+                    [typeId]: {
+                        ...prev[typeId],
+                        [featureId]: {
+                            ...prev[typeId][featureId],
+                            slotCount: validatedSlotCount,
+                        },
+                    },
+                }));
+
+                showNotification("success", "Slot count updated!");
+            } catch (error) {
+                console.error("Error updating slot count:", error);
+                showNotification("error", "Error updating slot count.");
+            } finally {
+                setIsSubmitting(false);
+            }
+        } else {
+            // Update local state for new items
+            setSelectedFeatures((prev) => ({
+                ...prev,
+                [typeId]: {
+                    ...prev[typeId],
+                    [featureId]: {
+                        ...prev[typeId][featureId],
+                        slotCount: validatedSlotCount,
+                    },
+                },
+            }));
         }
     };
 
@@ -300,12 +369,48 @@ const ItemManagement = () => {
 
         setIsSubmitting(true);
         try {
-            await createFeature({
+           const result = await createFeature({
                 featureName: newFeatureName.trim(),
                 featureTypeId: parseInt(selectedFeatureTypeId),
             }).unwrap();
 
             await refetchAllFeatures();
+
+            // Add the feature to selected features
+            if (selectedItem) {
+                // For existing item, create item-feature relationship
+                const itemFeatureResult = await createItemFeature({
+                    itemId: selectedItem.id,
+                    featureId: result.id,
+                    slotCount: 0, // Default slot count
+                }).unwrap();
+
+                setSelectedFeatures((prev) => ({
+                    ...prev,
+                    [selectedFeatureTypeId]: {
+                        ...prev[selectedFeatureTypeId],
+                        [result.id]: {
+                            featureId: result.id,
+                            itemFeatureId: itemFeatureResult.id,
+                            featureName: newFeatureName.trim(),
+                            slotCount: 0,
+                        },
+                    },
+                }));
+            } else {
+                // For new item (not saved yet)
+                setSelectedFeatures((prev) => ({
+                    ...prev,
+                    [selectedFeatureTypeId]: {
+                        ...prev[selectedFeatureTypeId],
+                        [result.id]: {
+                            featureId: result.id,
+                            featureName: newFeatureName.trim(),
+                            slotCount: 0,
+                        },
+                    },
+                }));
+            }
             setNewFeatureName("");
             showNotification("success", "Feature created!");
         } catch (error) {
@@ -414,6 +519,13 @@ const ItemManagement = () => {
         (total, featureType) => total + Object.keys(featureType).length,
         0
     );
+
+    // Calculate total slots from selected features
+    const totalSlots = Object.values(selectedFeatures).reduce((total, featureType) => {
+        return total + Object.values(featureType).reduce((typeTotal, feature) => {
+            return typeTotal + (parseInt(feature.slotCount) || 0);
+        }, 0);
+    }, 0);
 
     return (
         <div className="container mx-auto p-4 space-y-6">
@@ -562,13 +674,18 @@ const ItemManagement = () => {
                         </form>
                     </div>
 
-                    {/* Feature Management - SIMPLE AND INLINE */}
+                    {/* Feature Management */}
                     {formData.componentId && (
                         <div className="bg-white rounded-lg border p-4">
                             <div className="flex justify-between items-center mb-4">
                                 <div>
                                     <h4 className="font-medium">Features</h4>
-                                    <p className="text-sm text-gray-500">{selectedFeaturesCount} selected</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-sm text-gray-500">{selectedFeaturesCount} features selected</span>
+                                        <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">
+                                            {totalSlots} total slots
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -648,11 +765,15 @@ const ItemManagement = () => {
                                             <div className="flex items-center gap-2">
                                                 <span
                                                     className="text-sm font-medium text-gray-700">{featureTypeName}</span>
-
-                                                <span
-                                                    className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">
-                          {Object.keys(selectedFeatures[typeId] || {}).length} selected
-                        </span>
+                                                <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">
+                                                    {Object.keys(selectedFeatures[typeId] || {}).length} selected
+                                                </span>
+                                                {selectedFeatures[typeId] && (
+                                                    <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
+                                                        {Object.values(selectedFeatures[typeId]).reduce((total, feature) =>
+                                                            total + (parseInt(feature.slotCount) || 1), 0)} slots
+                                                    </span>
+                                                )}
                                             </div>
                                             <span className="text-gray-500">{isExpanded ? "▼" : "▶"}</span>
                                         </button>
@@ -662,6 +783,7 @@ const ItemManagement = () => {
                                                 {features.map((feature) => {
                                                     const isSelected = selectedFeatures[typeId]?.[feature.id];
                                                     const isEditing = editingFeature?.id === feature.id;
+                                                    const slotCount = isSelected ? selectedFeatures[typeId][feature.id].slotCount || 0 : 0;
 
                                                     return (
                                                         <div
@@ -681,21 +803,38 @@ const ItemManagement = () => {
                                                                 >
                                                                     {isSelected && "✓"}
                                                                 </div>
-                                                                <span className="text-sm">{feature.featureName}</span>
+                                                                <div>
+                                                                    <span className="text-sm">{feature.featureName}</span>
+                                                                </div>
                                                             </div>
-                                                            <div className="flex gap-1">
-                                                                <button
-                                                                    onClick={() => handleStartEditFeature(feature)}
-                                                                    className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                                                                >
-                                                                    Edit
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleDeleteFeature(feature)}
-                                                                    className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-                                                                >
-                                                                    Delete
-                                                                </button>
+                                                            <div className="flex items-center gap-2">
+                                                                {isSelected && (
+                                                                    <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded">
+                                                                        <span className="text-xs text-gray-600">Slots:</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            min="1"
+                                                                            value={slotCount}
+                                                                            onChange={(e) => handleUpdateSlotCount(feature.id, typeId, e.target.value)}
+                                                                            className="w-12 p-1 border rounded text-center text-sm bg-white"
+                                                                            disabled={isSubmitting}
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex gap-1">
+                                                                    <button
+                                                                        onClick={() => handleStartEditFeature(feature)}
+                                                                        className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                                                                    >
+                                                                        Edit
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteFeature(feature)}
+                                                                        className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                                                                    >
+                                                                        Delete
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     );

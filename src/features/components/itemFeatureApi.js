@@ -23,10 +23,10 @@ export const itemFeatureApi = baseApi.injectEndpoints({
         }),
 
         updateItemFeature: builder.mutation({
-            query: ({id, itemId, featureId}) => ({
+            query: ({id, itemId, featureId, slotCount}) => ({
                 url: `/item_feature/${id}`,
                 method: "PUT",
-                body: {itemId, featureId},
+                body: {itemId, featureId, slotCount},
             }),
             invalidatesTags: (result, error, {id}) => [{type: "ItemFeature", id}],
         }),
@@ -58,4 +58,5 @@ export const itemFeatureApi = baseApi.injectEndpoints({
 export const {
     useCreateItemFeatureMutation,
     useDeleteItemFeatureMutation,
+    useUpdateItemFeatureMutation
 } = itemFeatureApi;

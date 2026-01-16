@@ -4,13 +4,13 @@ import ManufacturerManagement from "./components/features/ManufacturerManagement
 import ItemManagement from "./components/features/ItemManagement.jsx";
 
 function App() {
-  return (
-    <div>
-      <ManufacturerManagement />
-      <ComponentManagement />
-      <ItemManagement />
-    </div>
-  );
+    return (
+        <div>
+            <ManufacturerManagement/>
+            <ComponentManagement/>
+            <ItemManagement/>
+        </div>
+    );
 }
 
 export default App;

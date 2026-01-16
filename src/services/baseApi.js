@@ -21,7 +21,8 @@ export const baseApi = createApi({
         "Manufacturer",
         "User",
         "UserRole",
-        "Build"],
+        "Build",
+        "ItemComponentCount"],
     endpoints: () => ({}),
 });
 
