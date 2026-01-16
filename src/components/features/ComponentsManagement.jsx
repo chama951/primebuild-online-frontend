@@ -1,4 +1,4 @@
-import {useState} from "react";
+import { useState } from "react";
 import ItemListTable from "../common/ItemListTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import {
@@ -23,6 +23,7 @@ export default function ComponentManagement() {
     // state
     const [selectedComponent, setSelectedComponent] = useState(null);
     const [componentName, setComponentName] = useState("");
+    const [isBuildComponent, setIsBuildComponent] = useState(false); // New state
     const [searchTerm, setSearchTerm] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,9 +41,9 @@ export default function ComponentManagement() {
     });
 
     // api hooks
-    const {data: components = [], refetch: refetchComponents} = useGetComponentsQuery();
-    const {data: allFeatureTypes = [], refetch: refetchAllFeatureTypes} = useGetFeatureTypesQuery();
-    const {data: componentFeatureTypes = [], refetch: refetchComponentFeatureTypes} =
+    const { data: components = [], refetch: refetchComponents } = useGetComponentsQuery();
+    const { data: allFeatureTypes = [], refetch: refetchAllFeatureTypes } = useGetFeatureTypesQuery();
+    const { data: componentFeatureTypes = [], refetch: refetchComponentFeatureTypes } =
         useGetComponentFeatureTypesByComponentIdQuery(selectedComponent?.id || null, {
             skip: !selectedComponent,
         });
@@ -70,12 +71,12 @@ export default function ComponentManagement() {
 
     // notification handlers
     const showNotification = (type, message, action = null) => {
-        setNotification({show: true, type, message, action});
+        setNotification({ show: true, type, message, action });
     };
 
     const handleConfirmAction = async () => {
         if (notification.action) {
-            const {callback} = notification.action;
+            const { callback } = notification.action;
             setIsSubmitting(true);
             try {
                 await callback();
@@ -85,7 +86,7 @@ export default function ComponentManagement() {
                 showNotification("error", notification.action.errorMessage || "Error performing action.");
             } finally {
                 setIsSubmitting(false);
-                setNotification((prev) => ({...prev, action: null}));
+                setNotification((prev) => ({ ...prev, action: null }));
             }
         }
     };
@@ -100,11 +101,21 @@ export default function ComponentManagement() {
 
         setIsSubmitting(true);
         try {
+            const componentData = {
+                componentName: componentName.trim(),
+                isBuildComponent: isBuildComponent,
+                componentFeatureTypeList: [], // Empty array as per your example
+            };
+
             if (selectedComponent) {
-                await updateComponent({id: selectedComponent.id, componentName: componentName.trim()}).unwrap();
+                await updateComponent({
+                    id: selectedComponent.id,
+                    componentName: componentName.trim(),
+                    isBuildComponent: isBuildComponent,
+                }).unwrap();
                 showNotification("success", "Component updated successfully!");
             } else {
-                await saveComponent({componentName: componentName.trim()}).unwrap();
+                await saveComponent(componentData).unwrap();
                 showNotification("success", "Component created successfully!");
             }
 
@@ -121,11 +132,13 @@ export default function ComponentManagement() {
     const handleSelectComponent = (component) => {
         setSelectedComponent(component);
         setComponentName(component.componentName);
+        setIsBuildComponent(component.isBuildComponent ?? true); // Default to true if undefined
     };
 
     const handleResetForm = () => {
         setSelectedComponent(null);
         setComponentName("");
+        setIsBuildComponent(false); // Reset to default
         setNewFeatureTypeName("");
         setEditingFeatureType(null);
     };
@@ -144,7 +157,7 @@ export default function ComponentManagement() {
         });
     };
 
-    // feature type handlers
+    // feature type handlers (unchanged)
     const handleCreateFeatureType = async () => {
         if (!newFeatureTypeName.trim()) {
             showNotification("error", "Please enter a feature type name");
@@ -153,10 +166,8 @@ export default function ComponentManagement() {
 
         setIsSubmitting(true);
         try {
-            // Create the feature type first
-            const result = await createFeatureType({featureTypeName: newFeatureTypeName.trim()}).unwrap();
+            const result = await createFeatureType({ featureTypeName: newFeatureTypeName.trim() }).unwrap();
 
-            // If there's a selected component, also create the component_feature_type relationship
             if (selectedComponent) {
                 await createComponentFeatureType({
                     componentId: selectedComponent.id,
@@ -215,15 +226,12 @@ export default function ComponentManagement() {
         setIsSubmitting(true);
         try {
             if (assign) {
-                // Add feature type to component
                 await createComponentFeatureType({
                     componentId: selectedComponent.id,
                     featureTypeId: featureType.id,
                 }).unwrap();
                 showNotification("success", "Feature type added!");
             } else {
-                // Remove feature type from component
-                // Find the componentFeatureType relationship
                 const componentFeatureType = componentFeatureTypes.find((cft) => cft.featureType?.id === featureType.id);
                 if (componentFeatureType) {
                     await deleteComponentFeatureType(componentFeatureType.id).unwrap();
@@ -241,7 +249,7 @@ export default function ComponentManagement() {
     };
 
     const handleStartEditFeatureType = (featureType) => {
-        setEditingFeatureType({...featureType});
+        setEditingFeatureType({ ...featureType });
     };
 
     const handleCancelEdit = () => {
@@ -263,6 +271,7 @@ export default function ComponentManagement() {
             render: (item) => <div className="text-sm font-medium">{item.componentName}</div>,
         },
         {
+
             key: "id",
             header: "ID",
             render: (item) => <div className="text-sm text-gray-500">#{item.id}</div>,
@@ -319,6 +328,26 @@ export default function ComponentManagement() {
                                 onChange={(e) => setComponentName(e.target.value)}
                                 required
                             />
+
+                            {/* Build Component Toggle */}
+                            <div className="flex items-center space-x-3 p-3 border rounded bg-gray-50">
+                                <div className="flex items-center h-5">
+                                    <input
+                                        id="is-build-component"
+                                        type="checkbox"
+                                        disabled={isSubmitting || !componentName.trim()}
+                                        checked={isBuildComponent}
+                                        onChange={(e) => setIsBuildComponent(e.target.checked)}
+                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div className="flex flex-col">
+                                    <label htmlFor="is-build-component" className="font-medium text-gray-700">
+                                        Build Component
+                                    </label>
+
+                                </div>
+                            </div>
 
                             <div className="flex gap-2">
                                 <button
@@ -419,8 +448,8 @@ export default function ComponentManagement() {
                                         className="flex items-center justify-between w-full p-2 border rounded bg-gray-50 hover:bg-gray-100"
                                     >
                                         <div className="flex items-center gap-2">
-                                            <span
-                                                className="text-sm font-medium">All Feature Types ({allFeatureTypes.length})</span>
+                      <span
+                          className="text-sm font-medium">All Feature Types ({allFeatureTypes.length})</span>
                                             <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">
                         {selectedFeatureTypesCount} assigned
                       </span>
@@ -484,10 +513,10 @@ export default function ComponentManagement() {
             {/* common Notification Dialog */}
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
-                setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
+                setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
-                setShowErrorDialog={() => setNotification({show: false, type: "", message: "", action: null})}
+                setShowErrorDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
                 errorMessage={notification.message}
                 errorAction={notification.action}
                 onErrorAction={handleConfirmAction}

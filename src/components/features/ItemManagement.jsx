@@ -169,8 +169,8 @@ const ItemManagement = () => {
     // Validation function
     const validateSlotCount = (slotCountValue) => {
         const slotCount = parseInt(slotCountValue);
-        if (isNaN(slotCount) || slotCount < 0) {
-            showNotification("error", "Slot count must be at least 0");
+        if (isNaN(slotCount) || slotCount < 1) {
+            showNotification("error", "Slot count must be at least 1");
             return null;
         }
         return slotCount;
@@ -271,7 +271,7 @@ const ItemManagement = () => {
                 const result = await createItemFeature({
                     itemId: selectedItem.id,
                     featureId: featureId,
-                    slotCount: 0, // Default slot count
+                    slotCount: 1, // Default slot count
                 }).unwrap();
 
                 setSelectedFeatures((prev) => ({
@@ -296,7 +296,7 @@ const ItemManagement = () => {
                         [featureId]: {
                             featureId,
                             featureName: feature.featureName,
-                            slotCount: 0, // Default slot count
+                            slotCount: 1, // Default slot count
                         },
                     },
                 }));
@@ -382,7 +382,7 @@ const ItemManagement = () => {
                 const itemFeatureResult = await createItemFeature({
                     itemId: selectedItem.id,
                     featureId: result.id,
-                    slotCount: 0, // Default slot count
+                    slotCount: 1, // Default slot count
                 }).unwrap();
 
                 setSelectedFeatures((prev) => ({
@@ -393,7 +393,7 @@ const ItemManagement = () => {
                             featureId: result.id,
                             itemFeatureId: itemFeatureResult.id,
                             featureName: newFeatureName.trim(),
-                            slotCount: 0,
+                            slotCount: 1,
                         },
                     },
                 }));
@@ -406,7 +406,7 @@ const ItemManagement = () => {
                         [result.id]: {
                             featureId: result.id,
                             featureName: newFeatureName.trim(),
-                            slotCount: 0,
+                            slotCount: 1,
                         },
                     },
                 }));
@@ -523,7 +523,7 @@ const ItemManagement = () => {
     // Calculate total slots from selected features
     const totalSlots = Object.values(selectedFeatures).reduce((total, featureType) => {
         return total + Object.values(featureType).reduce((typeTotal, feature) => {
-            return typeTotal + (parseInt(feature.slotCount) || 0);
+            return typeTotal + (parseInt(feature.slotCount) || 1);
         }, 0);
     }, 0);
 
@@ -771,7 +771,7 @@ const ItemManagement = () => {
                                                 {selectedFeatures[typeId] && (
                                                     <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
                                                         {Object.values(selectedFeatures[typeId]).reduce((total, feature) =>
-                                                            total + (parseInt(feature.slotCount) || 1), 0)} slots
+                                                            total + (parseInt(feature.slotCount) || 1),1)} slots
                                                     </span>
                                                 )}
                                             </div>

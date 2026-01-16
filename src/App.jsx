@@ -5,8 +5,8 @@ import ItemManagement from "./components/features/ItemManagement.jsx";
 
 function App() {
     return (
-        <div>
-            <ManufacturerManagement/>
+        <div className="bg-gray-100">
+            {/*<ManufacturerManagement/>*/}
             <ComponentManagement/>
             <ItemManagement/>
         </div>
