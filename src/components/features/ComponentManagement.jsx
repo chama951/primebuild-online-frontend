@@ -134,8 +134,13 @@ const ComponentManagement = () => {
             render: (item) => <div className="text-sm font-medium">{item.componentName}</div>,
         },
         {
+            key: "id",
+            header: "ID",
+            render: (item) => <div className="text-sm text-gray-500">#{item.id}</div>,
+        },
+        {
             key: "isBuildComponent",
-            header: "Build Component",
+            header: "Build",
             render: (item) => (
                 <span
                     className={`px-2 py-1 rounded text-xs ${item.buildComponent ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
@@ -144,10 +149,10 @@ const ComponentManagement = () => {
             ),
         },
         {
-            key: "id",
-            header: "ID",
-            render: (item) => <div className="text-sm text-gray-500">#{item.id}</div>,
-        },
+            key: "Priority",
+            header: "Priority",
+            render: (item) => <div className="text-sm text-gray-500">{item.buildPriority}</div>,
+        }
     ];
 
     return (
