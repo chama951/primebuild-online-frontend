@@ -17,10 +17,10 @@ export const componentApi = baseApi.injectEndpoints({
         }),
 
         updateComponent: builder.mutation({
-            query: ({id, componentName, buildComponent}) => ({
+            query: ({id, data}) => ({
                 url: `/component/${id}`,
                 method: "PUT",
-                body: {componentName, buildComponent},
+                body: data,
             }),
             invalidatesTags: ["component"],
         }),
@@ -34,8 +34,10 @@ export const componentApi = baseApi.injectEndpoints({
         }),
 
         getBuildComponents: builder.query({
-            query: () => "/component",
-            providesTags: ["component"],
+            query: (isBuild) => `component?isBuild=${isBuild}`,
+            providesTags: (result, error, isBuild) => [
+                {type: "ComponentsByIsBuild", id: isBuild},
+            ],
         }),
     }),
 });
@@ -45,4 +47,5 @@ export const {
     useSaveComponentMutation,
     useUpdateComponentMutation,
     useDeleteComponentMutation,
+    useGetBuildComponentsQuery
 } = componentApi;

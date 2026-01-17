@@ -22,6 +22,7 @@ const ComponentManagement = () => {
         message: "",
         action: null,
     });
+    const [buildPriority, setBuildPriority] = useState("");
 
     // API hooks (only component-related)
     const {data: components = [], refetch: refetchComponents} = useGetComponentsQuery();
@@ -71,15 +72,18 @@ const ComponentManagement = () => {
             if (selectedComponent) {
                 await updateComponent({
                     id: selectedComponent.id,
-                    componentName: componentName.trim(),
-                    buildComponent: isBuildComponent,
+                    data: {
+                        componentName: componentName.trim(),
+                        buildComponent: isBuildComponent,
+                        buildPriority: buildPriority.valueOf(),
+                    }
                 }).unwrap();
                 showNotification("success", "Component updated successfully!");
             } else {
                 await saveComponent({
                     componentName: componentName.trim(),
                     buildComponent: isBuildComponent,
-                    componentFeatureTypeList: [],
+                    buildPriority: buildPriority,
                 }).unwrap();
                 showNotification("success", "Component created successfully!");
             }
@@ -98,12 +102,14 @@ const ComponentManagement = () => {
         setSelectedComponent(component);
         setComponentName(component.componentName);
         setIsBuildComponent(component.buildComponent ?? false);
+        setBuildPriority(component.buildPriority);
     };
 
     const handleResetForm = () => {
         setSelectedComponent(null);
         setComponentName("");
         setIsBuildComponent(false);
+        setBuildPriority("");
     };
 
     const handleDeleteComponent = (component) => {
@@ -196,23 +202,38 @@ const ComponentManagement = () => {
                                 required
                             />
 
-                            {/* Build Component Toggle */}
-                            <div className="flex items-center space-x-3 p-3 border rounded ">
-                                <div className="flex items-center h-5">
-                                    <input
-                                        id="is-build-component"
-                                        type="checkbox"
-                                        disabled={isSubmitting || !componentName.trim()}
-                                        checked={isBuildComponent}
-                                        onChange={(e) => setIsBuildComponent(e.target.checked)}
-                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                    />
-                                </div>
-                                <div className="flex flex-col">
+                            {/* Build Component Toggle - Compact */}
+                            <div className="flex items-center justify-between p-3 border rounded">
+                                <div className="flex items-center space-x-3">
+                                    <div className="flex items-center h-5">
+                                        <input
+                                            id="is-build-component"
+                                            type="checkbox"
+                                            disabled={isSubmitting || !componentName.trim()}
+                                            checked={isBuildComponent}
+                                            onChange={(e) => setIsBuildComponent(e.target.checked)}
+                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                    </div>
                                     <label htmlFor="is-build-component" className="font-medium text-gray-700">
                                         Build Component
                                     </label>
                                 </div>
+
+                                {isBuildComponent && (
+                                    <div className="w-20">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="99"
+                                            value={buildPriority}
+                                            onChange={(e) => setBuildPriority(parseInt(e.target.value) || 1)}
+                                            disabled={isSubmitting}
+                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="Priority"
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex gap-2">

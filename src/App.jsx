@@ -2,6 +2,7 @@ import "./App.css";
 import ComponentManagement from "./components/features/ComponentManagement.jsx";
 import ManufacturerManagement from "./components/features/ManufacturerManagement.jsx";
 import ItemManagement from "./components/features/ItemManagement.jsx";
+import BuildCart from "./components/features/BuildCart.jsx";
 
 function App() {
     return (
@@ -9,6 +10,7 @@ function App() {
             <ManufacturerManagement/>
             <ComponentManagement/>
             <ItemManagement/>
+            <BuildCart />
         </div>
     );
 }
