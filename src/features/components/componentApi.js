@@ -32,6 +32,11 @@ export const componentApi = baseApi.injectEndpoints({
             }),
             invalidatesTags: ["component"],
         }),
+
+        getBuildComponents: builder.query({
+            query: () => "/component",
+            providesTags: ["component"],
+        }),
     }),
 });
 

@@ -14,10 +14,10 @@ export const itemFeatureApi = baseApi.injectEndpoints({
         }),
 
         createItemFeature: builder.mutation({
-            query: ({itemId, featureId}) => ({
+            query: ({itemId, featureId, slotCount}) => ({
                 url: "/item_feature",
                 method: "POST",
-                body: {itemId, featureId},
+                body: {itemId, featureId, slotCount},
             }),
             invalidatesTags: ["ItemFeature"],
         }),
