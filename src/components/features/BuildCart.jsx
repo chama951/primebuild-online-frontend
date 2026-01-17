@@ -1,5 +1,7 @@
-export const BuildCart = () => {
+const BuildCart = () => {
     return (
         <></>
     )
 }
+
+export default BuildCart;

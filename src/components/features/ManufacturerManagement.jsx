@@ -8,7 +8,7 @@ import {
 import ItemListTable from "../common/ItemListTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
-export default function ManufacturerManagement() {
+const ManufacturerManagement = () => {
     // state
     const [selectedManufacturer, setSelectedManufacturer] = useState(null);
     const [manufacturerName, setManufacturerName] = useState("");
@@ -237,4 +237,6 @@ export default function ManufacturerManagement() {
             />
         </div>
     );
-}
+};
+
+export default ManufacturerManagement;
