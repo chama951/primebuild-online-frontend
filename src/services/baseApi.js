@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react";
 
 export const baseApi = createApi({
     reducerPath: "api",
@@ -17,9 +17,12 @@ export const baseApi = createApi({
         "FeatureType",
         "ComponentFeatureType",
         "Item",
-        "Manufacturers",
+        "BuildItem",
+        "Manufacturer",
         "User",
-        "Build"],
+        "UserRole",
+        "Build",
+        "ItemComponentCount"],
     endpoints: () => ({}),
 });
 

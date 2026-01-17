@@ -17,10 +17,10 @@ export const componentApi = baseApi.injectEndpoints({
         }),
 
         updateComponent: builder.mutation({
-            query: ({id, componentName}) => ({
+            query: ({id, componentName, buildComponent}) => ({
                 url: `/component/${id}`,
                 method: "PUT",
-                body: {componentName},
+                body: {componentName, buildComponent},
             }),
             invalidatesTags: ["component"],
         }),

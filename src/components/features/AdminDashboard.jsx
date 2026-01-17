@@ -1,10 +1,10 @@
 import React, {useState} from "react";
 import {LayoutDashboard, Cpu, Building, Package, Tag, Settings, Users, FileText, LogOut, Menu, X} from "lucide-react";
 
-import ComponentManagement from "./ComponentsManagement.jsx";
+import ComponentManagement from "./ComponentManagement.jsx";
 import ManageItems from "./components/ManageItems";
 
-const App = () => {
+const Dashboard = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [activePage, setActivePage] = useState("dashboard");
 
@@ -159,4 +159,4 @@ const App = () => {
     );
 };
 
-export default App;
+export default Dashboard;
