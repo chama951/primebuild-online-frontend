@@ -1,9 +1,13 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {useGetBuildComponentsQuery} from '../../features/components/componentApi.js';
+import ComponentItemsTable from "../common/ComponentItemsTable.jsx";
+
 
 const BuildCart = () => {
     const isBuild = true;
     const {data: buildComponents, isLoading, error} = useGetBuildComponentsQuery(isBuild);
+    const [isComponentItemsTableOpen, setIsComponentItemsTableOpen] = useState()
+    const [selectedComponent, setSelectedComponent] = useState()
 
     if (isLoading) {
         return (
@@ -50,8 +54,11 @@ const BuildCart = () => {
                         </p>
 
                         <button
-                            onClick={() => console.log(`Add ${component.itemList?.[0].itemName}`)}
-                            className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors"
+                            onClick={() => {
+                                console.log(`Add ${component.componentName}`);
+                                setSelectedComponent(component); // Set the component
+                                setIsComponentItemsTableOpen(true); // Open the table modal
+                            }}
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -68,6 +75,34 @@ const BuildCart = () => {
                                 />
                             </svg>
                         </button>
+
+                        {isComponentItemsTableOpen && selectedComponent && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-auto">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-xl font-bold">
+                                            Select Item for {selectedComponent.componentName}
+                                        </h3>
+                                        <button
+                                            onClick={() => {
+                                                setIsComponentItemsTableOpen(false);
+                                                setSelectedComponent(null);
+                                            }}
+                                            className="p-2 hover:bg-gray-100 rounded"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                    <ComponentItemsTable
+                                        component={selectedComponent}
+                                        onClose={() => {
+                                            setIsComponentItemsTableOpen(false);
+                                            setSelectedComponent(null);
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>

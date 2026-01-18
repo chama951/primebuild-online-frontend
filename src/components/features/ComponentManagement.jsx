@@ -1,5 +1,5 @@
 import {useState} from "react";
-import ItemListTable from "../common/ItemListTable.jsx";
+import Table from "../common/table.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import ComponentFeatureSection from "./component/ComponentFeatureSection.jsx";
 import {
@@ -182,7 +182,7 @@ const ComponentManagement = () => {
                         </div>
                     </div>
 
-                    <ItemListTable
+                    <Table
                         items={filteredComponents}
                         selectedItem={selectedComponent}
                         onSelectItem={handleSelectComponent}

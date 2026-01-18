@@ -5,7 +5,7 @@ import {
     useUpdateManufacturerMutation,
     useDeleteManufacturerMutation,
 } from "../../features/components/manufacturerApi.js";
-import ItemListTable from "../common/ItemListTable.jsx";
+import Table from "../common/table.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const ManufacturerManagement = () => {
@@ -167,7 +167,7 @@ const ManufacturerManagement = () => {
                         </div>
                     </div>
 
-                    <ItemListTable
+                    <Table
                         items={filteredManufacturers}
                         selectedItem={selectedManufacturer}
                         onSelectItem={handleSelectManufacturer}
