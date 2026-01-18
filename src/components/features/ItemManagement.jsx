@@ -133,27 +133,33 @@ const ItemManagement = () => {
     };
 
     // Table columns
-    const columns = [{
-        key: "itemName", header: "Item Name", render: (item) =>
-            <div className="space-y-1">
+    const columns = [
+        {
+            key: "id",
+            header: "ID",
+            render: (item) => <div className="text-sm text-gray-500">#{item.id}</div>,
+        },
+        {
+            key: "itemName", header: "Item Name", render: (item) =>
+                <div className="space-y-1">
 
-                <div className="inline-flex items-center px-2 py-1 rounded-md bg-green-100 text-green-800'">
+                    <div className="inline-flex items-center px-2 py-1 rounded-md bg-green-100 text-green-800'">
             <span className="text-xs font-medium text-gray-600">
                 {item.manufacturer.manufacturerName}
              </span>
-                </div>
+                    </div>
 
-                <div className="text-sm font-medium">{item.itemName}</div>
-            </div>,
-    }, {
-        key: "component",
-        header: "Component",
-        render: (item) => <div className="text-sm">{item.component?.componentName || "N/A"}</div>,
-    }, {
-        key: "price",
-        header: "Price",
-        render: (item) => <div className="text-sm">Rs {parseFloat(item.price || 0).toFixed(2)}</div>,
-    },];
+                    <div className="text-sm font-medium">{item.itemName}</div>
+                </div>,
+        }, {
+            key: "component",
+            header: "Component",
+            render: (item) => <div className="text-sm">{item.component?.componentName || "N/A"}</div>,
+        }, {
+            key: "price",
+            header: "Price",
+            render: (item) => <div className="text-sm">Rs {parseFloat(item.price || 0).toFixed(2)}</div>,
+        },];
 
     return (<div className="container mx-auto p-4 space-y-6">
         <h1 className="text-2xl font-bold">Item Management</h1>

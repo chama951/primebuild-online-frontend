@@ -129,14 +129,14 @@ const ComponentManagement = () => {
     // Table columns
     const columns = [
         {
-            key: "componentName",
-            header: "Component Name",
-            render: (item) => <div className="text-sm font-medium">{item.componentName}</div>,
-        },
-        {
             key: "id",
             header: "ID",
             render: (item) => <div className="text-sm text-gray-500">#{item.id}</div>,
+        },
+        {
+            key: "componentName",
+            header: "Component Name",
+            render: (item) => <div className="text-sm font-medium">{item.componentName}</div>,
         },
         {
             key: "isBuildComponent",
