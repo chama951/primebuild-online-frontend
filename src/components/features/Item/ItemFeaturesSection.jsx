@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import {useState, useEffect} from "react";
 import {
     useCreateItemFeatureMutation,
     useUpdateItemFeatureMutation,
@@ -26,7 +26,7 @@ const ItemFeaturesSection = ({
     const [selectedFeatureTypeId, setSelectedFeatureTypeId] = useState("");
 
     // API hooks
-    const { data: allFeatures = [], refetch: refetchAllFeatures } = useGetFeaturesQuery();
+    const {data: allFeatures = [], refetch: refetchAllFeatures} = useGetFeaturesQuery();
     const [createItemFeature] = useCreateItemFeatureMutation();
     const [updateItemFeature] = useUpdateItemFeatureMutation();
     const [deleteItemFeature] = useDeleteItemFeatureMutation();
@@ -106,7 +106,7 @@ const ItemFeaturesSection = ({
                 }
 
                 setSelectedFeatures(prev => {
-                    const updated = { ...prev };
+                    const updated = {...prev};
                     if (updated[typeId]) {
                         delete updated[typeId][featureId];
                         if (Object.keys(updated[typeId]).length === 0) delete updated[typeId];
@@ -271,8 +271,10 @@ const ItemFeaturesSection = ({
         try {
             await updateFeature({
                 id: editingFeature.id,
-                featureName: newFeatureName.trim(),
-                featureTypeId: parseInt(selectedFeatureTypeId),
+                data: {
+                    featureName: editingFeature.featureName.trim(),
+                    featureTypeId: parseInt(selectedFeatureTypeId),
+                }
             }).unwrap();
 
             await refetchAllFeatures();
@@ -347,7 +349,7 @@ const ItemFeaturesSection = ({
                             value={editingFeature?.featureName || newFeatureName}
                             onChange={(e) =>
                                 editingFeature
-                                    ? setEditingFeature({ ...editingFeature, featureName: e.target.value })
+                                    ? setEditingFeature({...editingFeature, featureName: e.target.value})
                                     : setNewFeatureName(e.target.value)
                             }
                             disabled={isSubmitting}
@@ -383,7 +385,7 @@ const ItemFeaturesSection = ({
             </div>
 
             {/* Features List */}
-            {Object.entries(groupedFeatures).map(([typeId, { featureTypeName, features }]) => {
+            {Object.entries(groupedFeatures).map(([typeId, {featureTypeName, features}]) => {
                 const isExpanded = expandedFeatureTypes[typeId] !== false;
 
                 return (
@@ -425,7 +427,8 @@ const ItemFeaturesSection = ({
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 {isSelected && (
-                                                    <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded">
+                                                    <div
+                                                        className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded">
                                                         <span className="text-xs text-gray-600">Slots:</span>
                                                         <input
                                                             type="number"

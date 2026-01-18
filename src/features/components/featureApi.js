@@ -14,19 +14,19 @@ export const featureApi = baseApi.injectEndpoints({
         }),
 
         createFeature: builder.mutation({
-            query: (featureData) => ({
+            query: (data) => ({
                 url: "/feature",
                 method: "POST",
-                body: featureData,
+                body: data,
             }),
             invalidatesTags: ["Feature"],
         }),
 
         updateFeature: builder.mutation({
-            query: ({id, ...featureData}) => ({
+            query: ({id, data}) => ({
                 url: `/feature/${id}`,
                 method: "PUT",
-                body: featureData,
+                body: data,
             }),
             invalidatesTags: (result, error, {id}) => [{type: "Feature", id}],
         }),
