@@ -1,4 +1,4 @@
-const ItemListTable = ({
+const Table = ({
   // Data props
   items = [],
   selectedItem,
@@ -116,4 +116,4 @@ const ItemListTable = ({
   );
 };
 
-export default ItemListTable;
+export default Table;

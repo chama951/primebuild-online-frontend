@@ -1,5 +1,5 @@
 import {useState} from "react";
-import ItemListTable from "../common/ItemListTable.jsx";
+import Table from "../common/table.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import ComponentFeatureSection from "./component/ComponentFeatureSection.jsx";
 import {
@@ -75,7 +75,7 @@ const ComponentManagement = () => {
                     data: {
                         componentName: componentName.trim(),
                         buildComponent: isBuildComponent,
-                        buildPriority: buildPriority.valueOf(),
+                        buildPriority: buildPriority ? buildPriority.valueOf() : 1,
                     }
                 }).unwrap();
                 showNotification("success", "Component updated successfully!");
@@ -83,7 +83,7 @@ const ComponentManagement = () => {
                 await saveComponent({
                     componentName: componentName.trim(),
                     buildComponent: isBuildComponent,
-                    buildPriority: buildPriority,
+                    buildPriority: buildPriority ? buildPriority.valueOf() : 1,
                 }).unwrap();
                 showNotification("success", "Component created successfully!");
             }
@@ -182,7 +182,7 @@ const ComponentManagement = () => {
                         </div>
                     </div>
 
-                    <ItemListTable
+                    <Table
                         items={filteredComponents}
                         selectedItem={selectedComponent}
                         onSelectItem={handleSelectComponent}
