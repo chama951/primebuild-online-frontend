@@ -75,7 +75,7 @@ const ComponentManagement = () => {
                     data: {
                         componentName: componentName.trim(),
                         buildComponent: isBuildComponent,
-                        buildPriority: buildPriority.valueOf(),
+                        buildPriority: buildPriority ? buildPriority.valueOf() : 1,
                     }
                 }).unwrap();
                 showNotification("success", "Component updated successfully!");
@@ -83,7 +83,7 @@ const ComponentManagement = () => {
                 await saveComponent({
                     componentName: componentName.trim(),
                     buildComponent: isBuildComponent,
-                    buildPriority: buildPriority,
+                    buildPriority: buildPriority ? buildPriority.valueOf() : 1,
                 }).unwrap();
                 showNotification("success", "Component created successfully!");
             }
