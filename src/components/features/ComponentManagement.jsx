@@ -23,6 +23,7 @@ const ComponentManagement = () => {
         action: null,
     });
     const [buildPriority, setBuildPriority] = useState("");
+    const [powerSource, setPowerSource] = useState(""); // powerSource
 
     // API hooks (only component-related)
     const {data: components = [], refetch: refetchComponents} = useGetComponentsQuery();
@@ -76,6 +77,7 @@ const ComponentManagement = () => {
                         componentName: componentName.trim(),
                         buildComponent: isBuildComponent,
                         buildPriority: buildPriority ? buildPriority.valueOf() : 1,
+                        powerSource: powerSource ? powerSource : false, //powerSource
                     }
                 }).unwrap();
                 showNotification("success", "Component updated successfully!");
@@ -84,6 +86,7 @@ const ComponentManagement = () => {
                     componentName: componentName.trim(),
                     buildComponent: isBuildComponent,
                     buildPriority: buildPriority ? buildPriority.valueOf() : 1,
+                    powerSource: powerSource ? powerSource : false, // powerSource
                 }).unwrap();
                 showNotification("success", "Component created successfully!");
             }
@@ -103,6 +106,7 @@ const ComponentManagement = () => {
         setComponentName(component.componentName);
         setIsBuildComponent(component.buildComponent ?? false);
         setBuildPriority(component.buildPriority);
+        setPowerSource(component.powerSource ?? false); // powerSource
     };
 
     const handleResetForm = () => {
@@ -110,6 +114,7 @@ const ComponentManagement = () => {
         setComponentName("");
         setIsBuildComponent(false);
         setBuildPriority("");
+        setPowerSource("");
     };
 
     const handleDeleteComponent = (component) => {
@@ -152,7 +157,7 @@ const ComponentManagement = () => {
             key: "Priority",
             header: "Priority",
             render: (item) => <div className="text-sm text-gray-500">{item.buildPriority}</div>,
-        }
+        },
     ];
 
     return (
@@ -206,6 +211,25 @@ const ComponentManagement = () => {
                                 onChange={(e) => setComponentName(e.target.value)}
                                 required
                             />
+
+                            {/* NEW: Power Source Toggle */}
+                            <div className="flex items-center justify-between p-3 border rounded">
+                                <div className="flex items-center space-x-3">
+                                    <div className="flex items-center h-5">
+                                        <input
+                                            id="power-source"
+                                            type="checkbox"
+                                            checked={powerSource}
+                                            disabled={isSubmitting || !componentName.trim()}
+                                            onChange={(e) => setPowerSource(e.target.checked)}
+                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <label htmlFor="power-source" className="font-medium text-gray-700">
+                                        Power Source
+                                    </label>
+                                </div>
+                            </div>
 
                             {/* Build Component Toggle - Compact */}
                             <div className="flex items-center justify-between p-3 border rounded">
