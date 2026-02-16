@@ -52,11 +52,15 @@ const ItemManagement = () => {
             const {callback} = notification.action;
             setIsSubmitting(true);
             try {
-                await callback();
-                showNotification("success", notification.action.successMessage || "Action completed!");
+                const result = await callback();
+                // Use response message for success if available
+                const successMessage = result?.data?.message || notification.action.successMessage || "Action completed!";
+                showNotification("success", successMessage);
             } catch (error) {
                 console.error("Error:", error);
-                showNotification("error", notification.action.errorMessage || "Error performing action.");
+                // Use error message from response
+                const errorMessage = error.data?.message || notification.action.errorMessage || "Error performing action.";
+                showNotification("error", errorMessage);
             } finally {
                 setIsSubmitting(false);
                 setNotification((prev) => ({...prev, action: null}));
@@ -86,7 +90,7 @@ const ItemManagement = () => {
         e.preventDefault();
         setIsSubmitting(true);
 
-        // Basic validation
+        // Basic validation - still need manual messages for client-side validation
         if (!formData.itemName.trim() || !formData.componentId || !formData.manufacturerId) {
             showNotification("error", "Please fill in all required fields");
             setIsSubmitting(false);
@@ -101,33 +105,46 @@ const ItemManagement = () => {
         };
 
         try {
+            let response;
             if (selectedItem) {
-                await updateItem({id: selectedItem.id, ...itemData}).unwrap();
-                showNotification("success", "Item updated successfully!");
+                response = await updateItem({id: selectedItem.id, ...itemData}).unwrap();
             } else {
-                await createItem(itemData).unwrap();
-                showNotification("success", "Item created successfully!");
+                response = await createItem(itemData).unwrap();
             }
+
+            // Show success message from API response
+            showNotification("success", response.message || "Operation completed successfully!");
 
             handleResetForm();
             refetchItems();
         } catch (error) {
             console.error("Error saving item:", error);
-            showNotification("error", "Error saving item. Please try again.");
+            // Show error message from API response
+            showNotification("error", error.data?.message || "An error occurred while saving.");
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleDeleteItem = (item) => {
+        // Confirmation dialog - manual message required
         showNotification("error", `Are you sure you want to delete "${item.itemName}"?`, {
             callback: async () => {
-                await deleteItem(item.id).unwrap();
-                refetchItems();
-                if (selectedItem?.id === item.id) {
-                    handleResetForm();
+                try {
+                    const response = await deleteItem(item.id).unwrap();
+                    refetchItems();
+                    if (selectedItem?.id === item.id) {
+                        handleResetForm();
+                    }
+                    // Return response to handleConfirmAction to extract message
+                    return response;
+                } catch (error) {
+                    console.error("Error deleting item:", error);
+                    throw error; // Re-throw to be caught by handleConfirmAction
                 }
-            }, successMessage: "Item deleted successfully!", errorMessage: "Error deleting item.",
+            },
+            successMessage: "Item deleted successfully!", // Fallback if API doesn't return message
+            errorMessage: "Error deleting item.", // Fallback if API doesn't return message
         });
     };
 
@@ -171,39 +188,39 @@ const ItemManagement = () => {
         <div className="container mx-auto p-4 space-y-6">
             <h1 className="text-2xl font-bold">Item Management</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column: Item List */}
-            <div className="lg:col-span-2 space-y-4">
-                {/* Search and Filter */}
-                <div className="bg-white rounded-lg border p-4">
-                    <div className="flex gap-4">
-                        <div className="relative flex-1">
-                            <input
-                                type="text"
-                                placeholder="Search items..."
-                                className="w-full pl-4 pr-10 py-2 border rounded"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                            {searchTerm && (<button
-                                onClick={() => setSearchTerm("")}
-                                className="absolute right-3 top-2.5 text-gray-400"
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column: Item List */}
+                <div className="lg:col-span-2 space-y-4">
+                    {/* Search and Filter */}
+                    <div className="bg-white rounded-lg border p-4">
+                        <div className="flex gap-4">
+                            <div className="relative flex-1">
+                                <input
+                                    type="text"
+                                    placeholder="Search items..."
+                                    className="w-full pl-4 pr-10 py-2 border rounded"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                                {searchTerm && (<button
+                                    onClick={() => setSearchTerm("")}
+                                    className="absolute right-3 top-2.5 text-gray-400"
+                                >
+                                    ✕
+                                </button>)}
+                            </div>
+                            <select
+                                className="w-48 p-2.5 border rounded"
+                                value={filterComponent}
+                                onChange={(e) => setFilterComponent(e.target.value)}
                             >
-                                ✕
-                            </button>)}
+                                <option value="">All Components</option>
+                                {components.map((component) => (<option key={component.id} value={component.id}>
+                                    {component.componentName}
+                                </option>))}
+                            </select>
                         </div>
-                        <select
-                            className="w-48 p-2.5 border rounded"
-                            value={filterComponent}
-                            onChange={(e) => setFilterComponent(e.target.value)}
-                        >
-                            <option value="">All Components</option>
-                            {components.map((component) => (<option key={component.id} value={component.id}>
-                                {component.componentName}
-                            </option>))}
-                        </select>
                     </div>
-                </div>
 
                     {/* Items Table */}
                     <Table
@@ -213,7 +230,7 @@ const ItemManagement = () => {
                         onDeleteItemClick={handleDeleteItem}
                         isLoading={false}
                         columns={columns}
-                        emptyMessage="No items found"
+                        emptyMessage="No items found" // Table component handles this internally
                     />
                 </div>
 
@@ -321,30 +338,30 @@ const ItemManagement = () => {
                         </form>
                     </div>
 
-                {/* Features Section component */}
-                {formData.componentId && (<ItemFeaturesSection
-                    selectedComponent={selectedComponent}
-                    selectedItem={selectedItem}
-                    showNotification={showNotification}
-                    isSubmitting={isSubmitting}
-                    setIsSubmitting={setIsSubmitting}
-                />)}
+                    {/* Features Section component */}
+                    {formData.componentId && (<ItemFeaturesSection
+                        selectedComponent={selectedComponent}
+                        selectedItem={selectedItem}
+                        showNotification={showNotification}
+                        isSubmitting={isSubmitting}
+                        setIsSubmitting={setIsSubmitting}
+                    />)}
+                </div>
             </div>
-        </div>
 
-        {/* Global Notification Dialog */}
-        <NotificationDialogs
-            showSuccessDialog={notification.show && notification.type === "success"}
-            setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
-            successMessage={notification.message}
-            showErrorDialog={notification.show && notification.type === "error"}
-            setShowErrorDialog={() => setNotification({show: false, type: "", message: "", action: null})}
-            errorMessage={notification.message}
-            errorAction={notification.action}
-            onErrorAction={handleConfirmAction}
-            isActionLoading={isSubmitting}
-        />
-    </div>);
+            {/* Global Notification Dialog */}
+            <NotificationDialogs
+                showSuccessDialog={notification.show && notification.type === "success"}
+                setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
+                successMessage={notification.message}
+                showErrorDialog={notification.show && notification.type === "error"}
+                setShowErrorDialog={() => setNotification({show: false, type: "", message: "", action: null})}
+                errorMessage={notification.message}
+                errorAction={notification.action}
+                onErrorAction={handleConfirmAction}
+                isActionLoading={isSubmitting}
+            />
+        </div>);
 };
 
 export default ItemManagement;

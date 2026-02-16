@@ -57,11 +57,15 @@ const ManufacturerManagement = () => {
             const {callback} = notification.action;
             setIsSubmitting(true);
             try {
-                await callback();
-                showNotification("success", notification.action.successMessage || "Action completed!");
+                const result = await callback();
+                // Use response message for success if available
+                const successMessage = result?.data?.message || notification.action.successMessage || "Action completed!";
+                showNotification("success", successMessage);
             } catch (error) {
                 console.error("Error:", error);
-                showNotification("error", notification.action.errorMessage || "Error performing action.");
+                // Use error message from response
+                const errorMessage = error.data?.message || notification.action.errorMessage || "Error performing action.";
+                showNotification("error", errorMessage);
             } finally {
                 setIsSubmitting(false);
                 setNotification((prev) => ({...prev, action: null}));
@@ -73,30 +77,34 @@ const ManufacturerManagement = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!manufacturerName.trim()) {
+            // This validation still needs a manual message since there's no API call yet
             showNotification("error", "Please enter a manufacturer name");
             return;
         }
 
         setIsSubmitting(true);
         try {
+            let response;
             if (selectedManufacturer) {
-                await updateManufacturer({
+                response = await updateManufacturer({
                     id: selectedManufacturer.id,
                     manufacturerName: manufacturerName.trim(),
                 }).unwrap();
-                showNotification("success", "Manufacturer updated successfully!");
             } else {
-                await createManufacturer({
+                response = await createManufacturer({
                     manufacturerName: manufacturerName.trim(),
                 }).unwrap();
-                showNotification("success", "Manufacturer created successfully!");
             }
+
+            // Show success message from API response
+            showNotification("success", response.message || "Operation completed successfully!");
 
             handleResetForm();
             refetchManufacturers();
         } catch (error) {
             console.error("Error saving manufacturer:", error);
-            showNotification("error", "Error saving manufacturer.");
+            // Show error message from API response
+            showNotification("error", error.data?.message || "An error occurred while saving.");
         } finally {
             setIsSubmitting(false);
         }
@@ -113,16 +121,24 @@ const ManufacturerManagement = () => {
     };
 
     const handleDeleteManufacturer = (manufacturer) => {
+        // For confirmation dialog, we still need a manual message
         showNotification("error", `Are you sure you want to delete "${manufacturer.manufacturerName}"?`, {
             callback: async () => {
-                await deleteManufacturer(manufacturer.id).unwrap();
-                refetchManufacturers();
-                if (selectedManufacturer?.id === manufacturer.id) {
-                    handleResetForm();
+                try {
+                    const response = await deleteManufacturer(manufacturer.id).unwrap();
+                    refetchManufacturers();
+                    if (selectedManufacturer?.id === manufacturer.id) {
+                        handleResetForm();
+                    }
+                    // Return response to handleConfirmAction to extract message
+                    return response;
+                } catch (error) {
+                    console.error("Error deleting manufacturer:", error);
+                    throw error; // Re-throw to be caught by handleConfirmAction
                 }
             },
-            successMessage: "Manufacturer deleted successfully!",
-            errorMessage: "Error deleting manufacturer.",
+            successMessage: "Manufacturer deleted successfully!", // Fallback if API doesn't return message
+            errorMessage: "Error deleting manufacturer.", // Fallback if API doesn't return message
         });
     };
 

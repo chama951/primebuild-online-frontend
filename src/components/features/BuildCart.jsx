@@ -1,4 +1,5 @@
 import React, {useState, useMemo} from 'react';
+import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import {useGetBuildComponentsQuery} from '../../features/components/componentApi.js';
 import {useGetItemsByComponentIdQuery} from "../../features/components/itemApi.js";
 import {useGetCompatibleItemsByComponentQuery, useGetCompatiblePowerSourcesQuery} from '../../features/components/compatibilityApi';
@@ -7,17 +8,24 @@ const BuildCart = () => {
     const [selectedComponent, setSelectedComponent] = useState(null);
     const [selectedItems, setSelectedItems] = useState([]);
     const [itemSearchTerm, setItemSearchTerm] = useState('');
+    const [notification, setNotification] = useState({
+        show: false,
+        type: "",
+        message: "",
+        action: null,
+    });
 
-    const {data: components = [], isLoading: loadingComponents} = useGetBuildComponentsQuery(true);
+    // API hooks with error handling
+    const {data: components = [], isLoading: loadingComponents, error: componentsError} = useGetBuildComponentsQuery(true);
 
     // Get items for selected component
-    const {data: allItems = [], isLoading: loadingAllItems} = useGetItemsByComponentIdQuery(
+    const {data: allItems = [], isLoading: loadingAllItems, error: allItemsError} = useGetItemsByComponentIdQuery(
         selectedComponent?.id,
         {skip: !selectedComponent}
     );
 
     // Get compatible items for non-power-source components
-    const {data: compatibleData = {}, isLoading: loadingCompatible} = useGetCompatibleItemsByComponentQuery(
+    const {data: compatibleData = {}, isLoading: loadingCompatible, error: compatibleError} = useGetCompatibleItemsByComponentQuery(
         selectedComponent && selectedItems.length > 0 &&
         !(selectedComponent.powerSource === true || selectedComponent.powerSource === "true") ? {
             componentId: selectedComponent.id,
@@ -28,7 +36,7 @@ const BuildCart = () => {
     );
 
     // Get compatible power sources
-    const {data: compatiblePowerSources = [], isLoading: loadingPowerSources} = useGetCompatiblePowerSourcesQuery(
+    const {data: compatiblePowerSources = [], isLoading: loadingPowerSources, error: powerSourcesError} = useGetCompatiblePowerSourcesQuery(
         selectedComponent && selectedItems.length > 0 &&
         (selectedComponent.powerSource === true || selectedComponent.powerSource === "true") ? {
             componentId: selectedComponent.id,
@@ -37,6 +45,53 @@ const BuildCart = () => {
         {skip: !selectedComponent || selectedItems.length === 0 ||
                 !(selectedComponent.powerSource === true || selectedComponent.powerSource === "true")}
     );
+
+    // Notification handler
+    const showNotification = (type, message, action = null) => {
+        setNotification({show: true, type, message, action});
+    };
+
+    const handleConfirmAction = async () => {
+        if (notification.action) {
+            const {callback} = notification.action;
+            try {
+                await callback();
+                if (notification.action.successMessage) {
+                    showNotification("success", notification.action.successMessage);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                showNotification("error", notification.action.errorMessage || "Error performing action.");
+            } finally {
+                setNotification((prev) => ({...prev, action: null}));
+            }
+        }
+    };
+
+    // Show API errors in notification
+    React.useEffect(() => {
+        if (componentsError) {
+            showNotification("error", componentsError.data?.message || "Failed to load components");
+        }
+    }, [componentsError]);
+
+    React.useEffect(() => {
+        if (allItemsError && selectedComponent) {
+            showNotification("error", allItemsError.data?.message || "Failed to load items");
+        }
+    }, [allItemsError, selectedComponent]);
+
+    React.useEffect(() => {
+        if (compatibleError && selectedComponent) {
+            showNotification("error", compatibleError.data?.message || "Failed to load compatible items");
+        }
+    }, [compatibleError, selectedComponent]);
+
+    React.useEffect(() => {
+        if (powerSourcesError && selectedComponent) {
+            showNotification("error", powerSourcesError.data?.message || "Failed to load power sources");
+        }
+    }, [powerSourcesError, selectedComponent]);
 
     // Helper functions
     const getItemName = (item) => item.itemName || item.name || 'Item';
@@ -463,7 +518,12 @@ const BuildCart = () => {
                                 Clear Build
                             </button>
                             <button
-                                onClick={() => selectedItems.length > 0 && alert(`Invoice for ${selectedItems.length} items. Total: Rs ${totalPrice.toFixed(2)}`)}
+                                onClick={() => {
+                                    if (selectedItems.length > 0) {
+                                        // Invoice functionality would go here
+                                        console.log("Invoice for", selectedItems.length, "items. Total:", totalPrice);
+                                    }
+                                }}
                                 disabled={selectedItems.length === 0}
                                 className={`px-6 py-2 rounded text-sm font-medium ${
                                     selectedItems.length > 0
@@ -477,6 +537,19 @@ const BuildCart = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Global Notification Dialog */}
+            <NotificationDialogs
+                showSuccessDialog={notification.show && notification.type === "success"}
+                setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
+                successMessage={notification.message}
+                showErrorDialog={notification.show && notification.type === "error"}
+                setShowErrorDialog={() => setNotification({show: false, type: "", message: "", action: null})}
+                errorMessage={notification.message}
+                errorAction={notification.action}
+                onErrorAction={handleConfirmAction}
+                isActionLoading={false}
+            />
         </div>
     );
 };

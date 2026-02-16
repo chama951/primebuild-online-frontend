@@ -61,10 +61,10 @@ const ComponentFeatureSection = ({
 
             await refetchAllFeatureTypes();
             setNewFeatureTypeName("");
-            showNotification("success", "Feature type created and assigned!");
+            showNotification("success", result.message || "Feature type created and assigned!");
         } catch (error) {
             console.error("Error creating feature type:", error);
-            showNotification("error", "Error creating feature type.");
+            showNotification("error", error.data?.message || "Error creating feature type.");
         } finally {
             setIsSubmitting(false);
         }
@@ -75,7 +75,7 @@ const ComponentFeatureSection = ({
 
         setIsSubmitting(true);
         try {
-            await updateFeatureType({
+            const response = await updateFeatureType({
                 id: editingFeatureType.id,
                 featureTypeName: editingFeatureType.featureTypeName.trim(),
             }).unwrap();
@@ -83,10 +83,10 @@ const ComponentFeatureSection = ({
             await refetchAllFeatureTypes();
             setEditingFeatureType(null);
             setNewFeatureTypeName("");
-            showNotification("success", "Feature type updated!");
+            showNotification("success", response.message || "Feature type updated!");
         } catch (error) {
             console.error("Error updating feature type:", error);
-            showNotification("error", "Error updating feature type.");
+            showNotification("error", error.data?.message || "Error updating feature type.");
         } finally {
             setIsSubmitting(false);
         }
@@ -98,23 +98,23 @@ const ComponentFeatureSection = ({
         setIsSubmitting(true);
         try {
             if (assign) {
-                await createComponentFeatureType({
+                const result = await createComponentFeatureType({
                     componentId: selectedComponent.id,
                     featureTypeId: featureType.id,
                 }).unwrap();
-                showNotification("success", "Feature type added!");
+                showNotification("success", result.message || "Feature type added!");
             } else {
                 const componentFeatureType = componentFeatureTypes.find((cft) => cft.featureType?.id === featureType.id);
                 if (componentFeatureType) {
-                    await deleteComponentFeatureType(componentFeatureType.id).unwrap();
-                    showNotification("success", "Feature type removed!");
+                    const result = await deleteComponentFeatureType(componentFeatureType.id).unwrap();
+                    showNotification("success", result.message || "Feature type removed!");
                 }
             }
 
             await refetchComponentFeatureTypes();
         } catch (error) {
             console.error("Error toggling feature type:", error);
-            showNotification("error", "Error updating feature type assignment.");
+            showNotification("error", error.data?.message || "Error updating feature type assignment.");
         } finally {
             setIsSubmitting(false);
         }
@@ -123,11 +123,17 @@ const ComponentFeatureSection = ({
     const handleDeleteFeatureType = (featureType) => {
         showNotification("error", `Are you sure you want to delete "${featureType.featureTypeName}"?`, {
             callback: async () => {
-                await deleteFeatureType(featureType.id).unwrap();
-                await refetchAllFeatureTypes();
+                try {
+                    const response = await deleteFeatureType(featureType.id).unwrap();
+                    await refetchAllFeatureTypes();
+                    showNotification("success", response.message || "Feature type deleted!");
+                } catch (error) {
+                    console.error("Error deleting feature type:", error);
+                    throw error; // Re-throw to be caught by handleConfirmAction
+                }
             },
-            successMessage: "Feature type deleted!",
-            errorMessage: "Error deleting feature type.",
+            successMessage: "Feature type deleted!", // Fallback if API doesn't return message
+            errorMessage: "Error deleting feature type.", // Fallback if API doesn't return message
         });
     };
 

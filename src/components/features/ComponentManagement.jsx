@@ -48,11 +48,15 @@ const ComponentManagement = () => {
             const {callback} = notification.action;
             setIsSubmitting(true);
             try {
-                await callback();
-                showNotification("success", notification.action.successMessage || "Action completed!");
+                const result = await callback();
+                // Use response message for success if available
+                const successMessage = result?.data?.message || notification.action.successMessage || "Action completed!";
+                showNotification("success", successMessage);
             } catch (error) {
                 console.error("Error:", error);
-                showNotification("error", notification.action.errorMessage || "Error performing action.");
+                // Use error message from response
+                const errorMessage = error.data?.message || notification.action.errorMessage || "Error performing action.";
+                showNotification("error", errorMessage);
             } finally {
                 setIsSubmitting(false);
                 setNotification((prev) => ({...prev, action: null}));
@@ -70,8 +74,9 @@ const ComponentManagement = () => {
 
         setIsSubmitting(true);
         try {
+            let response;
             if (selectedComponent) {
-                await updateComponent({
+                response = await updateComponent({
                     id: selectedComponent.id,
                     data: {
                         componentName: componentName.trim(),
@@ -80,22 +85,24 @@ const ComponentManagement = () => {
                         powerSource: powerSource ? powerSource : false, //powerSource
                     }
                 }).unwrap();
-                showNotification("success", "Component updated successfully!");
             } else {
-                await saveComponent({
+                response = await saveComponent({
                     componentName: componentName.trim(),
                     buildComponent: isBuildComponent,
                     buildPriority: buildPriority ? buildPriority.valueOf() : 1,
                     powerSource: powerSource ? powerSource : false, // powerSource
                 }).unwrap();
-                showNotification("success", "Component created successfully!");
             }
+
+            // Show success message from API response
+            showNotification("success", response.message || "Operation completed successfully!");
 
             handleResetForm();
             refetchComponents();
         } catch (error) {
             console.error("Error saving component:", error);
-            showNotification("error", "Error saving component.");
+            // Show error message from API response
+            showNotification("error", error.data?.message || "An error occurred while saving.");
         } finally {
             setIsSubmitting(false);
         }
@@ -120,14 +127,21 @@ const ComponentManagement = () => {
     const handleDeleteComponent = (component) => {
         showNotification("error", `Are you sure you want to delete "${component.componentName}"?`, {
             callback: async () => {
-                await deleteComponent(component.id).unwrap();
-                refetchComponents();
-                if (selectedComponent?.id === component.id) {
-                    handleResetForm();
+                try {
+                    const response = await deleteComponent(component.id).unwrap();
+                    refetchComponents();
+                    if (selectedComponent?.id === component.id) {
+                        handleResetForm();
+                    }
+                    // Return response to handleConfirmAction to extract message
+                    return response;
+                } catch (error) {
+                    console.error("Error deleting component:", error);
+                    throw error; // Re-throw to be caught by handleConfirmAction
                 }
             },
-            successMessage: "Component deleted!",
-            errorMessage: "Error deleting component.",
+            successMessage: "Component deleted successfully!", // Fallback if API doesn't return message
+            errorMessage: "Error deleting component.", // Fallback if API doesn't return message
         });
     };
 
@@ -194,7 +208,7 @@ const ComponentManagement = () => {
                         onDeleteItemClick={handleDeleteComponent}
                         isLoading={false}
                         columns={columns}
-                        emptyMessage="No components found"
+                        emptyMessage="No components found" // Table component handles this internally
                     />
                 </div>
 

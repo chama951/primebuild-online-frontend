@@ -5,9 +5,9 @@ export const baseApi = createApi({
     baseQuery: fetchBaseQuery({
         baseUrl: "http://localhost:8080/api",
         prepareHeaders: (headers) => {
-            const token = localStorage.getItem("token");
+            const token = localStorage.getItem("jwtToken"); // use JWT from localStorage
             if (token) {
-                headers.set("authorization", `Bearer ${token}`);
+                headers.set("Authorization", `Bearer ${token}`);
             }
             return headers;
         },

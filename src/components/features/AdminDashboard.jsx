@@ -2,7 +2,7 @@ import React, {useState} from "react";
 import {LayoutDashboard, Cpu, Building, Package, Tag, Settings, Users, FileText, LogOut, Menu, X} from "lucide-react";
 
 import ComponentManagement from "./ComponentManagement.jsx";
-import ManageItems from "./components/ManageItems";
+import ManageItems from "./ItemManagement.jsx";
 
 const Dashboard = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);

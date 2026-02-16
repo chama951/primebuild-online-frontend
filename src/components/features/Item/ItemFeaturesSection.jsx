@@ -102,7 +102,10 @@ const ItemFeaturesSection = ({
                 // Remove feature
                 if (selectedItem) {
                     const itemFeatureId = selectedFeatures[typeId][featureId].itemFeatureId;
-                    await deleteItemFeature(itemFeatureId).unwrap();
+                    const response = await deleteItemFeature(itemFeatureId).unwrap();
+                    showNotification("success", response.message || "Feature removed!");
+                } else {
+                    showNotification("success", "Feature removed!");
                 }
 
                 setSelectedFeatures(prev => {
@@ -113,7 +116,6 @@ const ItemFeaturesSection = ({
                     }
                     return updated;
                 });
-                showNotification("success", "Feature removed!");
             } else {
                 // Add feature
                 if (selectedItem) {
@@ -135,7 +137,7 @@ const ItemFeaturesSection = ({
                             },
                         },
                     }));
-                    showNotification("success", "Feature added!");
+                    showNotification("success", result.message || "Feature added!");
                 } else {
                     setSelectedFeatures(prev => ({
                         ...prev,
@@ -148,11 +150,12 @@ const ItemFeaturesSection = ({
                             },
                         },
                     }));
+                    showNotification("success", "Feature added!");
                 }
             }
         } catch (error) {
             console.error("Error:", error);
-            showNotification("error", "Error updating feature.");
+            showNotification("error", error.data?.message || "Error updating feature.");
         } finally {
             setIsSubmitting(false);
         }
@@ -170,7 +173,7 @@ const ItemFeaturesSection = ({
         if (selectedItem && itemFeatureId) {
             setIsSubmitting(true);
             try {
-                await updateItemFeature({
+                const response = await updateItemFeature({
                     id: itemFeatureId,
                     slotCount: parsedSlotCount,
                 }).unwrap();
@@ -185,10 +188,10 @@ const ItemFeaturesSection = ({
                         },
                     },
                 }));
-                showNotification("success", "Slot count updated!");
+                showNotification("success", response.message || "Slot count updated!");
             } catch (error) {
                 console.error("Error updating slot count:", error);
-                showNotification("error", "Error updating slot count.");
+                showNotification("error", error.data?.message || "Error updating slot count.");
             } finally {
                 setIsSubmitting(false);
             }
@@ -204,6 +207,7 @@ const ItemFeaturesSection = ({
                     },
                 },
             }));
+            showNotification("success", "Slot count updated!");
         }
     };
 
@@ -255,10 +259,10 @@ const ItemFeaturesSection = ({
                 }));
             }
             setNewFeatureName("");
-            showNotification("success", "Feature created!");
+            showNotification("success", result.message || "Feature created!");
         } catch (error) {
             console.error("Error creating feature:", error);
-            showNotification("error", "Error creating feature.");
+            showNotification("error", error.data?.message || "Error creating feature.");
         } finally {
             setIsSubmitting(false);
         }
@@ -269,7 +273,7 @@ const ItemFeaturesSection = ({
 
         setIsSubmitting(true);
         try {
-            await updateFeature({
+            const response = await updateFeature({
                 id: editingFeature.id,
                 data: {
                     featureName: editingFeature.featureName.trim(),
@@ -280,10 +284,10 @@ const ItemFeaturesSection = ({
             await refetchAllFeatures();
             setEditingFeature(null);
             setNewFeatureName("");
-            showNotification("success", "Feature updated!");
+            showNotification("success", response.message || "Feature updated!");
         } catch (error) {
             console.error("Error updating feature:", error);
-            showNotification("error", "Error updating feature.");
+            showNotification("error", error.data?.message || "Error updating feature.");
         } finally {
             setIsSubmitting(false);
         }
@@ -292,11 +296,17 @@ const ItemFeaturesSection = ({
     const handleDeleteFeature = (feature) => {
         showNotification("error", `Are you sure you want to delete "${feature.featureName}"?`, {
             callback: async () => {
-                await deleteFeature(feature.id).unwrap();
-                await refetchAllFeatures();
+                try {
+                    const response = await deleteFeature(feature.id).unwrap();
+                    await refetchAllFeatures();
+                    showNotification("success", response.message || "Feature deleted!");
+                } catch (error) {
+                    console.error("Error deleting feature:", error);
+                    throw error; // Re-throw to be caught by handleConfirmAction
+                }
             },
-            successMessage: "Feature deleted!",
-            errorMessage: "Error deleting feature.",
+            successMessage: "Feature deleted!", // Fallback if API doesn't return message
+            errorMessage: "Error deleting feature.", // Fallback if API doesn't return message
         });
     };
 
