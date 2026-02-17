@@ -1,5 +1,5 @@
-import {useState} from "react";
-import Table from "../common/table.jsx";
+import {useEffect, useState} from "react";
+import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import ComponentFeatureSection from "./component/ComponentFeatureSection.jsx";
 import {
@@ -8,8 +8,9 @@ import {
     useUpdateComponentMutation,
     useSaveComponentMutation,
 } from "../../features/components/componentApi.js";
+import Unauthorized from "../common/Unauthorized.jsx";
 
-const ComponentManagement = () => {
+const ComponentManagement = ({refetchFlag, resetFlag}) => {
     // State
     const [selectedComponent, setSelectedComponent] = useState(null);
     const [componentName, setComponentName] = useState("");
@@ -26,12 +27,34 @@ const ComponentManagement = () => {
     const [powerSource, setPowerSource] = useState(""); // powerSource
 
     // API hooks (only component-related)
-    const {data: components = [], refetch: refetchComponents} = useGetComponentsQuery();
+    const {
+        data: components = [],
+        error: componentsError, refetch:
+            refetchComponents
+    }
+        = useGetComponentsQuery();
 
     // Mutations (only component-related)
     const [saveComponent] = useSaveComponentMutation();
     const [updateComponent] = useUpdateComponentMutation();
     const [deleteComponent] = useDeleteComponentMutation();
+
+    useEffect(() => {
+        if (refetchFlag) {
+            refetchComponents();    // actually trigger the API refetch
+            resetFlag();  // reset the flag after refetch
+        }
+    }, [refetchFlag]);
+
+// Check unauthorized
+    const isUnauthorized = () => {
+        const errors = [componentsError];
+        return errors.some(err => err?.isUnauthorized);
+    };
+
+    if (isUnauthorized()) {
+        return <Unauthorized/>;
+    }
 
     // Computed values
     const filteredComponents = components.filter((component) =>
@@ -145,7 +168,7 @@ const ComponentManagement = () => {
         });
     };
 
-    // Table columns
+    // DataTable columns
     const columns = [
         {
             key: "id",
@@ -176,8 +199,6 @@ const ComponentManagement = () => {
 
     return (
         <div className="container mx-auto p-4 space-y-6">
-            <h1 className="text-2xl font-bold">Component Management</h1>
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column: Components List */}
                 <div className="lg:col-span-2 space-y-4">
@@ -201,14 +222,14 @@ const ComponentManagement = () => {
                         </div>
                     </div>
 
-                    <Table
+                    <DataTable
                         items={filteredComponents}
                         selectedItem={selectedComponent}
                         onSelectItem={handleSelectComponent}
                         onDeleteItemClick={handleDeleteComponent}
                         isLoading={false}
                         columns={columns}
-                        emptyMessage="No components found" // Table component handles this internally
+                        emptyMessage="No components found" // DataTable component handles this internally
                     />
                 </div>
 

@@ -1,4 +1,4 @@
-const Table = ({
+const DataTable = ({
   // Data props
   items = [],
   selectedItem,
@@ -116,4 +116,4 @@ const Table = ({
   );
 };
 
-export default Table;
+export default DataTable;

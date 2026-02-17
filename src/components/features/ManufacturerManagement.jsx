@@ -1,14 +1,15 @@
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {
     useGetManufacturersQuery,
     useSaveManufacturerMutation,
     useUpdateManufacturerMutation,
     useDeleteManufacturerMutation,
 } from "../../features/components/manufacturerApi.js";
-import Table from "../common/table.jsx";
+import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
+import Unauthorized from "../common/Unauthorized.jsx";
 
-const ManufacturerManagement = () => {
+const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
     // state
     const [selectedManufacturer, setSelectedManufacturer] = useState(null);
     const [manufacturerName, setManufacturerName] = useState("");
@@ -24,15 +25,34 @@ const ManufacturerManagement = () => {
     });
 
     // api hooks
-    const {data: manufacturersData = [], refetch: refetchManufacturers} = useGetManufacturersQuery();
+    const {
+        data: manufacturersData = [],
+        error: manufacturersError,
+        refetch: refetchManufacturers
+    } = useGetManufacturersQuery();
 
-    // Mutations
     const [createManufacturer] = useSaveManufacturerMutation();
     const [updateManufacturer] = useUpdateManufacturerMutation();
     const [deleteManufacturer] = useDeleteManufacturerMutation();
 
-    // values and objects
-    // Safe data handling
+    useEffect(() => {
+        if (refetchFlag) {
+            refetchManufacturers();
+            resetFlag();
+        }
+    }, [refetchFlag]);
+
+    // Check unauthorized
+    const isUnauthorized = () => {
+        const errors = [manufacturersError];
+        return errors.some(err => err?.isUnauthorized);
+    };
+
+    if (isUnauthorized()) {
+        return <Unauthorized/>;
+    }
+
+
     const manufacturers = Array.isArray(manufacturersData)
         ? manufacturersData
             .filter((m) => m != null && m.id != null)
@@ -42,12 +62,10 @@ const ManufacturerManagement = () => {
             }))
         : [];
 
-    // Filter manufacturers based on search term
     const filteredManufacturers = manufacturers.filter((manufacturer) =>
         manufacturer.manufacturerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // notification handlers
     const showNotification = (type, message, action = null) => {
         setNotification({show: true, type, message, action});
     };
@@ -58,12 +76,10 @@ const ManufacturerManagement = () => {
             setIsSubmitting(true);
             try {
                 const result = await callback();
-                // Use response message for success if available
                 const successMessage = result?.data?.message || notification.action.successMessage || "Action completed!";
                 showNotification("success", successMessage);
             } catch (error) {
                 console.error("Error:", error);
-                // Use error message from response
                 const errorMessage = error.data?.message || notification.action.errorMessage || "Error performing action.";
                 showNotification("error", errorMessage);
             } finally {
@@ -73,11 +89,9 @@ const ManufacturerManagement = () => {
         }
     };
 
-    // handlers
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!manufacturerName.trim()) {
-            // This validation still needs a manual message since there's no API call yet
             showNotification("error", "Please enter a manufacturer name");
             return;
         }
@@ -96,14 +110,12 @@ const ManufacturerManagement = () => {
                 }).unwrap();
             }
 
-            // Show success message from API response
             showNotification("success", response.message || "Operation completed successfully!");
 
             handleResetForm();
             refetchManufacturers();
         } catch (error) {
             console.error("Error saving manufacturer:", error);
-            // Show error message from API response
             showNotification("error", error.data?.message || "An error occurred while saving.");
         } finally {
             setIsSubmitting(false);
@@ -121,7 +133,7 @@ const ManufacturerManagement = () => {
     };
 
     const handleDeleteManufacturer = (manufacturer) => {
-        // For confirmation dialog, we still need a manual message
+
         showNotification("error", `Are you sure you want to delete "${manufacturer.manufacturerName}"?`, {
             callback: async () => {
                 try {
@@ -130,19 +142,17 @@ const ManufacturerManagement = () => {
                     if (selectedManufacturer?.id === manufacturer.id) {
                         handleResetForm();
                     }
-                    // Return response to handleConfirmAction to extract message
                     return response;
                 } catch (error) {
                     console.error("Error deleting manufacturer:", error);
-                    throw error; // Re-throw to be caught by handleConfirmAction
+                    throw error;
                 }
             },
-            successMessage: "Manufacturer deleted successfully!", // Fallback if API doesn't return message
-            errorMessage: "Error deleting manufacturer.", // Fallback if API doesn't return message
+            successMessage: "Manufacturer deleted successfully!",
+            errorMessage: "Error deleting manufacturer.",
         });
     };
 
-    // render
     const columns = [
         {
             key: "id",
@@ -158,8 +168,6 @@ const ManufacturerManagement = () => {
 
     return (
         <div className="container mx-auto p-4 space-y-6">
-            <h1 className="text-2xl font-bold">Manufacturer Management</h1>
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column: Manufacturer List */}
                 <div className="lg:col-span-2 space-y-4">
@@ -183,7 +191,7 @@ const ManufacturerManagement = () => {
                         </div>
                     </div>
 
-                    <Table
+                    <DataTable
                         items={filteredManufacturers}
                         selectedItem={selectedManufacturer}
                         onSelectItem={handleSelectManufacturer}

@@ -1,10 +1,16 @@
-import React, {useState, useMemo} from 'react';
+import React, {useState, useMemo, useEffect} from 'react';
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import {useGetBuildComponentsQuery} from '../../features/components/componentApi.js';
 import {useGetItemsByComponentIdQuery} from "../../features/components/itemApi.js";
-import {useGetCompatibleItemsByComponentQuery, useGetCompatiblePowerSourcesQuery} from '../../features/components/compatibilityApi';
+import {
+    useGetCompatibleItemsByComponentQuery,
+    useGetCompatiblePowerSourcesQuery
+} from '../../features/components/compatibilityApi';
+import Unauthorized from "../common/Unauthorized.jsx";
 
-const BuildCart = () => {
+
+const BuildCart = ({refetchFlag, resetFlag}) => {
+
     const [selectedComponent, setSelectedComponent] = useState(null);
     const [selectedItems, setSelectedItems] = useState([]);
     const [itemSearchTerm, setItemSearchTerm] = useState('');
@@ -15,156 +21,148 @@ const BuildCart = () => {
         action: null,
     });
 
-    // API hooks with error handling
-    const {data: components = [], isLoading: loadingComponents, error: componentsError} = useGetBuildComponentsQuery(true);
+    // API hooks
+    const {
+        data: components = [],
+        isLoading: loadingComponents,
+        error: componentsError,
+        refetch: refetchComponents
+    } = useGetBuildComponentsQuery(true);
 
-    // Get items for selected component
-    const {data: allItems = [], isLoading: loadingAllItems, error: allItemsError} = useGetItemsByComponentIdQuery(
+    const {
+        data: allItems = [],
+        isLoading: loadingAllItems,
+        error: allItemsError,
+        refetch: refetchAllItems
+    } = useGetItemsByComponentIdQuery(
         selectedComponent?.id,
         {skip: !selectedComponent}
     );
 
-    // Get compatible items for non-power-source components
-    const {data: compatibleData = {}, isLoading: loadingCompatible, error: compatibleError} = useGetCompatibleItemsByComponentQuery(
+    const {
+        data: compatibleData = {},
+        isLoading: loadingCompatible,
+        error: compatibleError,
+        refetch: refetchCompatible
+    } = useGetCompatibleItemsByComponentQuery(
         selectedComponent && selectedItems.length > 0 &&
-        !(selectedComponent.powerSource === true || selectedComponent.powerSource === "true") ? {
-            componentId: selectedComponent.id,
-            selectedItems
-        } : null,
-        {skip: !selectedComponent || selectedItems.length === 0 ||
-                (selectedComponent.powerSource === true || selectedComponent.powerSource === "true")}
+        !(selectedComponent.powerSource === true || selectedComponent.powerSource === "true")
+            ? {componentId: selectedComponent.id, selectedItems}
+            : null,
+        {
+            skip:
+                !selectedComponent ||
+                selectedItems.length === 0 ||
+                (selectedComponent.powerSource === true ||
+                    selectedComponent.powerSource === "true")
+        }
     );
 
-    // Get compatible power sources
-    const {data: compatiblePowerSources = [], isLoading: loadingPowerSources, error: powerSourcesError} = useGetCompatiblePowerSourcesQuery(
+    const {
+        data: compatiblePowerSources = [],
+        isLoading: loadingPowerSources,
+        error: powerSourcesError,
+        refetch: refetchPowerSources
+    } = useGetCompatiblePowerSourcesQuery(
         selectedComponent && selectedItems.length > 0 &&
-        (selectedComponent.powerSource === true || selectedComponent.powerSource === "true") ? {
-            componentId: selectedComponent.id,
-            selectedItems
-        } : null,
-        {skip: !selectedComponent || selectedItems.length === 0 ||
-                !(selectedComponent.powerSource === true || selectedComponent.powerSource === "true")}
+        (selectedComponent.powerSource === true || selectedComponent.powerSource === "true")
+            ? {componentId: selectedComponent.id, selectedItems}
+            : null,
+        {
+            skip:
+                !selectedComponent ||
+                selectedItems.length === 0 ||
+                !(selectedComponent.powerSource === true || selectedComponent.powerSource === "true")
+        }
     );
+
+    // Handle external refetch from Dashboard
+    useEffect(() => {
+        if (refetchFlag) {
+            refetchComponents();
+            if (selectedComponent) refetchAllItems();
+            if (selectedItems.length > 0) {
+                const isPower = selectedComponent?.powerSource === true || selectedComponent?.powerSource === "true";
+                if (isPower) refetchPowerSources();
+                else refetchCompatible();
+            }
+            resetFlag();
+        }
+    }, [refetchFlag]);
+
+    // Show API errors as notifications
+    useEffect(() => {
+        if (componentsError) showNotification("error", componentsError.data?.message || "Failed to load components");
+    }, [componentsError]);
+    useEffect(() => {
+        if (allItemsError && selectedComponent) showNotification("error", allItemsError.data?.message || "Failed to load items");
+    }, [allItemsError, selectedComponent]);
+    useEffect(() => {
+        if (compatibleError && selectedComponent) showNotification("error", compatibleError.data?.message || "Failed to load compatible items");
+    }, [compatibleError, selectedComponent]);
+    useEffect(() => {
+        if (powerSourcesError && selectedComponent) showNotification("error", powerSourcesError.data?.message || "Failed to load power sources");
+    }, [powerSourcesError, selectedComponent]);
+
 
     // Notification handler
-    const showNotification = (type, message, action = null) => {
-        setNotification({show: true, type, message, action});
-    };
+    const showNotification = (type, message, action = null) => setNotification({show: true, type, message, action});
 
     const handleConfirmAction = async () => {
         if (notification.action) {
             const {callback} = notification.action;
             try {
                 await callback();
-                if (notification.action.successMessage) {
-                    showNotification("success", notification.action.successMessage);
-                }
+                if (notification.action.successMessage) showNotification("success", notification.action.successMessage);
             } catch (error) {
                 console.error("Error:", error);
                 showNotification("error", notification.action.errorMessage || "Error performing action.");
             } finally {
-                setNotification((prev) => ({...prev, action: null}));
+                setNotification(prev => ({...prev, action: null}));
             }
         }
     };
 
-    // Show API errors in notification
-    React.useEffect(() => {
-        if (componentsError) {
-            showNotification("error", componentsError.data?.message || "Failed to load components");
-        }
-    }, [componentsError]);
-
-    React.useEffect(() => {
-        if (allItemsError && selectedComponent) {
-            showNotification("error", allItemsError.data?.message || "Failed to load items");
-        }
-    }, [allItemsError, selectedComponent]);
-
-    React.useEffect(() => {
-        if (compatibleError && selectedComponent) {
-            showNotification("error", compatibleError.data?.message || "Failed to load compatible items");
-        }
-    }, [compatibleError, selectedComponent]);
-
-    React.useEffect(() => {
-        if (powerSourcesError && selectedComponent) {
-            showNotification("error", powerSourcesError.data?.message || "Failed to load power sources");
-        }
-    }, [powerSourcesError, selectedComponent]);
 
     // Helper functions
-    const getItemName = (item) => item.itemName || item.name || 'Item';
-    const getItemPrice = (item) => item.price || 0;
-    const getManufacturer = (item) => item.manufacturer?.manufacturerName || '';
+    const getItemName = item => item.itemName || item.name || 'Item';
+    const getItemPrice = item => item.price || 0;
+    const getManufacturer = item => item.manufacturer?.manufacturerName || '';
 
-    // Calculate which components to show
-    const powerSourceComponents = components.filter(comp =>
-        comp.powerSource === true || comp.powerSource === "true"
-    );
-    const otherComponents = components.filter(comp =>
-        !(comp.powerSource === true || comp.powerSource === "true")
-    );
+    const powerSourceComponents = components.filter(c => c.powerSource === true || c.powerSource === "true");
+    const otherComponents = components.filter(c => !(c.powerSource === true || c.powerSource === "true"));
 
     const allOthersSelected = otherComponents.length === selectedItems.filter(item =>
         otherComponents.some(comp => comp.id === item.component?.id)
     ).length;
 
-    // Determine which items to show based on component type
+    // Determine items to show based on selected component
     let baseItemsToShow = [];
     if (selectedComponent) {
         if (selectedComponent.powerSource === true || selectedComponent.powerSource === "true") {
-            // Show compatible power sources
             baseItemsToShow = Array.isArray(compatiblePowerSources) ? compatiblePowerSources : [];
         } else {
-            // Show regular items or compatible items
-            const showCompatible = selectedItems.length > 0;
-            if (showCompatible) {
-                if (Array.isArray(compatibleData)) {
-                    baseItemsToShow = compatibleData;
-                } else if (Array.isArray(compatibleData.compatibleItems)) {
-                    baseItemsToShow = compatibleData.compatibleItems;
-                } else if (Array.isArray(compatibleData.items)) {
-                    baseItemsToShow = compatibleData.items;
-                } else if (compatibleData.data && Array.isArray(compatibleData.data)) {
-                    baseItemsToShow = compatibleData.data;
-                }
-            } else {
-                baseItemsToShow = allItems;
-            }
+            baseItemsToShow = selectedItems.length > 0
+                ? compatibleData?.compatibleItems || compatibleData?.items || compatibleData?.data || []
+                : allItems;
         }
     }
 
-    // Filter items by search term AND remove already selected items from the list
     const filteredItems = useMemo(() => {
-        // Get the current component's selected item (if any)
-        const currentComponentSelectedItem = selectedItems.find(
-            item => item.component?.id === selectedComponent?.id
-        );
-
-        return baseItemsToShow
-            .filter(item => {
-                // First filter by search term
-                const itemName = getItemName(item).toLowerCase();
-                const manufacturer = getManufacturer(item).toLowerCase();
-                const searchLower = itemSearchTerm.toLowerCase();
-                const matchesSearch = itemName.includes(searchLower) || manufacturer.includes(searchLower);
-
-                // Remove the currently selected item from the list
-                const isCurrentSelectedItem = currentComponentSelectedItem &&
-                    currentComponentSelectedItem.id === item.id;
-
-                return matchesSearch && !isCurrentSelectedItem;
-            });
+        const currentComponentSelectedItem = selectedItems.find(item => item.component?.id === selectedComponent?.id);
+        return baseItemsToShow.filter(item => {
+            const itemName = getItemName(item).toLowerCase();
+            const manufacturer = getManufacturer(item).toLowerCase();
+            const searchLower = itemSearchTerm.toLowerCase();
+            const matchesSearch = itemName.includes(searchLower) || manufacturer.includes(searchLower);
+            const isCurrentSelectedItem = currentComponentSelectedItem && currentComponentSelectedItem.id === item.id;
+            return matchesSearch && !isCurrentSelectedItem;
+        });
     }, [baseItemsToShow, itemSearchTerm, selectedItems, selectedComponent]);
 
-    // Get selected item for a component
-    const getSelectedItem = (componentId) => {
-        return selectedItems.find(item => item.component?.id === componentId);
-    };
+    const getSelectedItem = componentId => selectedItems.find(item => item.component?.id === componentId);
 
-    // Add item
-    const handleAddItem = (item) => {
+    const handleAddItem = item => {
         const newItem = {
             ...item,
             component: {
@@ -172,53 +170,46 @@ const BuildCart = () => {
                 componentName: item.component?.componentName || selectedComponent?.componentName
             }
         };
-
-        setSelectedItems(prev => {
-            const filtered = prev.filter(selected =>
-                selected.component?.id !== newItem.component?.id
-            );
-            return [...filtered, newItem];
-        });
-
+        setSelectedItems(prev => [...prev.filter(s => s.component?.id !== newItem.component?.id), newItem]);
         setSelectedComponent(null);
         setItemSearchTerm('');
     };
 
-    // Remove item
-    const handleRemoveItem = (componentId) => {
-        setSelectedItems(prev => prev.filter(item => item.component?.id !== componentId));
-    };
-
-    // Clear all items
+    const handleRemoveItem = componentId => setSelectedItems(prev => prev.filter(item => item.component?.id !== componentId));
     const handleClearAll = () => {
         setSelectedItems([]);
         setSelectedComponent(null);
         setItemSearchTerm('');
     };
-
-    // Calculate total
     const totalPrice = selectedItems.reduce((sum, item) => sum + getItemPrice(item), 0);
 
-    // Determine loading state
     const isLoadingItems = selectedComponent?.powerSource === true || selectedComponent?.powerSource === "true"
         ? loadingPowerSources
         : loadingAllItems || (loadingCompatible && selectedItems.length > 0);
 
-    if (loadingComponents) {
-        return (
-            <div className="container mx-auto p-4">
-                <div className="text-center py-8">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <p className="mt-2 text-gray-600">Loading components...</p>
-                </div>
-            </div>
-        );
+    // Check unauthorized
+    const isUnauthorized = () => {
+        const errors = [
+            powerSourcesError,
+            componentsError,
+            allItemsError,
+            compatibleError];
+        return errors.some(err => err?.isUnauthorized);
+    };
+
+    if (isUnauthorized()) {
+        return <Unauthorized/>;
     }
+
+    if (loadingComponents) return (
+        <div className="container mx-auto p-4 text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-gray-600">Loading components...</p>
+        </div>
+    );
 
     return (
         <div className="container mx-auto p-4 space-y-6">
-            <h1 className="text-2xl font-bold">PC Builder</h1>
-
             {!allOthersSelected && powerSourceComponents.length > 0 && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
                     <div className="flex items-center gap-2">
@@ -317,7 +308,8 @@ const BuildCart = () => {
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2">
                                                         <h3 className="font-bold text-gray-800">{comp.componentName}</h3>
-                                                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                                                        <span
+                                                            className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
                                                             Power
                                                         </span>
                                                     </div>
@@ -422,7 +414,8 @@ const BuildCart = () => {
                             {isLoadingItems && (
                                 <div className="flex-1 flex items-center justify-center">
                                     <div className="text-center">
-                                        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                        <div
+                                            className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                                         <p className="mt-2 text-sm text-gray-600">
                                             {selectedComponent.powerSource === true || selectedComponent.powerSource === "true"
                                                 ? 'Finding compatible power sources...'
@@ -473,7 +466,8 @@ const BuildCart = () => {
                                                             {getItemName(item)}
                                                         </h4>
                                                         <div className="flex items-center gap-2 mt-1">
-                                                            <span className="text-xs text-gray-500">{getManufacturer(item)}</span>
+                                                            <span
+                                                                className="text-xs text-gray-500">{getManufacturer(item)}</span>
                                                             <span className="text-sm font-bold text-blue-600">
                                                                 Rs {getItemPrice(item).toFixed(2)}
                                                             </span>
@@ -489,7 +483,8 @@ const BuildCart = () => {
                             )}
                         </div>
                     ) : (
-                        <div className="bg-white rounded-lg border p-6 text-center h-[500px] flex flex-col items-center justify-center">
+                        <div
+                            className="bg-white rounded-lg border p-6 text-center h-[500px] flex flex-col items-center justify-center">
                             <h2 className="font-bold text-gray-700 mb-2">Select a Component</h2>
                             <p className="text-gray-500">Click on any component to view available items</p>
                         </div>

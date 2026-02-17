@@ -1,5 +1,5 @@
-import {useState} from "react";
-import Table from "../common/table.jsx";
+import {useEffect, useState} from "react";
+import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import ItemFeaturesSection from "./item/ItemFeaturesSection.jsx";
 import {
@@ -7,13 +7,15 @@ import {
 } from "../../features/components/itemApi.js";
 import {useGetComponentsQuery} from "../../features/components/componentApi.js";
 import {useGetManufacturersQuery} from "../../features/components/manufacturerApi.js";
+import Unauthorized from "../common/Unauthorized.jsx";
 
-const ItemManagement = () => {
+const ItemManagement = ({refetchFlag, resetFlag}) => {
+
     // State
     const [selectedItem, setSelectedItem] = useState(null);
     const [formData, setFormData] = useState({
         itemName: "", quantity: "", price: "",
-        powerConsumption: "", //power consumption field
+        powerConsumption: "",
         componentId: "", manufacturerId: "",
     });
     const [searchTerm, setSearchTerm] = useState("");
@@ -24,15 +26,32 @@ const ItemManagement = () => {
         message: "", action: null,
     });
 
-    // API hooks
-    const {data: items = [], refetch: refetchItems} = useGetItemsQuery();
-    const {data: components = []} = useGetComponentsQuery();
-    const {data: manufacturers = []} = useGetManufacturersQuery();
-
     // Mutations
     const [createItem] = useCreateItemMutation();
     const [updateItem] = useUpdateItemMutation();
     const [deleteItem] = useDeleteItemMutation();
+
+    // API hooks
+    const {data: items = [], error: itemsError, refetch: refetchItems} = useGetItemsQuery();
+    const {data: components = [], error: componentsError} = useGetComponentsQuery();
+    const {data: manufacturers = [], error: manufacturersError} = useGetManufacturersQuery();
+
+    useEffect(() => {
+        if (refetchFlag) {
+            refetchItems();
+            resetFlag();
+        }
+    }, [refetchFlag]);
+
+// Check unauthorized
+    const isUnauthorized = () => {
+        const errors = [itemsError, componentsError, manufacturersError];
+        return errors.some(err => err?.isUnauthorized);
+    };
+
+    if (isUnauthorized()) {
+        return <Unauthorized/>;
+    }
 
     // item
     const filteredItems = items.filter((item) =>
@@ -157,7 +176,7 @@ const ItemManagement = () => {
         });
     };
 
-    // Table columns - Added power consumption column
+    // DataTable columns - Added power consumption column
     const columns = [
         {
             key: "id",
@@ -186,7 +205,6 @@ const ItemManagement = () => {
 
     return (
         <div className="container mx-auto p-4 space-y-6">
-            <h1 className="text-2xl font-bold">Item Management</h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column: Item List */}
@@ -210,7 +228,7 @@ const ItemManagement = () => {
                                 </button>)}
                             </div>
                             <select
-                                className="w-48 p-2.5 border rounded"
+                                className="h-10 w-48 p-2.5 border rounded"
                                 value={filterComponent}
                                 onChange={(e) => setFilterComponent(e.target.value)}
                             >
@@ -222,15 +240,15 @@ const ItemManagement = () => {
                         </div>
                     </div>
 
-                    {/* Items Table */}
-                    <Table
+                    {/* Items DataTable */}
+                    <DataTable
                         items={filteredItems}
                         selectedItem={selectedItem}
                         onSelectItem={handleSelectItem}
                         onDeleteItemClick={handleDeleteItem}
                         isLoading={false}
                         columns={columns}
-                        emptyMessage="No items found" // Table component handles this internally
+                        emptyMessage="No items found" // DataTable component handles this internally
                     />
                 </div>
 
