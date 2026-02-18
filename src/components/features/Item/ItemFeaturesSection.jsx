@@ -1,4 +1,4 @@
-import {useState, useEffect} from "react";
+import { useState, useEffect } from "react";
 import {
     useCreateItemFeatureMutation,
     useUpdateItemFeatureMutation,
@@ -10,6 +10,9 @@ import {
     useUpdateFeatureMutation,
     useDeleteFeatureMutation,
 } from "../../../features/components/featureApi.js";
+import {
+    useGetComponentFeatureTypesByComponentIdQuery
+} from "../../../features/components/componentFeatureTypeApi.js";
 
 const ItemFeaturesSection = ({
                                  selectedComponent,
@@ -24,9 +27,28 @@ const ItemFeaturesSection = ({
     const [newFeatureName, setNewFeatureName] = useState("");
     const [editingFeature, setEditingFeature] = useState(null);
     const [selectedFeatureTypeId, setSelectedFeatureTypeId] = useState("");
+    const [updatingSlotCount, setUpdatingSlotCount] = useState(null); // { featureId, typeId, currentCount }
 
-    // API hooks
-    const {data: allFeatures = [], refetch: refetchAllFeatures} = useGetFeaturesQuery();
+    // API hooks - get component feature types directly from API
+    const { data: componentFeatureTypes = [], refetch: refetchComponentFeatureTypes } =
+        useGetComponentFeatureTypesByComponentIdQuery(selectedComponent?.id, {
+            skip: !selectedComponent,
+        });
+
+    // Extract feature types from the response
+    const featureTypes = componentFeatureTypes
+        .map(cft => cft.featureType)
+        .filter(Boolean);
+
+    // Get all features
+    const { data: allFeatures = [], refetch: refetchAllFeatures } = useGetFeaturesQuery();
+
+    // Filter features that belong to this component's feature types
+    const componentFeatures = allFeatures.filter((feature) =>
+        featureTypes.some((ft) => ft?.id === feature.featureType?.id)
+    );
+
+    // Mutations
     const [createItemFeature] = useCreateItemFeatureMutation();
     const [updateItemFeature] = useUpdateItemFeatureMutation();
     const [deleteItemFeature] = useDeleteItemFeatureMutation();
@@ -34,28 +56,28 @@ const ItemFeaturesSection = ({
     const [updateFeature] = useUpdateFeatureMutation();
     const [deleteFeature] = useDeleteFeatureMutation();
 
-    // Get component feature types
-    const componentFeatureTypes = selectedComponent?.componentFeatureTypeList || [];
-
-    // Get features for selected component
-    const componentFeatures = allFeatures.filter((feature) =>
-        componentFeatureTypes.some((cft) => cft.featureType?.id === feature.featureType?.id)
-    );
-
-    // Simple feature grouping
+    // Group features by type
     const groupedFeatures = {};
     componentFeatures.forEach(feature => {
         const typeId = feature.featureType?.id;
         if (typeId) {
             if (!groupedFeatures[typeId]) {
+                const featureType = featureTypes.find(ft => ft.id === typeId);
                 groupedFeatures[typeId] = {
-                    featureTypeName: componentFeatureTypes.find(cft => cft.featureType?.id === typeId)?.featureType?.featureTypeName || "Unknown",
+                    featureTypeName: featureType?.featureTypeName || "Unknown",
                     features: [],
                 };
             }
             groupedFeatures[typeId].features.push(feature);
         }
     });
+
+    // Refresh when component changes
+    useEffect(() => {
+        if (selectedComponent) {
+            refetchComponentFeatureTypes();
+        }
+    }, [selectedComponent?.id, refetchComponentFeatureTypes]);
 
     // Load features when item is selected
     useEffect(() => {
@@ -82,13 +104,13 @@ const ItemFeaturesSection = ({
 
     // Set first feature type when component changes
     useEffect(() => {
-        if (componentFeatureTypes.length > 0 && !selectedFeatureTypeId) {
-            const firstTypeId = componentFeatureTypes[0]?.featureType?.id;
+        if (featureTypes.length > 0 && !selectedFeatureTypeId) {
+            const firstTypeId = featureTypes[0]?.id;
             if (firstTypeId) {
                 setSelectedFeatureTypeId(firstTypeId);
             }
         }
-    }, [componentFeatureTypes, selectedFeatureTypeId]);
+    }, [featureTypes, selectedFeatureTypeId]);
 
     // Feature handlers
     const handleToggleFeature = async (feature) => {
@@ -153,6 +175,8 @@ const ItemFeaturesSection = ({
                     showNotification("success", "Feature added!");
                 }
             }
+            // Clear any active slot update
+            setUpdatingSlotCount(null);
         } catch (error) {
             console.error("Error:", error);
             showNotification("error", error.data?.message || "Error updating feature.");
@@ -161,8 +185,8 @@ const ItemFeaturesSection = ({
         }
     };
 
-    const handleUpdateSlotCount = async (featureId, typeId, slotCount) => {
-        const parsedSlotCount = parseInt(slotCount);
+    const handleUpdateSlotCount = async (featureId, typeId, newSlotCount) => {
+        const parsedSlotCount = parseInt(newSlotCount);
         if (parsedSlotCount < 1) {
             showNotification("error", "Slot count must be at least 1");
             return;
@@ -189,6 +213,7 @@ const ItemFeaturesSection = ({
                     },
                 }));
                 showNotification("success", response.message || "Slot count updated!");
+                setUpdatingSlotCount(null);
             } catch (error) {
                 console.error("Error updating slot count:", error);
                 showNotification("error", error.data?.message || "Error updating slot count.");
@@ -208,6 +233,7 @@ const ItemFeaturesSection = ({
                 },
             }));
             showNotification("success", "Slot count updated!");
+            setUpdatingSlotCount(null);
         }
     };
 
@@ -302,11 +328,11 @@ const ItemFeaturesSection = ({
                     showNotification("success", response.message || "Feature deleted!");
                 } catch (error) {
                     console.error("Error deleting feature:", error);
-                    throw error; // Re-throw to be caught by handleConfirmAction
+                    throw error;
                 }
             },
-            successMessage: "Feature deleted!", // Fallback if API doesn't return message
-            errorMessage: "Error deleting feature.", // Fallback if API doesn't return message
+            successMessage: "Feature deleted!",
+            errorMessage: "Error deleting feature.",
         });
     };
 
@@ -338,12 +364,13 @@ const ItemFeaturesSection = ({
                             setSelectedFeatureTypeId(e.target.value);
                             setNewFeatureName("");
                             setEditingFeature(null);
+                            setUpdatingSlotCount(null);
                         }}
                     >
                         <option value="">Select Feature Type</option>
-                        {componentFeatureTypes.map(cft => (
-                            <option key={cft.featureType?.id} value={cft.featureType?.id}>
-                                {cft.featureType?.featureTypeName}
+                        {featureTypes.map(ft => (
+                            <option key={ft.id} value={ft.id}>
+                                {ft.featureTypeName}
                             </option>
                         ))}
                     </select>
@@ -369,14 +396,17 @@ const ItemFeaturesSection = ({
                                 <button
                                     onClick={handleEditFeature}
                                     disabled={isSubmitting || !editingFeature.featureName.trim()}
-                                    className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                                    className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 whitespace-nowrap"
                                 >
                                     Save
                                 </button>
                                 <button
-                                    onClick={() => setEditingFeature(null)}
+                                    onClick={() => {
+                                        setEditingFeature(null);
+                                        setNewFeatureName("");
+                                    }}
                                     disabled={isSubmitting}
-                                    className="px-3 py-2 border border-gray-300 text-sm rounded hover:bg-gray-50"
+                                    className="px-3 py-2 border border-gray-300 text-sm rounded hover:bg-gray-50 whitespace-nowrap"
                                 >
                                     Cancel
                                 </button>
@@ -385,7 +415,7 @@ const ItemFeaturesSection = ({
                             <button
                                 onClick={handleCreateFeature}
                                 disabled={isSubmitting || !newFeatureName.trim()}
-                                className="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                className="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 whitespace-nowrap"
                             >
                                 Add
                             </button>
@@ -405,27 +435,29 @@ const ItemFeaturesSection = ({
                             onClick={() => toggleFeatureType(typeId)}
                             className="flex items-center justify-between w-full p-2 border rounded bg-gray-50 hover:bg-gray-100"
                         >
-                            <span className="text-sm font-medium">{featureTypeName} ({features.length})</span>
-                            <span>{isExpanded ? "▼" : "▶"}</span>
+                            <span className="text-sm font-medium truncate mr-2">{featureTypeName} ({features.length})</span>
+                            <span className="flex-shrink-0">{isExpanded ? "▼" : "▶"}</span>
                         </button>
 
                         {isExpanded && (
                             <div className="mt-2 space-y-1">
                                 {features.map(feature => {
                                     const isSelected = selectedFeatures[typeId]?.[feature.id];
-                                    const slotCount = isSelected ? selectedFeatures[typeId][feature.id].slotCount || 0 : 0;
+                                    const isUpdatingSlot = updatingSlotCount?.featureId === feature.id &&
+                                        updatingSlotCount?.typeId === typeId;
+                                    const currentSlotCount = isSelected ? selectedFeatures[typeId][feature.id].slotCount : 0;
 
                                     return (
                                         <div
                                             key={feature.id}
-                                            className={`flex items-center justify-between p-2 border rounded ${
+                                            className={`flex flex-col sm:flex-row sm:items-center justify-between p-2 border rounded ${
                                                 isSelected ? "bg-green-50 border-green-200" : "bg-white hover:bg-gray-50"
                                             }`}
                                         >
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 mb-2 sm:mb-0 min-w-0 flex-1">
                                                 <div
                                                     onClick={() => handleToggleFeature(feature)}
-                                                    className={`w-4 h-4 border rounded flex items-center justify-center cursor-pointer ${
+                                                    className={`w-4 h-4 border rounded flex items-center justify-center cursor-pointer flex-shrink-0 ${
                                                         isSelected
                                                             ? "bg-green-500 border-green-600"
                                                             : "border-gray-300 bg-white hover:bg-gray-100"
@@ -433,41 +465,90 @@ const ItemFeaturesSection = ({
                                                 >
                                                     {isSelected && "✓"}
                                                 </div>
-                                                <span className="text-sm">{feature.featureName}</span>
+                                                <span className="text-sm truncate" title={feature.featureName}>
+                                                    {feature.featureName}
+                                                </span>
+                                                {isSelected && !isUpdatingSlot && (
+                                                    <span className="text-xs text-gray-500 ml-1">
+                                                        [{currentSlotCount}]
+                                                    </span>
+                                                )}
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                {isSelected && (
-                                                    <div
-                                                        className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded">
-                                                        <span className="text-xs text-gray-600">Slots:</span>
+                                            <div className="flex items-center gap-1 ml-6 sm:ml-0">
+                                                {isSelected && isUpdatingSlot ? (
+                                                    <div className="flex items-center gap-0.5">
                                                         <input
                                                             type="number"
                                                             min="1"
-                                                            value={slotCount}
-                                                            onChange={(e) => handleUpdateSlotCount(feature.id, typeId, e.target.value)}
+                                                            value={updatingSlotCount.newCount || currentSlotCount}
+                                                            onChange={(e) => setUpdatingSlotCount({
+                                                                ...updatingSlotCount,
+                                                                newCount: parseInt(e.target.value) || 1
+                                                            })}
                                                             className="w-12 p-1 border rounded text-center text-sm bg-white"
                                                             disabled={isSubmitting}
+                                                            autoFocus
                                                         />
+                                                        <button
+                                                            onClick={() => handleUpdateSlotCount(
+                                                                feature.id,
+                                                                typeId,
+                                                                updatingSlotCount.newCount || currentSlotCount
+                                                            )}
+                                                            disabled={isSubmitting}
+                                                            className="px-1.5 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                                            title="Save"
+                                                        >
+                                                            ✓
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setUpdatingSlotCount(null)}
+                                                            disabled={isSubmitting}
+                                                            className="px-1.5 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                                                            title="Cancel"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex gap-0.5">
+                                                        {isSelected && (
+                                                            <button
+                                                                onClick={() => setUpdatingSlotCount({
+                                                                    featureId: feature.id,
+                                                                    typeId: typeId,
+                                                                    newCount: currentSlotCount
+                                                                })}
+                                                                className="px-1.5 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
+                                                                title="Update Slots"
+                                                            >
+                                                                ⌂
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingFeature(feature);
+                                                                setNewFeatureName(feature.featureName);
+                                                                setSelectedFeatureTypeId(feature.featureType?.id || "");
+                                                                setUpdatingSlotCount(null);
+                                                            }}
+                                                            className="px-1.5 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                                            title="Edit"
+                                                        >
+                                                            ✎
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                handleDeleteFeature(feature);
+                                                                setUpdatingSlotCount(null);
+                                                            }}
+                                                            className="px-1.5 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                                                            title="Delete"
+                                                        >
+                                                            🗑
+                                                        </button>
                                                     </div>
                                                 )}
-                                                <div className="flex gap-1">
-                                                    <button
-                                                        onClick={() => {
-                                                            setEditingFeature(feature);
-                                                            setNewFeatureName(feature.featureName);
-                                                            setSelectedFeatureTypeId(feature.featureType?.id || "");
-                                                        }}
-                                                        className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteFeature(feature)}
-                                                        className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                </div>
                                             </div>
                                         </div>
                                     );
@@ -477,6 +558,12 @@ const ItemFeaturesSection = ({
                     </div>
                 );
             })}
+
+            {Object.keys(groupedFeatures).length === 0 && (
+                <div className="text-center py-4 text-gray-500 text-sm">
+                    No features available for this component
+                </div>
+            )}
         </div>
     );
 };
