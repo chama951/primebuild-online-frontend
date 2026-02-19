@@ -1,239 +1,273 @@
-import React, {useState, useMemo, useEffect} from 'react';
-import NotificationDialogs from "../common/NotificationDialogs.jsx";
-import {useGetBuildComponentsQuery} from '../../features/components/componentApi.js';
-import {useGetItemsByComponentIdQuery} from "../../features/components/itemApi.js";
-import {
-    useGetCompatibleItemsByComponentQuery,
-    useGetCompatiblePowerSourcesQuery
-} from '../../features/components/compatibilityApi';
-import Unauthorized from "../common/Unauthorized.jsx";
+import React, { useState, useMemo, useEffect } from 'react';
+import { useGetBuildComponentsQuery } from '../../features/components/componentApi.js';
+import { useGetItemsByComponentIdQuery } from "../../features/components/itemApi.js";
+import { useGetCompatibleItemsByComponentQuery } from '../../features/components/compatibilityApi';
+import { useCreateInvoiceMutation } from '../../features/components/InvoiceApi.js';
+import NotificationDialogs from '../common/NotificationDialogs.jsx'; // adjust path if needed
 
-
-const BuildCart = ({refetchFlag, resetFlag}) => {
-
+const BuildCart = ({ refetchFlag, resetFlag }) => {
     const [selectedComponent, setSelectedComponent] = useState(null);
     const [selectedItems, setSelectedItems] = useState([]);
     const [itemSearchTerm, setItemSearchTerm] = useState('');
+    const [itemQuantities, setItemQuantities] = useState({});
     const [notification, setNotification] = useState({
         show: false,
-        type: "",
-        message: "",
+        type: '',
+        message: '',
         action: null,
     });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // API hooks
+    // API hooks with refetch
     const {
         data: components = [],
         isLoading: loadingComponents,
-        error: componentsError,
         refetch: refetchComponents
     } = useGetBuildComponentsQuery(true);
 
     const {
         data: allItems = [],
         isLoading: loadingAllItems,
-        error: allItemsError,
-        refetch: refetchAllItems
+        refetch: refetchItems
     } = useGetItemsByComponentIdQuery(
         selectedComponent?.id,
-        {skip: !selectedComponent}
+        { skip: !selectedComponent }
     );
 
     const {
         data: compatibleData = {},
         isLoading: loadingCompatible,
-        error: compatibleError,
         refetch: refetchCompatible
     } = useGetCompatibleItemsByComponentQuery(
-        selectedComponent && selectedItems.length > 0 &&
-        !(selectedComponent.powerSource === true || selectedComponent.powerSource === "true")
-            ? {componentId: selectedComponent.id, selectedItems}
-            : null,
-        {
-            skip:
-                !selectedComponent ||
-                selectedItems.length === 0 ||
-                (selectedComponent.powerSource === true ||
-                    selectedComponent.powerSource === "true")
-        }
+        selectedComponent && selectedItems.length > 0 ? {
+            componentId: selectedComponent.id,
+            selectedItems
+        } : null,
+        { skip: !selectedComponent || selectedItems.length === 0 }
     );
 
-    const {
-        data: compatiblePowerSources = [],
-        isLoading: loadingPowerSources,
-        error: powerSourcesError,
-        refetch: refetchPowerSources
-    } = useGetCompatiblePowerSourcesQuery(
-        selectedComponent && selectedItems.length > 0 &&
-        (selectedComponent.powerSource === true || selectedComponent.powerSource === "true")
-            ? {componentId: selectedComponent.id, selectedItems}
-            : null,
-        {
-            skip:
-                !selectedComponent ||
-                selectedItems.length === 0 ||
-                !(selectedComponent.powerSource === true || selectedComponent.powerSource === "true")
-        }
-    );
+    const [createInvoice] = useCreateInvoiceMutation();
 
-    // Handle external refetch from Dashboard
+    // Refetch all data when component loads or refetchFlag changes
     useEffect(() => {
-        if (refetchFlag) {
-            refetchComponents();
-            if (selectedComponent) refetchAllItems();
-            if (selectedItems.length > 0) {
-                const isPower = selectedComponent?.powerSource === true || selectedComponent?.powerSource === "true";
-                if (isPower) refetchPowerSources();
-                else refetchCompatible();
-            }
-            resetFlag();
-        }
-    }, [refetchFlag]);
-
-    // Show API errors as notifications
-    useEffect(() => {
-        if (componentsError) showNotification("error", componentsError.data?.message || "Failed to load components");
-    }, [componentsError]);
-    useEffect(() => {
-        if (allItemsError && selectedComponent) showNotification("error", allItemsError.data?.message || "Failed to load items");
-    }, [allItemsError, selectedComponent]);
-    useEffect(() => {
-        if (compatibleError && selectedComponent) showNotification("error", compatibleError.data?.message || "Failed to load compatible items");
-    }, [compatibleError, selectedComponent]);
-    useEffect(() => {
-        if (powerSourcesError && selectedComponent) showNotification("error", powerSourcesError.data?.message || "Failed to load power sources");
-    }, [powerSourcesError, selectedComponent]);
-
-
-    // Notification handler
-    const showNotification = (type, message, action = null) => setNotification({show: true, type, message, action});
-
-    const handleConfirmAction = async () => {
-        if (notification.action) {
-            const {callback} = notification.action;
+        const refetchAll = async () => {
             try {
-                await callback();
-                if (notification.action.successMessage) showNotification("success", notification.action.successMessage);
+                await refetchComponents();
+                if (selectedComponent) {
+                    await refetchItems();
+                    if (selectedItems.length > 0) {
+                        await refetchCompatible();
+                    }
+                }
             } catch (error) {
-                console.error("Error:", error);
-                showNotification("error", notification.action.errorMessage || "Error performing action.");
+                console.error("Error refetching data:", error);
             } finally {
-                setNotification(prev => ({...prev, action: null}));
+                // Reset the flag if provided
+                if (resetFlag) {
+                    resetFlag();
+                }
             }
+        };
+
+        refetchAll();
+    }, [refetchFlag, selectedComponent?.id, selectedItems.length]); // Dependencies
+
+    // Refetch when component changes
+    useEffect(() => {
+        if (selectedComponent) {
+            refetchItems();
         }
-    };
+    }, [selectedComponent?.id]);
 
+    // Refetch compatible items when selection changes
+    useEffect(() => {
+        if (selectedComponent && selectedItems.length > 0) {
+            refetchCompatible();
+        }
+    }, [selectedItems.length, selectedComponent?.id]);
 
-    // Helper functions
-    const getItemName = item => item.itemName || item.name || 'Item';
-    const getItemPrice = item => item.price || 0;
-    const getManufacturer = item => item.manufacturer?.manufacturerName || '';
+    const getItemName = (item) => item.itemName || item.name || 'Item';
+    const getItemPrice = (item) => item.price || 0;
+    const getManufacturer = (item) => item.manufacturer?.manufacturerName || '';
 
-    const powerSourceComponents = components.filter(c => c.powerSource === true || c.powerSource === "true");
-    const otherComponents = components.filter(c => !(c.powerSource === true || c.powerSource === "true"));
+    const showCompatible = selectedItems.length > 0;
 
-    const allOthersSelected = otherComponents.length === selectedItems.filter(item =>
-        otherComponents.some(comp => comp.id === item.component?.id)
-    ).length;
-
-    // Determine items to show based on selected component
     let baseItemsToShow = [];
-    if (selectedComponent) {
-        if (selectedComponent.powerSource === true || selectedComponent.powerSource === "true") {
-            baseItemsToShow = Array.isArray(compatiblePowerSources) ? compatiblePowerSources : [];
-        } else {
-            baseItemsToShow = selectedItems.length > 0
-                ? compatibleData?.compatibleItems || compatibleData?.items || compatibleData?.data || []
-                : allItems;
+    if (showCompatible) {
+        if (Array.isArray(compatibleData)) {
+            baseItemsToShow = compatibleData;
+        } else if (compatibleData.data && Array.isArray(compatibleData.data)) {
+            baseItemsToShow = compatibleData.data;
+        } else if (compatibleData.compatibleItems && Array.isArray(compatibleData.compatibleItems)) {
+            baseItemsToShow = compatibleData.compatibleItems;
+        } else if (compatibleData.items && Array.isArray(compatibleData.items)) {
+            baseItemsToShow = compatibleData.items;
         }
+
+        baseItemsToShow.forEach(item => {
+            if (!itemQuantities[item.id]) {
+                setItemQuantities(prev => ({
+                    ...prev,
+                    [item.id]: 1
+                }));
+            }
+        });
+    } else {
+        baseItemsToShow = allItems;
     }
 
-    const filteredItems = useMemo(() => {
-        const currentComponentSelectedItem = selectedItems.find(item => item.component?.id === selectedComponent?.id);
-        return baseItemsToShow.filter(item => {
-            const itemName = getItemName(item).toLowerCase();
-            const manufacturer = getManufacturer(item).toLowerCase();
-            const searchLower = itemSearchTerm.toLowerCase();
-            const matchesSearch = itemName.includes(searchLower) || manufacturer.includes(searchLower);
-            const isCurrentSelectedItem = currentComponentSelectedItem && currentComponentSelectedItem.id === item.id;
-            return matchesSearch && !isCurrentSelectedItem;
-        });
-    }, [baseItemsToShow, itemSearchTerm, selectedItems, selectedComponent]);
+    const filteredItems = useMemo(() =>
+            baseItemsToShow.filter(item => {
+                const itemName = getItemName(item).toLowerCase();
+                const manufacturer = getManufacturer(item).toLowerCase();
+                const searchLower = itemSearchTerm.toLowerCase();
+                return itemName.includes(searchLower) || manufacturer.includes(searchLower);
+            }),
+        [baseItemsToShow, itemSearchTerm]
+    );
 
-    const getSelectedItem = componentId => selectedItems.find(item => item.component?.id === componentId);
+    const getSelectedItem = (componentId) => selectedItems.find(item => item.component?.id === componentId);
 
-    const handleAddItem = item => {
+    const handleAddItem = (item) => {
+        const selectedQuantity = itemQuantities[item.id] || 1;
+
         const newItem = {
             ...item,
+            selectedQuantity,
             component: {
                 id: item.component?.id || selectedComponent?.id,
                 componentName: item.component?.componentName || selectedComponent?.componentName
             }
         };
-        setSelectedItems(prev => [...prev.filter(s => s.component?.id !== newItem.component?.id), newItem]);
+
+        setSelectedItems(prev => {
+            const filtered = prev.filter(selected => selected.component?.id !== newItem.component?.id);
+            return [...filtered, newItem];
+        });
+
         setSelectedComponent(null);
         setItemSearchTerm('');
     };
 
-    const handleRemoveItem = componentId => setSelectedItems(prev => prev.filter(item => item.component?.id !== componentId));
+    const handleQuantityChange = (itemId, value, maxQuantity) => {
+        const newQuantity = Math.max(1, Math.min(parseInt(value) || 1, maxQuantity));
+        setItemQuantities(prev => ({
+            ...prev,
+            [itemId]: newQuantity
+        }));
+    };
+
+    const handleRemoveItem = (componentId) => {
+        setSelectedItems(prev => prev.filter(item => item.component?.id !== componentId));
+    };
+
     const handleClearAll = () => {
         setSelectedItems([]);
         setSelectedComponent(null);
         setItemSearchTerm('');
-    };
-    const totalPrice = selectedItems.reduce((sum, item) => sum + getItemPrice(item), 0);
-
-    const isLoadingItems = selectedComponent?.powerSource === true || selectedComponent?.powerSource === "true"
-        ? loadingPowerSources
-        : loadingAllItems || (loadingCompatible && selectedItems.length > 0);
-
-    // Check unauthorized
-    const isUnauthorized = () => {
-        const errors = [
-            powerSourcesError,
-            componentsError,
-            allItemsError,
-            compatibleError];
-        return errors.some(err => err?.isUnauthorized);
+        setItemQuantities({});
     };
 
-    if (isUnauthorized()) {
-        return <Unauthorized/>;
-    }
+    const handleConfirmAction = () => {
+        // Placeholder for error action handling
+        console.log('Error action executed');
+    };
 
-    if (loadingComponents) return (
-        <div className="container mx-auto p-4 text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">Loading components...</p>
-        </div>
+    const handleCompleteInvoice = async () => {
+        if (selectedItems.length === 0) {
+            setNotification({
+                show: true,
+                type: 'error',
+                message: 'Please select at least one item to create an invoice.',
+            });
+            return;
+        }
+
+        setIsSubmitting(true);
+        const body = {
+            invoiceStatus: "NOT_PAID",
+            itemList: selectedItems.map(item => ({
+                id: item.id,
+                quantity: (item.selectedQuantity || 1).toString()
+            }))
+        };
+
+        try {
+            const response = await createInvoice(body).unwrap();
+            setNotification({
+                show: true,
+                type: 'success',
+                message: 'Invoice created successfully!',
+            });
+            handleClearAll();
+            console.log("Invoice response:", response);
+
+            // Refetch data after successful invoice creation
+            await refetchComponents();
+            if (selectedComponent) {
+                await refetchItems();
+            }
+        } catch (error) {
+            setNotification({
+                show: true,
+                type: 'error',
+                message: error?.data?.message || "Failed to create invoice",
+            });
+            console.error("Invoice creation failed:", error);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const totalPrice = selectedItems.reduce((sum, item) =>
+        sum + (getItemPrice(item) * (item.selectedQuantity || 1)), 0
     );
+
+    const totalItemsCount = selectedItems.reduce((sum, item) => sum + (item.selectedQuantity || 1), 0);
+
+    if (loadingComponents) {
+        return (
+            <div className="container mx-auto p-4">
+                <div className="text-center py-8">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p className="mt-2 text-gray-600">Loading components...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="container mx-auto p-4 space-y-6">
-            {!allOthersSelected && powerSourceComponents.length > 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                    <div className="flex items-center gap-2">
-                        <span>🔒</span>
-                        <span>Power source components will appear after selecting all other components</span>
-                    </div>
-                </div>
-            )}
+            <NotificationDialogs
+                showSuccessDialog={notification.show && notification.type === "success"}
+                setShowSuccessDialog={() =>
+                    setNotification({ show: false, type: "", message: "", action: null })
+                }
+                successMessage={notification.message}
+                showErrorDialog={notification.show && notification.type === "error"}
+                setShowErrorDialog={() =>
+                    setNotification({ show: false, type: "", message: "", action: null })
+                }
+                errorMessage={notification.message}
+                errorAction={notification.action}
+                onErrorAction={handleConfirmAction}
+                isActionLoading={isSubmitting}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column: Components Grid */}
+                {/* Left Column: Components Grid - More Compact Cards */}
                 <div className="lg:col-span-2">
-                    <div className="bg-white rounded-lg border p-4">
+                    <div className="bg-white rounded-lg border p-3">
                         <div className="overflow-y-auto pr-2">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4">
-                                {/* Show other components first */}
-                                {otherComponents.map(comp => {
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
+                                {components.map(comp => {
                                     const selectedItem = getSelectedItem(comp.id);
                                     const isSelected = selectedComponent?.id === comp.id;
 
                                     return (
                                         <div
                                             key={comp.id}
-                                            className={`border rounded-lg p-4 cursor-pointer transition-all min-h-[100px] ${
+                                            className={`border rounded-lg p-3 cursor-pointer transition-all ${
                                                 isSelected
                                                     ? 'border-blue-500 bg-blue-50'
                                                     : selectedItem
@@ -246,24 +280,31 @@ const BuildCart = ({refetchFlag, resetFlag}) => {
                                             }}
                                         >
                                             <div className="flex justify-between items-start">
-                                                <div className="flex-1">
-                                                    <h3 className="font-bold text-gray-800">{comp.componentName}</h3>
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="font-semibold text-gray-800 text-sm">{comp.componentName}</h3>
                                                     {selectedItem ? (
-                                                        <div className="mt-2">
-                                                            <h4 className="font-medium text-green-700 text-sm">
+                                                        <div className="mt-1">
+                                                            <h4 className="font-medium text-green-700 text-xs truncate">
                                                                 {getItemName(selectedItem)}
                                                             </h4>
-                                                            <div className="flex items-center justify-between mt-1">
-                                                                <div className="text-xs text-gray-600">
+                                                            <div className="flex items-center justify-between mt-0.5">
+                                                                <span className="text-[10px] text-gray-500">
                                                                     {getManufacturer(selectedItem)}
-                                                                </div>
-                                                                <div className="font-bold text-blue-600 text-sm">
-                                                                    Rs {getItemPrice(selectedItem).toFixed(2)}
+                                                                </span>
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="text-xs font-bold text-blue-600">
+                                                                        Rs {getItemPrice(selectedItem).toFixed(2)}
+                                                                    </span>
+                                                                    {selectedItem.selectedQuantity > 1 && (
+                                                                        <span className="text-[10px] text-gray-500 bg-gray-100 px-1 rounded">
+                                                                            x{selectedItem.selectedQuantity}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <p className="text-sm text-gray-500 mt-2">Click to select</p>
+                                                        <p className="text-[10px] text-gray-400 mt-1">Click to select</p>
                                                     )}
                                                 </div>
                                                 {selectedItem ? (
@@ -272,92 +313,26 @@ const BuildCart = ({refetchFlag, resetFlag}) => {
                                                             e.stopPropagation();
                                                             handleRemoveItem(comp.id);
                                                         }}
-                                                        className="text-red-500 hover:text-red-700 ml-2"
+                                                        className="text-red-500 hover:text-red-700 text-xs ml-1 flex-shrink-0 w-4 h-4 flex items-center justify-center"
                                                     >
                                                         ✕
                                                     </button>
                                                 ) : (
-                                                    <span className="text-blue-600 font-bold text-lg">+</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-
-                                {/* Show power source components only when all others are selected */}
-                                {allOthersSelected && powerSourceComponents.map(comp => {
-                                    const selectedItem = getSelectedItem(comp.id);
-                                    const isSelected = selectedComponent?.id === comp.id;
-
-                                    return (
-                                        <div
-                                            key={comp.id}
-                                            className={`border rounded-lg p-4 cursor-pointer transition-all min-h-[100px] ${
-                                                isSelected
-                                                    ? 'border-blue-500 bg-blue-50'
-                                                    : selectedItem
-                                                        ? 'border-green-400 bg-green-50'
-                                                        : 'border-gray-200 hover:border-blue-300'
-                                            }`}
-                                            onClick={() => {
-                                                setSelectedComponent(comp);
-                                                setItemSearchTerm('');
-                                            }}
-                                        >
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <h3 className="font-bold text-gray-800">{comp.componentName}</h3>
-                                                        <span
-                                                            className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                                                            Power
-                                                        </span>
-                                                    </div>
-                                                    {selectedItem ? (
-                                                        <div className="mt-2">
-                                                            <h4 className="font-medium text-green-700 text-sm">
-                                                                {getItemName(selectedItem)}
-                                                            </h4>
-                                                            <div className="flex items-center justify-between mt-1">
-                                                                <div className="text-xs text-gray-600">
-                                                                    {getManufacturer(selectedItem)}
-                                                                </div>
-                                                                <div className="font-bold text-blue-600 text-sm">
-                                                                    Rs {getItemPrice(selectedItem).toFixed(2)}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <p className="text-sm text-gray-500 mt-2">Click to select</p>
-                                                    )}
-                                                </div>
-                                                {selectedItem ? (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleRemoveItem(comp.id);
-                                                        }}
-                                                        className="text-red-500 hover:text-red-700 ml-2"
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-blue-600 font-bold text-lg">+</span>
+                                                    <span className="text-blue-600 font-bold text-sm flex-shrink-0">+</span>
                                                 )}
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
-
                             {components.length === 0 && (
-                                <div className="text-center py-8 text-gray-500">No components found</div>
+                                <div className="text-center py-6 text-gray-500 text-sm">No components found</div>
                             )}
                         </div>
                     </div>
                 </div>
 
-                {/* Right Column: Items List and Build Total */}
+                {/* Right Column: Items List */}
                 <div className="space-y-4">
                     {selectedComponent ? (
                         <div className="bg-white rounded-lg border p-4 h-[500px] flex flex-col">
@@ -365,186 +340,163 @@ const BuildCart = ({refetchFlag, resetFlag}) => {
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <h3 className="font-bold text-gray-800">{selectedComponent.componentName}</h3>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className={`text-xs px-2 py-1 rounded ${
-                                                selectedComponent.powerSource === true || selectedComponent.powerSource === "true"
-                                                    ? 'bg-yellow-100 text-yellow-800'
-                                                    : selectedItems.length > 0
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-blue-100 text-blue-800'
-                                            }`}>
-                                                {selectedComponent.powerSource === true || selectedComponent.powerSource === "true"
-                                                    ? 'Compatible Power Sources'
-                                                    : selectedItems.length > 0
-                                                        ? 'Compatibility Mode'
-                                                        : 'All Items'}
+                                        {showCompatible && (
+                                            <span className="inline-block mt-1 text-xs px-2 py-1 bg-green-100 text-green-800 rounded">
+                                                Compatibility Mode
                                             </span>
-                                        </div>
+                                        )}
                                     </div>
                                     <button
-                                        onClick={() => {
-                                            setSelectedComponent(null);
-                                            setItemSearchTerm('');
-                                        }}
+                                        onClick={() => { setSelectedComponent(null); setItemSearchTerm(''); }}
                                         className="text-gray-500 hover:text-gray-700"
                                     >
                                         ✕
                                     </button>
                                 </div>
 
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder={`Search ${selectedItems.length > 0 ? 'compatible ' : ''}items...`}
-                                        className="w-full pl-4 pr-10 py-2 border rounded text-sm"
-                                        value={itemSearchTerm}
-                                        onChange={(e) => setItemSearchTerm(e.target.value)}
-                                    />
-                                    {itemSearchTerm && (
-                                        <button
-                                            onClick={() => setItemSearchTerm('')}
-                                            className="absolute right-3 top-2 text-gray-400 hover:text-gray-600"
-                                        >
-                                            ✕
-                                        </button>
-                                    )}
-                                </div>
+                                {/* Search Bar */}
+                                <input
+                                    type="text"
+                                    placeholder="Search items..."
+                                    className="w-full px-3 py-2 border rounded text-sm"
+                                    value={itemSearchTerm}
+                                    onChange={(e) => setItemSearchTerm(e.target.value)}
+                                />
                             </div>
 
-                            {isLoadingItems && (
+                            {(loadingAllItems || (loadingCompatible && showCompatible)) && (
                                 <div className="flex-1 flex items-center justify-center">
                                     <div className="text-center">
-                                        <div
-                                            className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                                         <p className="mt-2 text-sm text-gray-600">
-                                            {selectedComponent.powerSource === true || selectedComponent.powerSource === "true"
-                                                ? 'Finding compatible power sources...'
-                                                : 'Loading items...'}
+                                            {showCompatible ? 'Checking compatibility...' : 'Loading items...'}
                                         </p>
                                     </div>
                                 </div>
                             )}
 
-                            {!isLoadingItems && filteredItems.length === 0 ? (
-                                <div className="flex-1 flex flex-col items-center justify-center">
-                                    <div className="text-center text-gray-500 mb-3">
-                                        {itemSearchTerm
-                                            ? 'No items match your search'
-                                            : selectedComponent.powerSource === true || selectedComponent.powerSource === "true"
-                                                ? 'No compatible power sources found'
-                                                : 'No items available'
-                                        }
+                            {!loadingAllItems && !(loadingCompatible && showCompatible) && (
+                                filteredItems.length === 0 ? (
+                                    <div className="flex-1 flex items-center justify-center text-gray-500">
+                                        {itemSearchTerm ? 'No items match your search' : showCompatible ? 'No compatible items found' : 'No items available'}
                                     </div>
-                                    {itemSearchTerm && (
-                                        <button
-                                            onClick={() => setItemSearchTerm('')}
-                                            className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
-                                        >
-                                            Clear Search
-                                        </button>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-                                    <div className="text-xs text-gray-500 mb-2 px-1">
-                                        {filteredItems.length} {selectedComponent.powerSource === true || selectedComponent.powerSource === "true" ? 'power source' : 'item'}{filteredItems.length !== 1 ? 's' : ''} found
-                                    </div>
-                                    {filteredItems.map(item => {
-                                        const isSelected = selectedItems.some(selected => selected.id === item.id);
-                                        return (
-                                            <button
-                                                key={item.id}
-                                                onClick={() => !isSelected && handleAddItem(item)}
-                                                disabled={isSelected}
-                                                className={`w-full text-left p-3 border rounded transition-all ${
-                                                    isSelected ? 'bg-green-50 border-green-300' : 'hover:bg-blue-50 border-gray-200'
-                                                }`}
-                                            >
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex-1">
+                                ) : (
+                                    <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                                        {filteredItems.map(item => {
+                                            const isSelected = selectedItems.some(selected => selected.id === item.id);
+                                            const maxQuantity = item.quantity || 0;
+                                            const isOutOfStock = maxQuantity <= 0;
+
+                                            return (
+                                                <div key={item.id} className={`p-3 border rounded ${
+                                                    isSelected ? 'bg-green-50 border-green-300' : isOutOfStock ? 'bg-gray-50 border-gray-200 opacity-60' : 'border-gray-200 hover:bg-blue-50'
+                                                }`}>
+                                                    <div className="mb-2">
                                                         <h4 className={`font-medium text-sm ${isSelected ? 'text-green-700' : 'text-gray-800'}`}>
-                                                            {getItemName(item)}
+                                                            {item.itemName}
                                                         </h4>
                                                         <div className="flex items-center gap-2 mt-1">
-                                                            <span
-                                                                className="text-xs text-gray-500">{getManufacturer(item)}</span>
-                                                            <span className="text-sm font-bold text-blue-600">
-                                                                Rs {getItemPrice(item).toFixed(2)}
-                                                            </span>
+                                                            <span className="text-xs text-gray-500">{item.manufacturer?.manufacturerName}</span>
                                                         </div>
                                                     </div>
-                                                    {selectedItems.length > 0 && !isSelected && selectedComponent.powerSource !== true && selectedComponent.powerSource !== "true" &&
-                                                        <span className="text-green-600 text-sm ml-2">✓</span>}
+
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-sm font-bold text-blue-600">Rs {item.price?.toFixed(2)}</span>
+                                                        <div>
+                                                            {showCompatible && !isSelected && !isOutOfStock && (
+                                                                <div className="flex items-center gap-2">
+                                                                    <input
+                                                                        type="number"
+                                                                        min="1"
+                                                                        max={maxQuantity}
+                                                                        value={itemQuantities[item.id] || 1}
+                                                                        onChange={(e) => handleQuantityChange(item.id, e.target.value, maxQuantity)}
+                                                                        className="w-16 border rounded px-2 py-1 text-sm text-center"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => handleAddItem(item)}
+                                                                        className="px-3 py-1 rounded text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 whitespace-nowrap"
+                                                                    >
+                                                                        Add
+                                                                    </button>
+                                                                </div>
+                                                            )}
+
+                                                            {!showCompatible && !isSelected && !isOutOfStock && (
+                                                                <button onClick={() => handleAddItem(item)} className="px-3 py-1 rounded text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 whitespace-nowrap">
+                                                                    Add
+                                                                </button>
+                                                            )}
+
+                                                            {isSelected && (
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-sm text-green-600 font-medium">Added</span>
+                                                                    {selectedItems.find(si => si.id === item.id)?.selectedQuantity > 1 && (
+                                                                        <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                                                            Qty: {selectedItems.find(si => si.id === item.id)?.selectedQuantity}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {isOutOfStock && <span className="text-sm text-red-600 font-medium">Out of Stock</span>}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )
                             )}
                         </div>
                     ) : (
-                        <div
-                            className="bg-white rounded-lg border p-6 text-center h-[500px] flex flex-col items-center justify-center">
-                            <h2 className="font-bold text-gray-700 mb-2">Select a Component</h2>
-                            <p className="text-gray-500">Click on any component to view available items</p>
+                        <div className="bg-white rounded-lg border p-6 text-center h-[500px] flex items-center justify-center">
+                            <div>
+                                <h2 className="font-bold text-gray-700 mb-2">Select a Component</h2>
+                                <p className="text-gray-500">Click on any component to view available items</p>
+                            </div>
                         </div>
                     )}
+                </div>
+            </div>
 
-                    <div className="bg-white rounded-lg border p-4">
-                        <div className="flex justify-between items-center mb-4">
-                            <div>
-                                <h2 className="font-bold text-gray-800">Build Total</h2>
-                                <p className="text-sm text-gray-500">
-                                    {selectedItems.length} item{selectedItems.length !== 1 ? 's' : ''} selected
-                                </p>
-                            </div>
-                            <div className="text-xl font-bold text-green-600">Rs {totalPrice.toFixed(2)}</div>
-                        </div>
-                        <div className="flex justify-between items-center pt-4 border-t">
+            {/* Build Total Section - Single Row */}
+            <div className="bg-white rounded-lg border p-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <h2 className="font-bold text-gray-800 text-lg">Build Total</h2>
+                        <p className="text-sm text-gray-500">{totalItemsCount} item{totalItemsCount !== 1 ? 's' : ''} selected</p>
+                    </div>
+                    <div className="flex items-center gap-6">
+                        <div className="text-2xl font-bold text-green-600">Rs {totalPrice.toFixed(2)}</div>
+                        <div className="flex items-center gap-3">
                             <button
                                 onClick={handleClearAll}
-                                disabled={selectedItems.length === 0}
-                                className={`px-4 py-2 border rounded text-sm ${
+                                className={`px-6 py-2.5 border rounded text-sm font-medium transition-colors ${
                                     selectedItems.length > 0
                                         ? 'border-red-300 text-red-600 hover:bg-red-50'
                                         : 'border-gray-300 text-gray-400 cursor-not-allowed'
                                 }`}
+                                disabled={selectedItems.length === 0}
                             >
                                 Clear Build
                             </button>
                             <button
-                                onClick={() => {
-                                    if (selectedItems.length > 0) {
-                                        // Invoice functionality would go here
-                                        console.log("Invoice for", selectedItems.length, "items. Total:", totalPrice);
-                                    }
-                                }}
-                                disabled={selectedItems.length === 0}
-                                className={`px-6 py-2 rounded text-sm font-medium ${
+                                onClick={handleCompleteInvoice}
+                                className={`px-8 py-2.5 rounded text-sm font-medium transition-colors ${
                                     selectedItems.length > 0
                                         ? 'bg-green-600 text-white hover:bg-green-700'
                                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                 }`}
+                                disabled={selectedItems.length === 0}
                             >
-                                Invoice
+                                Create Invoice
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
-
-            {/* Global Notification Dialog */}
-            <NotificationDialogs
-                showSuccessDialog={notification.show && notification.type === "success"}
-                setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
-                successMessage={notification.message}
-                showErrorDialog={notification.show && notification.type === "error"}
-                setShowErrorDialog={() => setNotification({show: false, type: "", message: "", action: null})}
-                errorMessage={notification.message}
-                errorAction={notification.action}
-                onErrorAction={handleConfirmAction}
-                isActionLoading={false}
-            />
         </div>
     );
 };

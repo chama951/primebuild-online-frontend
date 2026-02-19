@@ -22,9 +22,10 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
     const [filterComponent, setFilterComponent] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [notification, setNotification] = useState({
-        show: false, type: "", // "success" or "error"
+        show: false, type: "",
         message: "", action: null,
     });
+    const [refreshKey, setRefreshKey] = useState(0);
 
     // Mutations
     const [createItem] = useCreateItemMutation();
@@ -41,12 +42,30 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
             refetchItems();
             resetFlag();
         }
-    }, [refetchFlag]);
+    }, [refetchFlag, resetFlag, refetchItems]);
 
-// Check unauthorized
+    // Update selectedItem when items change
+    useEffect(() => {
+        if (selectedItem && items.length > 0) {
+            const updatedItem = items.find(item => item.id === selectedItem.id);
+            if (updatedItem) {
+                setSelectedItem(updatedItem);
+                setFormData({
+                    itemName: updatedItem.itemName,
+                    quantity: updatedItem.quantity?.toString() || "",
+                    price: updatedItem.price?.toString() || "",
+                    powerConsumption: updatedItem.powerConsumption?.toString() || "",
+                    componentId: updatedItem.component?.id?.toString() || "",
+                    manufacturerId: updatedItem.manufacturer?.id?.toString() || "",
+                });
+            }
+        }
+    }, [items]);
+
+    // Check unauthorized
     const isUnauthorized = () => {
         const errors = [itemsError, componentsError, manufacturersError];
-        return errors.some(err => err?.isUnauthorized);
+        return errors.some(err => err?.status === 401);
     };
 
     if (isUnauthorized()) {
@@ -54,10 +73,12 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
     }
 
     // item
-    const filteredItems = items.filter((item) =>
-        item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.manufacturer.manufacturerName.toLowerCase().includes(searchTerm.toLowerCase())
-        && (!filterComponent || item.component?.id === parseInt(filterComponent)));
+    const filteredItems = items.filter((item) => {
+        const matchesSearch = item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.manufacturer?.manufacturerName?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesComponent = !filterComponent || item.component?.id === parseInt(filterComponent);
+        return matchesSearch && matchesComponent;
+    });
 
     const selectedComponent = components.find((c) => c.id === parseInt(formData.componentId));
 
@@ -75,6 +96,12 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                 // Use response message for success if available
                 const successMessage = result?.data?.message || notification.action.successMessage || "Action completed!";
                 showNotification("success", successMessage);
+
+                // Refetch items after successful action
+                await refetchItems();
+
+                // Increment refresh key to force re-render
+                setRefreshKey(prev => prev + 1);
             } catch (error) {
                 console.error("Error:", error);
                 // Use error message from response
@@ -97,12 +124,13 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
         setSelectedItem(item);
         setFormData({
             itemName: item.itemName,
-            quantity: item.quantity.toString(),
-            price: item.price.toString(),
+            quantity: item.quantity?.toString() || "",
+            price: item.price?.toString() || "",
             powerConsumption: item.powerConsumption?.toString() || "",
-            componentId: item.component?.id || "",
-            manufacturerId: item.manufacturer?.id || "",
+            componentId: item.component?.id?.toString() || "",
+            manufacturerId: item.manufacturer?.id?.toString() || "",
         });
+        setRefreshKey(prev => prev + 1);
     };
 
     const handleSubmit = async (e) => {
@@ -117,10 +145,12 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
         }
 
         const itemData = {
-            ...formData,
-            quantity: formData.quantity || "0",
-            price: formData.price || "0.00",
-            powerConsumption: formData.powerConsumption || "0.0",
+            itemName: formData.itemName.trim(),
+            quantity: parseInt(formData.quantity) || 0,
+            price: parseFloat(formData.price) || 0,
+            powerConsumption: parseFloat(formData.powerConsumption) || 0,
+            componentId: parseInt(formData.componentId),
+            manufacturerId: parseInt(formData.manufacturerId),
         };
 
         try {
@@ -134,8 +164,8 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
             // Show success message from API response
             showNotification("success", response.message || "Operation completed successfully!");
 
+            await refetchItems();
             handleResetForm();
-            refetchItems();
         } catch (error) {
             console.error("Error saving item:", error);
             // Show error message from API response
@@ -151,7 +181,7 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
             callback: async () => {
                 try {
                     const response = await deleteItem(item.id).unwrap();
-                    refetchItems();
+                    await refetchItems();
                     if (selectedItem?.id === item.id) {
                         handleResetForm();
                     }
@@ -159,11 +189,11 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                     return response;
                 } catch (error) {
                     console.error("Error deleting item:", error);
-                    throw error; // Re-throw to be caught by handleConfirmAction
+                    throw error;
                 }
             },
-            successMessage: "Item deleted successfully!", // Fallback if API doesn't return message
-            errorMessage: "Error deleting item.", // Fallback if API doesn't return message
+            successMessage: "Item deleted successfully!",
+            errorMessage: "Error deleting item.",
         });
     };
 
@@ -171,9 +201,15 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
         setSelectedItem(null);
         setFormData({
             itemName: "", quantity: "", price: "",
-            powerConsumption: "", // NEW
+            powerConsumption: "",
             componentId: "", manufacturerId: "",
         });
+        setRefreshKey(prev => prev + 1);
+    };
+
+    const handleItemUpdated = async () => {
+        await refetchItems();
+        setRefreshKey(prev => prev + 1);
     };
 
     // DataTable columns - Added power consumption column
@@ -184,28 +220,32 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
             render: (item) => <div className="text-sm text-gray-500">#{item.id}</div>,
         },
         {
-            key: "itemName", header: "Item Name", render: (item) =>
+            key: "itemName",
+            header: "Item Name",
+            render: (item) =>
                 <div className="space-y-1">
-                    <div className="inline-flex items-center px-2 py-1 rounded-md bg-green-100 text-green-800'">
-                        <span className="text-xs font-medium text-gray-600">
-                            {item.manufacturer.manufacturerName}
+                    <div className="inline-flex items-center px-2 py-1 rounded-md bg-green-100 text-green-800">
+                        <span className="text-xs font-medium">
+                            {item.manufacturer?.manufacturerName || "N/A"}
                         </span>
                     </div>
                     <div className="text-sm font-medium">{item.itemName}</div>
                 </div>,
-        }, {
+        },
+        {
             key: "component",
             header: "Component",
             render: (item) => <div className="text-sm">{item.component?.componentName || "N/A"}</div>,
-        }, {
+        },
+        {
             key: "price",
             header: "Price",
             render: (item) => <div className="text-sm">Rs {parseFloat(item.price || 0).toFixed(2)}</div>,
-        },];
+        },
+    ];
 
     return (
         <div className="container mx-auto p-4 space-y-6">
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column: Item List */}
                 <div className="lg:col-span-2 space-y-4">
@@ -222,13 +262,13 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                                 />
                                 {searchTerm && (<button
                                     onClick={() => setSearchTerm("")}
-                                    className="absolute right-3 top-2.5 text-gray-400"
+                                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
                                 >
                                     ✕
                                 </button>)}
                             </div>
                             <select
-                                className="h-10 w-48 p-2.5 border rounded"
+                                className="h-10 w-48 p-2 border rounded"
                                 value={filterComponent}
                                 onChange={(e) => setFilterComponent(e.target.value)}
                             >
@@ -248,7 +288,7 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                         onDeleteItemClick={handleDeleteItem}
                         isLoading={false}
                         columns={columns}
-                        emptyMessage="No items found" // DataTable component handles this internally
+                        emptyMessage="No items found"
                     />
                 </div>
 
@@ -317,7 +357,6 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                                     min="0"
                                     step="0.01"
                                 />
-                                {/* Power Consumption Input */}
                                 <input
                                     type="number"
                                     name="powerConsumption"
@@ -341,7 +380,7 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                                     }
                                     className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                                 >
-                                    {isSubmitting ? "..." : selectedItem ? "Update" : "Create"}
+                                    {isSubmitting ? "Saving..." : selectedItem ? "Update" : "Create"}
                                 </button>
                                 {(selectedItem || formData.itemName.trim() || formData.componentId || formData.manufacturerId) && (
                                     <button
@@ -357,13 +396,17 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                     </div>
 
                     {/* Features Section component */}
-                    {formData.componentId && (<ItemFeaturesSection
-                        selectedComponent={selectedComponent}
-                        selectedItem={selectedItem}
-                        showNotification={showNotification}
-                        isSubmitting={isSubmitting}
-                        setIsSubmitting={setIsSubmitting}
-                    />)}
+                    {formData.componentId && selectedItem && (
+                        <ItemFeaturesSection
+                            key={`features-${selectedItem.id}-${refreshKey}`} // Add key to force re-render
+                            selectedComponent={selectedComponent}
+                            selectedItem={selectedItem}
+                            showNotification={showNotification}
+                            isSubmitting={isSubmitting}
+                            setIsSubmitting={setIsSubmitting}
+                            onItemUpdated={handleItemUpdated} // Pass the callback
+                        />
+                    )}
                 </div>
             </div>
 
@@ -379,7 +422,8 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                 onErrorAction={handleConfirmAction}
                 isActionLoading={isSubmitting}
             />
-        </div>);
+        </div>
+    );
 };
 
 export default ItemManagement;

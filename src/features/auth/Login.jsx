@@ -74,6 +74,15 @@ export default function Login() {
                             required
                             className="w-full px-4 py-2 border rounded-lg"
                         />
+                        <div className="text-right">
+                            <button
+                                type="button"
+                                onClick={() => navigate("/forgot-password")}
+                                className="text-sm text-blue-600 hover:underline"
+                            >
+                                Forgot Password?
+                            </button>
+                        </div>
                         <button
                             type="submit"
                             disabled={isLoading}

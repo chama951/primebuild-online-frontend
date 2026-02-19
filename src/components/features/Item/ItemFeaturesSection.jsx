@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import {useState, useEffect} from "react";
 import {
     useCreateItemFeatureMutation,
     useUpdateItemFeatureMutation,
@@ -20,6 +20,7 @@ const ItemFeaturesSection = ({
                                  showNotification,
                                  isSubmitting,
                                  setIsSubmitting,
+                                 onItemUpdated,
                              }) => {
     // Local state
     const [selectedFeatures, setSelectedFeatures] = useState({});
@@ -30,7 +31,7 @@ const ItemFeaturesSection = ({
     const [updatingSlotCount, setUpdatingSlotCount] = useState(null); // { featureId, typeId, currentCount }
 
     // API hooks - get component feature types directly from API
-    const { data: componentFeatureTypes = [], refetch: refetchComponentFeatureTypes } =
+    const {data: componentFeatureTypes = [], refetch: refetchComponentFeatureTypes} =
         useGetComponentFeatureTypesByComponentIdQuery(selectedComponent?.id, {
             skip: !selectedComponent,
         });
@@ -41,7 +42,7 @@ const ItemFeaturesSection = ({
         .filter(Boolean);
 
     // Get all features
-    const { data: allFeatures = [], refetch: refetchAllFeatures } = useGetFeaturesQuery();
+    const {data: allFeatures = [], refetch: refetchAllFeatures} = useGetFeaturesQuery();
 
     // Filter features that belong to this component's feature types
     const componentFeatures = allFeatures.filter((feature) =>
@@ -126,6 +127,7 @@ const ItemFeaturesSection = ({
                     const itemFeatureId = selectedFeatures[typeId][featureId].itemFeatureId;
                     const response = await deleteItemFeature(itemFeatureId).unwrap();
                     showNotification("success", response.message || "Feature removed!");
+                    if (onItemUpdated) await onItemUpdated();
                 } else {
                     showNotification("success", "Feature removed!");
                 }
@@ -160,6 +162,7 @@ const ItemFeaturesSection = ({
                         },
                     }));
                     showNotification("success", result.message || "Feature added!");
+                    if (onItemUpdated) await onItemUpdated();
                 } else {
                     setSelectedFeatures(prev => ({
                         ...prev,
@@ -213,6 +216,7 @@ const ItemFeaturesSection = ({
                     },
                 }));
                 showNotification("success", response.message || "Slot count updated!");
+                if (onItemUpdated) await onItemUpdated();
                 setUpdatingSlotCount(null);
             } catch (error) {
                 console.error("Error updating slot count:", error);
@@ -271,6 +275,7 @@ const ItemFeaturesSection = ({
                         },
                     },
                 }));
+                if (onItemUpdated) await onItemUpdated();
             } else {
                 setSelectedFeatures(prev => ({
                     ...prev,
@@ -435,7 +440,8 @@ const ItemFeaturesSection = ({
                             onClick={() => toggleFeatureType(typeId)}
                             className="flex items-center justify-between w-full p-2 border rounded bg-gray-50 hover:bg-gray-100"
                         >
-                            <span className="text-sm font-medium truncate mr-2">{featureTypeName} ({features.length})</span>
+                            <span
+                                className="text-sm font-medium truncate mr-2">{featureTypeName} ({features.length})</span>
                             <span className="flex-shrink-0">{isExpanded ? "▼" : "▶"}</span>
                         </button>
 
