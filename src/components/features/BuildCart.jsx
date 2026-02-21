@@ -230,19 +230,48 @@ const BuildCart = () => {
             />
 
             <div className="bg-white border rounded-lg p-4 flex flex-col lg:flex-row gap-3 items-center">
-                <input type="text" placeholder="Build name" value={buildName}
-                       onChange={e => setBuildName(e.target.value)}
-                       className="h-9 px-3 text-sm border rounded-md flex-1"/>
-                <select className="h-9 px-3 text-sm border rounded-md w-56" value={currentBuildId || ""}
-                        onChange={e => setCurrentBuildId(Number(e.target.value) || null)}>
+                {/* Build Name Input */}
+                <div className="flex-1">
+                    <input
+                        type="text"
+                        placeholder="Build name"
+                        value={buildName}
+                        onChange={e => setBuildName(e.target.value)}
+                        className="w-full h-10 px-3 text-sm border rounded-md"
+                    />
+                </div>
+
+                {/* Build Select Dropdown */}
+                <select
+                    className="h-10 w-56 px-3 text-sm border rounded-md"
+                    value={currentBuildId || ""}
+                    onChange={e => setCurrentBuildId(Number(e.target.value) || null)}
+                >
                     <option value="">New Build</option>
-                    {userBuilds.map(build => <option key={build.id} value={build.id}>{build.buildName}</option>)}
+                    {userBuilds.map(build => (
+                        <option key={build.id} value={build.id}>{build.buildName}</option>
+                    ))}
                 </select>
-                <button onClick={handleSaveBuild} disabled={isSubmitting}
-                        className="h-9 px-4 text-sm rounded-md bg-green-600 text-white hover:bg-green-700 transition">Save
+
+                {/* Save Button */}
+                <button
+                    onClick={handleSaveBuild}
+                    disabled={isSubmitting}
+                    className="h-10 px-4 text-sm rounded-md bg-green-600 text-white hover:bg-green-700 transition"
+                >
+                    Save
                 </button>
-                {currentBuildId && <button onClick={handleDeleteBuild} disabled={isSubmitting}
-                                           className="h-9 px-4 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 transition">Delete</button>}
+
+                {/* Delete Button */}
+                {currentBuildId && (
+                    <button
+                        onClick={handleDeleteBuild}
+                        disabled={isSubmitting}
+                        className="h-10 px-4 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 transition"
+                    >
+                        Delete
+                    </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

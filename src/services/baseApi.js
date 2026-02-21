@@ -1,4 +1,4 @@
-import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
     baseUrl: "http://localhost:8080/api",
@@ -12,11 +12,18 @@ const baseQuery = fetchBaseQuery({
     },
 });
 
-const baseQueryWithErrorHandling = async (args, api, extraOptions) => {
+const baseQueryWithAuthRedirect = async (args, api, extraOptions) => {
     const result = await baseQuery(args, api, extraOptions);
 
     if (result.error) {
-        if (result.error.status === 401 || result.error.status === 403) {
+        const { status } = result.error;
+        if (status === 401 || status === 403) {
+            // Clear token
+            localStorage.removeItem("jwtToken");
+
+            // Redirect to login page
+            window.location.href = "/login";
+
             return {
                 ...result,
                 error: {
@@ -32,7 +39,7 @@ const baseQueryWithErrorHandling = async (args, api, extraOptions) => {
 
 export const baseApi = createApi({
     reducerPath: "api",
-    baseQuery: baseQueryWithErrorHandling,
+    baseQuery: baseQueryWithAuthRedirect,
     tagTypes: [
         "Component",
         "FeatureType",
