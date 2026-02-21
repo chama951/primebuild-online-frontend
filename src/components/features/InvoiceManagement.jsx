@@ -9,9 +9,7 @@ import {
 import Unauthorized from "../common/Unauthorized.jsx";
 
 const InvoiceManagement = ({refetchFlag, resetFlag}) => {
-    // ------------------------
-    // State
-    // ------------------------
+
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [invoiceStatus, setInvoiceStatus] = useState("NOT_PAID");
     const [searchTerm, setSearchTerm] = useState("");
