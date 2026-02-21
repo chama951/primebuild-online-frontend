@@ -29,7 +29,12 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
     const {data: components = [], error: componentsError} = useGetComponentsQuery();
     const {data: manufacturers = [], error: manufacturersError} = useGetManufacturersQuery();
 
-    useEffect(() => { if (refetchFlag) { refetchItems(); resetFlag(); } }, [refetchFlag, resetFlag, refetchItems]);
+    useEffect(() => {
+        if (refetchFlag) {
+            refetchItems();
+            resetFlag();
+        }
+    }, [refetchFlag, resetFlag, refetchItems]);
 
     useEffect(() => {
         if (selectedItem && items.length > 0) {
@@ -49,7 +54,7 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
         }
     }, [items]);
 
-    const isUnauthorized = () => [itemsError, componentsError, manufacturersError].some(err => err?.status === 401);
+    const isUnauthorized = () => [itemsError, componentsError, manufacturersError].some(error => error?.status === 401 || error?.status === 403);
     if (isUnauthorized()) return <Unauthorized/>;
 
     const filteredItems = items.filter(item =>
@@ -135,7 +140,9 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                     await refetchItems();
                     if (selectedItem?.id === item.id) handleResetForm();
                     return response;
-                } catch (error) { throw error; }
+                } catch (error) {
+                    throw error;
+                }
             },
             successMessage: "Item deleted successfully!",
             errorMessage: "Error deleting item.",
@@ -144,37 +151,57 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
 
     const handleResetForm = () => {
         setSelectedItem(null);
-        setFormData({itemName: "", quantity: "", price: "", powerConsumption: "", discountPercentage: "", componentId: "", manufacturerId: ""});
+        setFormData({
+            itemName: "",
+            quantity: "",
+            price: "",
+            powerConsumption: "",
+            discountPercentage: "",
+            componentId: "",
+            manufacturerId: ""
+        });
         setRefreshKey(prev => prev + 1);
     };
 
-    const handleItemUpdated = async () => { await refetchItems(); setRefreshKey(prev => prev + 1); };
+    const handleItemUpdated = async () => {
+        await refetchItems();
+        setRefreshKey(prev => prev + 1);
+    };
 
     const calculateDiscountedPrice = (price, discount) =>
         !price || !discount ? price : (price - (price * discount / 100)).toFixed(2);
 
     const columns = [
-        { key: "id", header: "ID", render: (item) => <div className="text-sm text-gray-500">#{item.id}</div> },
-        { key: "itemName", header: "Item Name", render: (item) => (
+        {key: "id", header: "ID", render: (item) => <div className="text-sm text-gray-500">#{item.id}</div>},
+        {
+            key: "itemName", header: "Item Name", render: (item) => (
                 <div className="space-y-1">
                     <div className="inline-flex items-center px-2 py-1 rounded-md bg-green-100 text-green-800">
                         <span className="text-xs font-medium">{item.manufacturer?.manufacturerName || "N/A"}</span>
                     </div>
                     <div className="text-sm font-medium">{item.itemName}</div>
                 </div>
-            )},
-        { key: "component", header: "Component", render: (item) => <div className="text-sm">{item.component?.componentName || "N/A"}</div> },
-        { key: "price", header: "Price", render: (item) => {
+            )
+        },
+        {
+            key: "component",
+            header: "Component",
+            render: (item) => <div className="text-sm">{item.component?.componentName || "N/A"}</div>
+        },
+        {
+            key: "price", header: "Price", render: (item) => {
                 const price = parseFloat(item.price || 0);
                 const discount = parseFloat(item.discountPercentage || 0);
                 return discount > 0 ? (
                     <div className="text-sm">
                         <span className="line-through text-gray-400 mr-2">Rs {price.toFixed(2)}</span>
-                        <span className="text-green-600 font-medium">Rs {calculateDiscountedPrice(price, discount)}</span>
+                        <span
+                            className="text-green-600 font-medium">Rs {calculateDiscountedPrice(price, discount)}</span>
                         <span className="ml-1 text-xs text-green-500">({discount}% off)</span>
                     </div>
                 ) : <span>Rs {price.toFixed(2)}</span>;
-            }},
+            }
+        },
     ];
 
     return (
@@ -184,45 +211,57 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                     <div className="bg-white rounded-lg border p-4">
                         <div className="flex gap-4">
                             <div className="relative flex-1">
-                                <input type="text" placeholder="Search items..." className="w-full pl-4 pr-10 py-2 border rounded"
-                                       value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                <input type="text" placeholder="Search items..."
+                                       className="w-full pl-4 pr-10 py-2 border rounded"
+                                       value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}/>
                                 {searchTerm && <button onClick={() => setSearchTerm("")}
                                                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">✕</button>}
                             </div>
-                            <select className="h-10 w-48 p-2 border rounded" value={filterComponent} onChange={(e) => setFilterComponent(e.target.value)}>
+                            <select className="h-10 w-48 p-2 border rounded" value={filterComponent}
+                                    onChange={(e) => setFilterComponent(e.target.value)}>
                                 <option value="">All Components</option>
                                 {components.map(c => <option key={c.id} value={c.id}>{c.componentName}</option>)}
                             </select>
                         </div>
                     </div>
                     <DataTable items={filteredItems} selectedItem={selectedItem} onSelectItem={handleSelectItem}
-                               onDeleteItemClick={handleDeleteItem} isLoading={false} columns={columns} emptyMessage="No items found" />
+                               onDeleteItemClick={handleDeleteItem} isLoading={false} columns={columns}
+                               emptyMessage="No items found"/>
                 </div>
 
                 <div className="space-y-4">
                     <div className="bg-white rounded-lg border p-4">
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <input type="text" name="itemName" placeholder="Item Name *" className="w-full p-2 border rounded"
-                                   value={formData.itemName} onChange={handleInputChange} required />
-                            <select name="componentId" className="w-full p-2 border rounded" value={formData.componentId} onChange={handleInputChange} required>
+                            <input type="text" name="itemName" placeholder="Item Name *"
+                                   className="w-full p-2 border rounded"
+                                   value={formData.itemName} onChange={handleInputChange} required/>
+                            <select name="componentId" className="w-full p-2 border rounded"
+                                    value={formData.componentId} onChange={handleInputChange} required>
                                 <option value="">Select Component *</option>
                                 {components.map(c => <option key={c.id} value={c.id}>{c.componentName}</option>)}
                             </select>
-                            <select name="manufacturerId" className="w-full p-2 border rounded" value={formData.manufacturerId} onChange={handleInputChange} required>
+                            <select name="manufacturerId" className="w-full p-2 border rounded"
+                                    value={formData.manufacturerId} onChange={handleInputChange} required>
                                 <option value="">Select Manufacturer *</option>
                                 {manufacturers.map(m => <option key={m.id} value={m.id}>{m.manufacturerName}</option>)}
                             </select>
                             <div className="grid grid-cols-2 gap-4">
-                                <input type="number" name="quantity" placeholder="Quantity" className="p-2 border rounded placeholder:text-sm"
-                                       value={formData.quantity} onChange={handleInputChange} min="0" />
-                                <input type="number" name="price" placeholder="Price (Rs)" className="p-2 border rounded placeholder:text-sm"
-                                       value={formData.price} onChange={handleInputChange} min="0" step="0.01" />
+                                <input type="number" name="quantity" placeholder="Quantity"
+                                       className="p-2 border rounded placeholder:text-sm"
+                                       value={formData.quantity} onChange={handleInputChange} min="0"/>
+                                <input type="number" name="price" placeholder="Price (Rs)"
+                                       className="p-2 border rounded placeholder:text-sm"
+                                       value={formData.price} onChange={handleInputChange} min="0" step="0.01"/>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <input type="number" name="powerConsumption" placeholder="Power (W)" className="p-2 border rounded placeholder:text-sm"
-                                       value={formData.powerConsumption} onChange={handleInputChange} min="0" step="0.1" />
-                                <input type="number" name="discountPercentage" placeholder="Discount %" className="p-2 border rounded placeholder:text-sm"
-                                       value={formData.discountPercentage} onChange={handleInputChange} min="0" max="100" step="0.1" />
+                                <input type="number" name="powerConsumption" placeholder="Power (W)"
+                                       className="p-2 border rounded placeholder:text-sm"
+                                       value={formData.powerConsumption} onChange={handleInputChange} min="0"
+                                       step="0.1"/>
+                                <input type="number" name="discountPercentage" placeholder="Discount %"
+                                       className="p-2 border rounded placeholder:text-sm"
+                                       value={formData.discountPercentage} onChange={handleInputChange} min="0"
+                                       max="100" step="0.1"/>
                             </div>
                             {formData.price && formData.discountPercentage && (
                                 <div className="text-sm bg-blue-50 p-2 rounded">
@@ -234,12 +273,14 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                                 </div>
                             )}
                             <div className="flex gap-2">
-                                <button type="submit" disabled={isSubmitting || !formData.itemName.trim() || !formData.componentId || !formData.manufacturerId}
+                                <button type="submit"
+                                        disabled={isSubmitting || !formData.itemName.trim() || !formData.componentId || !formData.manufacturerId}
                                         className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
                                     {isSubmitting ? "Saving..." : selectedItem ? "Update" : "Create"}
                                 </button>
                                 {(selectedItem || formData.itemName.trim() || formData.componentId || formData.manufacturerId) && (
-                                    <button type="button" onClick={handleResetForm} className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-50">
+                                    <button type="button" onClick={handleResetForm}
+                                            className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-50">
                                         Clear
                                     </button>
                                 )}
@@ -247,9 +288,11 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                         </form>
                     </div>
                     {formData.componentId && selectedItem && (
-                        <ItemFeaturesSection key={`features-${selectedItem.id}-${refreshKey}`} selectedComponent={selectedComponent}
-                                             selectedItem={selectedItem} showNotification={showNotification} isSubmitting={isSubmitting}
-                                             setIsSubmitting={setIsSubmitting} onItemUpdated={handleItemUpdated} />
+                        <ItemFeaturesSection key={`features-${selectedItem.id}-${refreshKey}`}
+                                             selectedComponent={selectedComponent}
+                                             selectedItem={selectedItem} showNotification={showNotification}
+                                             isSubmitting={isSubmitting}
+                                             setIsSubmitting={setIsSubmitting} onItemUpdated={handleItemUpdated}/>
                     )}
                 </div>
             </div>

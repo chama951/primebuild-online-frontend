@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect} from "react";
 import {
     useGetPaymentsQuery,
     useGetPaymentsByDateQuery,
@@ -15,8 +15,9 @@ import {
     CreditCard,
     TrendingUp
 } from "lucide-react";
+import Unauthorized from "../common/Unauthorized.jsx";
 
-const Reports = ({ refetchFlag, resetFlag }) => {
+const Reports = ({refetchFlag, resetFlag}) => {
     // State
     const [dateRange, setDateRange] = useState({
         startDate: "",
@@ -36,12 +37,14 @@ const Reports = ({ refetchFlag, resetFlag }) => {
     const {
         data: allPayments = [],
         isLoading: loadingAll,
+        error: errorAll,
         refetch: refetchAll
     } = useGetPaymentsQuery();
 
     const {
         data: paymentsByDate = [],
         isLoading: loadingByDate,
+        error: errorByDate,
         refetch: refetchByDate
     } = useGetPaymentsByDateQuery(dateRange.startDate, {
         skip: !dateRange.startDate
@@ -50,6 +53,7 @@ const Reports = ({ refetchFlag, resetFlag }) => {
     const {
         data: paymentsByStatus = [],
         isLoading: loadingByStatus,
+        error: errorByStatus,
         refetch: refetchByStatus
     } = useGetPaymentsByStatusQuery(selectedStatus, {
         skip: !selectedStatus
@@ -58,6 +62,7 @@ const Reports = ({ refetchFlag, resetFlag }) => {
     const {
         data: paymentsByUsername = [],
         isLoading: loadingByUsername,
+        error: errorByUsername,
         refetch: refetchByUsername
     } = useGetPaymentsByUsernameQuery(selectedUsername, {
         skip: !selectedUsername
@@ -113,6 +118,12 @@ const Reports = ({ refetchFlag, resetFlag }) => {
         }
     };
 
+    const error = errorAll || errorByDate || errorByStatus || errorByUsername;
+
+    if (error?.status === 401 || error?.status === 403) {
+        return <Unauthorized/>;
+    }
+
     // Calculate report data
     const calculateReportData = () => {
         const totalPayments = payments.length;
@@ -162,7 +173,7 @@ const Reports = ({ refetchFlag, resetFlag }) => {
             ...rows.map(row => row.join(','))
         ].join('\n');
 
-        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const blob = new Blob([csvContent], {type: 'text/csv'});
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -196,12 +207,12 @@ const Reports = ({ refetchFlag, resetFlag }) => {
 
     // Show notification
     const showNotification = (type, message, action = null) => {
-        setNotification({ show: true, type, message, action });
+        setNotification({show: true, type, message, action});
     };
 
     const handleConfirmAction = async () => {
         if (notification.action) {
-            const { callback } = notification.action;
+            const {callback} = notification.action;
             setIsSubmitting(true);
             try {
                 const result = await callback();
@@ -212,14 +223,14 @@ const Reports = ({ refetchFlag, resetFlag }) => {
                 showNotification("error", errorMessage);
             } finally {
                 setIsSubmitting(false);
-                setNotification((prev) => ({ ...prev, action: null }));
+                setNotification((prev) => ({...prev, action: null}));
             }
         }
     };
 
     // Clear all filters
     const handleClearFilters = () => {
-        setDateRange({ startDate: "", endDate: "" });
+        setDateRange({startDate: "", endDate: ""});
         setSelectedStatus("");
         setSelectedUsername("");
     };
@@ -228,10 +239,10 @@ const Reports = ({ refetchFlag, resetFlag }) => {
         <div className="container mx-auto p-4 space-y-6">
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
-                setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
+                setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
-                setShowErrorDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
+                setShowErrorDialog={() => setNotification({show: false, type: "", message: "", action: null})}
                 errorMessage={notification.message}
                 errorAction={notification.action}
                 onErrorAction={handleConfirmAction}
@@ -252,9 +263,9 @@ const Reports = ({ refetchFlag, resetFlag }) => {
                                     type="date"
                                     className="w-full pl-8 pr-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                                     value={dateRange.startDate}
-                                    onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                                    onChange={(e) => setDateRange({...dateRange, startDate: e.target.value})}
                                 />
-                                <Calendar className="absolute left-2 top-3 w-4 h-4 text-gray-400" />
+                                <Calendar className="absolute left-2 top-3 w-4 h-4 text-gray-400"/>
                             </div>
                             <span className="text-gray-500 self-center">—</span>
                             <div className="relative flex-1">
@@ -262,9 +273,9 @@ const Reports = ({ refetchFlag, resetFlag }) => {
                                     type="date"
                                     className="w-full pl-8 pr-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                                     value={dateRange.endDate}
-                                    onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                                    onChange={(e) => setDateRange({...dateRange, endDate: e.target.value})}
                                 />
-                                <Calendar className="absolute left-2 top-3 w-4 h-4 text-gray-400" />
+                                <Calendar className="absolute left-2 top-3 w-4 h-4 text-gray-400"/>
                             </div>
                         </div>
                     </div>
@@ -308,7 +319,7 @@ const Reports = ({ refetchFlag, resetFlag }) => {
                             className="w-full px-4 py-2.5 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={!dateRange.startDate && !selectedStatus && !selectedUsername}
                         >
-                            <Filter className="w-4 h-4" />
+                            <Filter className="w-4 h-4"/>
                             Clear Filters
                         </button>
                     </div>
@@ -336,7 +347,7 @@ const Reports = ({ refetchFlag, resetFlag }) => {
                                     <p className="text-xs text-gray-400 mt-1">All transactions</p>
                                 </div>
                                 <div className="p-3 bg-blue-50 rounded-full">
-                                    <CreditCard className="w-6 h-6 text-blue-600" />
+                                    <CreditCard className="w-6 h-6 text-blue-600"/>
                                 </div>
                             </div>
                         </div>
@@ -352,7 +363,7 @@ const Reports = ({ refetchFlag, resetFlag }) => {
                                     <p className="text-xs text-gray-400 mt-1">Sum of all payments</p>
                                 </div>
                                 <div className="p-3 bg-green-50 rounded-full">
-                                    <TrendingUp className="w-6 h-6 text-green-600" />
+                                    <TrendingUp className="w-6 h-6 text-green-600"/>
                                 </div>
                             </div>
                         </div>
@@ -361,7 +372,7 @@ const Reports = ({ refetchFlag, resetFlag }) => {
                     {/* Status Distribution Graph */}
                     <div className="bg-white rounded-lg border p-6 shadow-sm">
                         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                            <BarChart3 className="w-5 h-5 text-blue-600" />
+                            <BarChart3 className="w-5 h-5 text-blue-600"/>
                             Payment Status Distribution
                         </h3>
                         <div className="space-y-4">
@@ -392,7 +403,7 @@ const Reports = ({ refetchFlag, resetFlag }) => {
                                                         status === 'CANCELLED' ? 'bg-red-500' :
                                                             'bg-purple-500'
                                             }`}
-                                            style={{ width: `${(count / reportData.totalPayments) * 100}%` }}
+                                            style={{width: `${(count / reportData.totalPayments) * 100}%`}}
                                         ></div>
                                     </div>
                                 </div>
@@ -403,7 +414,7 @@ const Reports = ({ refetchFlag, resetFlag }) => {
                     {/* Amount by Status Graph */}
                     <div className="bg-white rounded-lg border p-6 shadow-sm">
                         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                            <DollarSign className="w-5 h-5 text-green-600" />
+                            <DollarSign className="w-5 h-5 text-green-600"/>
                             Amount by Status
                         </h3>
                         <div className="space-y-4">
@@ -436,7 +447,7 @@ const Reports = ({ refetchFlag, resetFlag }) => {
                                                         status === 'CANCELLED' ? 'bg-red-500' :
                                                             'bg-purple-500'
                                             }`}
-                                            style={{ width: `${(amount / reportData.totalAmount) * 100}%` }}
+                                            style={{width: `${(amount / reportData.totalAmount) * 100}%`}}
                                         ></div>
                                     </div>
                                 </div>
@@ -446,15 +457,18 @@ const Reports = ({ refetchFlag, resetFlag }) => {
 
                     {/* Summary Stats Footer */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                        <div
+                            className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
                             <p className="text-sm text-blue-700 font-medium">PAID Amount</p>
                             <p className="text-2xl font-bold text-blue-800">{formatCurrency(reportData.amountByStatus.PAID)}</p>
                         </div>
-                        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border border-yellow-200">
+                        <div
+                            className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border border-yellow-200">
                             <p className="text-sm text-yellow-700 font-medium">PENDING Amount</p>
                             <p className="text-2xl font-bold text-yellow-800">{formatCurrency(reportData.amountByStatus.PENDING)}</p>
                         </div>
-                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                        <div
+                            className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
                             <p className="text-sm text-purple-700 font-medium">REFUNDED + CANCELLED</p>
                             <p className="text-2xl font-bold text-purple-800">
                                 {formatCurrency(reportData.amountByStatus.REFUNDED + reportData.amountByStatus.CANCELLED)}
@@ -469,7 +483,7 @@ const Reports = ({ refetchFlag, resetFlag }) => {
                             className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 transition-colors shadow-sm"
                             disabled={payments.length === 0}
                         >
-                            <Download className="w-5 h-5" />
+                            <Download className="w-5 h-5"/>
                             Export CSV
                         </button>
                     </div>

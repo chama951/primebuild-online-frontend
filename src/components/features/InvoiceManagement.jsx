@@ -33,6 +33,7 @@ const InvoiceManagement = ({refetchFlag, resetFlag}) => {
     const [updateInvoice] = useUpdateInvoiceMutation();
     const [deleteInvoice] = useDeleteInvoiceMutation();
 
+
     useEffect(() => {
         if (refetchFlag) {
             refetch();
@@ -40,7 +41,6 @@ const InvoiceManagement = ({refetchFlag, resetFlag}) => {
         }
     }, [refetchFlag]);
 
-    if (error?.isUnauthorized) return <Unauthorized/>;
 
     const filteredInvoices = useMemo(() => {
         const term = searchTerm.toLowerCase().trim();
@@ -57,6 +57,10 @@ const InvoiceManagement = ({refetchFlag, resetFlag}) => {
         });
     }, [invoices, searchTerm, filterStatus, filterDate]);
 
+    if (error?.status === 401 || error?.status === 403) {
+        return <Unauthorized />;
+    }
+    
     const showNotification = (type, message, action = null) => {
         setNotification({show: true, type, message, action});
     };

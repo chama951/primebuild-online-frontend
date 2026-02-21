@@ -8,6 +8,7 @@ import {
 } from "../../features/components/paymentApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import {X, Calendar, Filter} from "lucide-react";
+import Unauthorized from "../common/Unauthorized.jsx";
 
 const PaymentManagement = ({refetchFlag, resetFlag}) => {
     // State
@@ -29,6 +30,7 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
     const {
         data: allPayments = [],
         isLoading: loadingAll,
+        error: errorAll,
         refetch: refetchAll
     } = useGetPaymentsQuery(undefined, {
         skip: filterStatus !== "" || filterDate !== ""
@@ -37,6 +39,7 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
     const {
         data: paymentsByDate = [],
         isLoading: loadingByDate,
+        error: errorByDate,
         refetch: refetchByDate
     } = useGetPaymentsByDateQuery(filterDate, {
         skip: !filterDate
@@ -45,6 +48,7 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
     const {
         data: paymentsByStatus = [],
         isLoading: loadingByStatus,
+        error: errorByStatus,
         refetch: refetchByStatus
     } = useGetPaymentsByStatusQuery(filterStatus, {
         skip: !filterStatus
@@ -104,6 +108,12 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
             console.error("Error refetching:", error);
         }
     };
+
+    const error = errorAll || errorByDate || errorByStatus;
+    if (error?.status === 401 || error?.status === 403) {
+        return <Unauthorized />;
+    }
+
 
     // Filter payments locally by search term
     const filteredPayments = basePayments.filter(payment => {

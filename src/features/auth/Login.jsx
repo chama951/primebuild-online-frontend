@@ -20,7 +20,7 @@ export default function Login() {
         const token = searchParams.get("token");
         if (token) {
             localStorage.setItem("jwtToken", token);
-            navigate("/item");
+            navigate("/home");
         }
     }, [searchParams, navigate]);
 
@@ -34,7 +34,7 @@ export default function Login() {
             localStorage.setItem("jwtToken", data.jwtToken);
             localStorage.setItem("username", data.username);
             localStorage.setItem("roles", JSON.stringify(data.roles));
-            navigate("/item");
+            navigate("/dashboard"); //Normal Login success
         } catch (err) {
             setError(err.data?.message || "Login failed");
         }
