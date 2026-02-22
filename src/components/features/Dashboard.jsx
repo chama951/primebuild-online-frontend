@@ -7,7 +7,6 @@ import {
     Users,
     FileText,
     Menu,
-    X,
     ChevronLeft,
     ChevronRight,
     UserCog,

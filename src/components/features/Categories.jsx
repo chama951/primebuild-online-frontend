@@ -1,0 +1,254 @@
+import React, { useState, useMemo } from "react";
+import { useGetComponentsQuery } from "../../features/components/componentApi.js";
+import { useGetItemsByComponentIdQuery } from "../../features/components/itemApi.js";
+import { useGetFeatureTypesQuery } from "../../features/components/featureTypeApi.js";
+import ItemDetails from "./ItemDetails.jsx"; // Import modal component
+
+const Categories = () => {
+    const { data: components, isLoading, isError } = useGetComponentsQuery();
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [selectedFeatures, setSelectedFeatures] = useState({});
+    const [selectedManufacturers, setSelectedManufacturers] = useState(new Set());
+    const [sortOrder, setSortOrder] = useState("");
+    const [selectedItem, setSelectedItem] = useState(null); // New: for modal
+
+    const { data: items = [], isLoading: itemsLoading, isError: itemsError } =
+        useGetItemsByComponentIdQuery(selectedCategory, { skip: !selectedCategory });
+
+    const { data: featureTypes = [] } = useGetFeatureTypesQuery();
+
+    const featureTypesById = useMemo(() => {
+        const map = {};
+        featureTypes.forEach(ft => { map[ft.id] = ft.featureTypeName; });
+        return map;
+    }, [featureTypes]);
+
+    const featuresByType = useMemo(() => {
+        if (!items.length) return {};
+        const map = {};
+        items.forEach(item => {
+            item.itemFeatureList.forEach(f => {
+                const typeName = featureTypesById[f.feature.featureType?.id] || "Other";
+                if (!map[typeName]) map[typeName] = new Set();
+                map[typeName].add(f.feature.featureName);
+            });
+        });
+        Object.keys(map).forEach(k => map[k] = Array.from(map[k]));
+        return map;
+    }, [items, featureTypesById]);
+
+    const manufacturers = useMemo(() => {
+        const set = new Set();
+        items.forEach(item => {
+            if (item.manufacturer?.manufacturerName) set.add(item.manufacturer.manufacturerName);
+        });
+        return Array.from(set);
+    }, [items]);
+
+    const toggleFeature = (featureTypeName, featureName) => {
+        setSelectedFeatures(prev => {
+            const newSelected = { ...prev };
+            if (!newSelected[featureTypeName]) newSelected[featureTypeName] = new Set();
+            if (newSelected[featureTypeName].has(featureName)) {
+                newSelected[featureTypeName].delete(featureName);
+                if (newSelected[featureTypeName].size === 0) delete newSelected[featureTypeName];
+            } else {
+                newSelected[featureTypeName].add(featureName);
+            }
+            return newSelected;
+        });
+    };
+
+    const toggleManufacturer = (name) => {
+        setSelectedManufacturers(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(name)) newSet.delete(name);
+            else newSet.add(name);
+            return newSet;
+        });
+    };
+
+    const clearFilters = () => {
+        setSelectedFeatures({});
+        setSelectedManufacturers(new Set());
+        setSortOrder("");
+    };
+
+    const filteredItems = useMemo(() => {
+        if (!items.length) return [];
+        let filtered = items;
+
+        // Feature filter
+        const selectedTypes = Object.keys(selectedFeatures);
+        if (selectedTypes.length > 0) {
+            filtered = filtered.filter(item =>
+                selectedTypes.every(type =>
+                    item.itemFeatureList.some(f =>
+                        featureTypesById[f.feature.featureType?.id] === type &&
+                        selectedFeatures[type].has(f.feature.featureName)
+                    )
+                )
+            );
+        }
+
+        // Manufacturer filter
+        if (selectedManufacturers.size > 0) {
+            filtered = filtered.filter(item =>
+                selectedManufacturers.has(item.manufacturer?.manufacturerName)
+            );
+        }
+
+        // Sort by price
+        if (sortOrder === "asc") filtered = filtered.slice().sort((a,b) => a.price - b.price);
+        if (sortOrder === "desc") filtered = filtered.slice().sort((a,b) => b.price - a.price);
+
+        return filtered;
+    }, [items, selectedFeatures, featureTypesById, selectedManufacturers, sortOrder]);
+
+    if (isLoading) return <div className="text-gray-500 py-4">Loading categories...</div>;
+    if (isError) return <div className="text-red-500 py-4">Failed to load categories.</div>;
+
+    return (
+        <div className="max-w-7xl mx-auto px-4 py-4 flex gap-6">
+            {/* Sidebar */}
+            <div className="w-64 flex-shrink-0 border-r pr-4 sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto">
+                {/* Feature Filters */}
+                {selectedCategory && Object.keys(featuresByType).length > 0 && (
+                    <div className="mb-6">
+                        {Object.entries(featuresByType).map(([typeName, featureArr]) => (
+                            <div key={typeName} className="mb-4">
+                                <h4 className="font-semibold mb-1">{typeName}</h4>
+                                <div className="flex flex-col gap-1">
+                                    {featureArr.map(feature => (
+                                        <button
+                                            key={feature}
+                                            onClick={() => toggleFeature(typeName, feature)}
+                                            className={`px-3 py-1 rounded-lg border text-left transition ${
+                                                selectedFeatures[typeName]?.has(feature)
+                                                    ? "bg-green-600 text-white border-green-600"
+                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-green-50"
+                                            }`}
+                                        >
+                                            {feature}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Manufacturer Filters */}
+                {manufacturers.length > 0 && (
+                    <div className="mb-6">
+                        <h4 className="font-semibold mb-1">Manufacturer</h4>
+                        <div className="flex flex-col gap-1">
+                            {manufacturers.map(man => (
+                                <button
+                                    key={man}
+                                    onClick={() => toggleManufacturer(man)}
+                                    className={`px-3 py-1 rounded-lg border text-left transition ${
+                                        selectedManufacturers.has(man)
+                                            ? "bg-blue-600 text-white border-blue-600"
+                                            : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"
+                                    }`}
+                                >
+                                    {man}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {(Object.keys(selectedFeatures).length > 0 || selectedManufacturers.size > 0 || sortOrder) && (
+                    <button
+                        onClick={clearFilters}
+                        className="mt-2 px-3 py-1 rounded-lg border border-red-500 text-red-500 hover:bg-red-50 w-full"
+                    >
+                        Clear All Filters
+                    </button>
+                )}
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1">
+                {/* Category Buttons */}
+                <div className="flex flex-wrap gap-3 mb-4">
+                    {components.map(component => (
+                        <button
+                            key={component.id}
+                            onClick={() => { setSelectedCategory(component.id); clearFilters(); }}
+                            className={`px-4 py-2 rounded-lg border transition ${
+                                selectedCategory === component.id
+                                    ? "bg-blue-600 text-white border-blue-600"
+                                    : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"
+                            }`}
+                        >
+                            {component.componentName}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Sort Dropdown */}
+                {selectedCategory && (
+                    <div className="mb-4">
+                        <label className="mr-2 font-medium">Sort by price:</label>
+                        <select
+                            value={sortOrder}
+                            onChange={e => setSortOrder(e.target.value)}
+                            className="p-2 border rounded shadow-sm"
+                        >
+                            <option value="">Default</option>
+                            <option value="asc">Low → High</option>
+                            <option value="desc">High → Low</option>
+                        </select>
+                    </div>
+                )}
+
+                {/* Items Grid */}
+                {selectedCategory && (
+                    <div>
+                        {itemsLoading && <div className="text-gray-500 py-4">Loading items...</div>}
+                        {itemsError && <div className="text-red-500 py-4">Failed to load items.</div>}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            {filteredItems.length > 0 ? (
+                                filteredItems.map(item => (
+                                    <div
+                                        key={item.id}
+                                        onClick={() => setSelectedItem(item)} // Open modal on click
+                                        className="cursor-pointer border rounded-lg p-4 shadow hover:shadow-md transition"
+                                    >
+                                        <h3 className="font-semibold text-lg mb-2">{item.itemName}</h3>
+                                        <p>Price: LKR {item.price.toLocaleString()}</p>
+                                        <p>Quantity: {item.quantity}</p>
+                                        {item.discountPercentage > 0 && <p>Discount: {item.discountPercentage}%</p>}
+                                        <p>Power: {item.powerConsumption}W</p>
+                                        {item.manufacturer && <p>Manufacturer: {item.manufacturer.manufacturerName}</p>}
+                                        {item.itemFeatureList.length > 0 && (
+                                            <p>Features: {item.itemFeatureList.map(f => f.feature.featureName).join(", ")}</p>
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-gray-500 col-span-full py-4">
+                                    No items match the selected filters.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Item Details Modal */}
+            {selectedItem && (
+                <ItemDetails
+                    item={selectedItem}
+                    onClose={() => setSelectedItem(null)}
+                />
+            )}
+        </div>
+    );
+};
+
+export default Categories;

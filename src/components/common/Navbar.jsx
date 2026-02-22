@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FiBell } from "react-icons/fi";
-import { formatDistanceToNow } from "date-fns";
-import { useGetNotificationsQuery, useReadNotificationsMutation } from "../../features/components/notificationsApi.js";
+import React, {useState, useRef, useEffect} from "react";
+import {Link, useLocation, useNavigate} from "react-router-dom";
+import {FiBell} from "react-icons/fi";
+import {formatDistanceToNow} from "date-fns";
+import {useGetNotificationsQuery, useReadNotificationsMutation} from "../../features/components/notificationsApi.js";
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -14,7 +14,7 @@ const Navbar = () => {
     const username = localStorage.getItem("username") || "";
     const roles = JSON.parse(localStorage.getItem("roles") || "[]");
 
-    const { data: notifications = [] } = useGetNotificationsQuery(undefined, {
+    const {data: notifications = []} = useGetNotificationsQuery(undefined, {
         skip: !token,
         pollingInterval: 10000,
     });
@@ -29,11 +29,6 @@ const Navbar = () => {
         localStorage.removeItem("roles");
         navigate("/login");
     };
-
-    const linkClass = (path) =>
-        `px-3 py-1 rounded hover:bg-gray-200 transition ${
-            location.pathname === path ? "bg-gray-200 font-semibold" : ""
-        }`;
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -52,24 +47,22 @@ const Navbar = () => {
 
         if (unreadIds.length > 0) {
             markAsRead({
-                notificationList: unreadIds.map(id => ({ id })),
+                notificationList: unreadIds.map(id => ({id})),
             });
         }
     };
 
     return (
         <nav className="bg-white shadow-md py-3 px-6 flex justify-between items-center">
+            {/* Logo */}
             <div
                 className="text-xl font-bold text-blue-600 cursor-pointer"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate("/home")}
             >
                 PrimeBuild
             </div>
 
             <div className="flex items-center space-x-4">
-                <Link to="/dashboard" className={linkClass("/dashboard")}>
-                    Dashboard
-                </Link>
 
                 {token && (
                     <div className="relative" ref={dropdownRef}>
@@ -80,15 +73,15 @@ const Navbar = () => {
                                 if (!open) handleMarkAsRead();
                             }}
                         >
-                            <FiBell />
+                            <FiBell/>
                             {unreadCount > 0 && (
-                                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                <span
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
                                     {unreadCount}
                                 </span>
                             )}
                         </div>
 
-                        {/* Dropdown */}
                         {open && (
                             <div className="absolute right-0 mt-3 w-80 bg-white shadow-lg rounded-lg border z-50">
                                 <div className="p-3 border-b font-semibold">
@@ -101,9 +94,9 @@ const Navbar = () => {
                                             No notifications
                                         </p>
                                     ) : (
-                                        [...notifications] // clone before sorting
+                                        [...notifications]
                                             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                                            .slice(0, 5) // show max 5
+                                            .slice(0, 5)
                                             .map((n) => (
                                                 <div
                                                     key={n.id}
@@ -113,7 +106,7 @@ const Navbar = () => {
                                                 >
                                                     <p>{n.message}</p>
                                                     <p className="text-xs text-gray-400 mt-1">
-                                                        {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                                                        {formatDistanceToNow(new Date(n.createdAt), {addSuffix: true})}
                                                     </p>
                                                 </div>
                                             ))

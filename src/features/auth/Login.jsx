@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useLoginMutation } from "../components/authApi.js";
 import Signup from "./Signup.jsx";
 
@@ -7,34 +7,46 @@ export default function Login() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [showSignup, setShowSignup] = useState(false);
 
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-
     const [login, { isLoading }] = useLoginMutation();
 
-    // Handle OAuth2 token redirect
+    // Handle OAuth2 redirect via backend-provided query params
     useEffect(() => {
-        const token = searchParams.get("token");
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get("token");
+        const usernameParam = params.get("username");
+        const rolesParam = params.get("roles")?.split(",") || [];
+        const redirectUrl = params.get("redirectUrl"); // backend can provide full redirect URL
+
         if (token) {
             localStorage.setItem("jwtToken", token);
-            navigate("/home");
+            localStorage.setItem("username", usernameParam);
+            localStorage.setItem("roles", JSON.stringify(rolesParam));
+
+            // Redirect to backend-provided URL if available
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            }
         }
-    }, [searchParams, navigate]);
+    }, []);
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError("");
-        setSuccess("");
 
         try {
             const data = await login({ username, password }).unwrap();
+
             localStorage.setItem("jwtToken", data.jwtToken);
             localStorage.setItem("username", data.username);
             localStorage.setItem("roles", JSON.stringify(data.roles));
-            navigate("/dashboard"); //Normal Login success
+
+            // Redirect using backend-provided URL
+            if (data.redirectUrl) {
+                window.location.href = data.redirectUrl;
+            }
         } catch (err) {
             setError(err.data?.message || "Login failed");
         }
@@ -52,10 +64,9 @@ export default function Login() {
                 </h1>
 
                 {error && <p className="text-red-500 text-center">{error}</p>}
-                {success && <p className="text-green-500 text-center">{success}</p>}
 
                 {showSignup ? (
-                    <Signup onSuccess={(msg) => { setShowSignup(false); setSuccess(msg); }} />
+                    <Signup onSuccess={() => setShowSignup(false)} />
                 ) : (
                     <form onSubmit={handleLogin} className="space-y-4">
                         <input
@@ -93,24 +104,11 @@ export default function Login() {
                     </form>
                 )}
 
-                <div className="text-center mt-4">
-                    <button
-                        onClick={() => { setShowSignup(!showSignup); setError(""); setSuccess(""); }}
-                        className="text-blue-600 hover:underline text-sm"
-                    >
-                        {showSignup
-                            ? "Already have an account? Login"
-                            : "Don't have an account? Signup"}
-                    </button>
-                </div>
-
                 {!showSignup && (
-                    <div className="my-6 flex items-center">
-                        <div className="flex-grow border-t"></div>
-                        <div className="flex-grow border-t"></div>
+                    <div className="mt-6 flex flex-col items-center gap-2">
                         <button
                             onClick={handleGoogleLogin}
-                            className="w-full border border-gray-300 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center gap-2 mt-4"
+                            className="w-full border border-gray-300 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center gap-2"
                         >
                             <img
                                 src="https://www.svgrepo.com/show/475656/google-color.svg"
@@ -118,6 +116,15 @@ export default function Login() {
                                 className="w-5 h-5"
                             />
                             Continue with Google
+                        </button>
+
+                        <button
+                            onClick={() => setShowSignup(!showSignup)}
+                            className="text-blue-600 hover:underline text-sm"
+                        >
+                            {showSignup
+                                ? "Already have an account? Login"
+                                : "Don't have an account? Signup"}
                         </button>
                     </div>
                 )}
