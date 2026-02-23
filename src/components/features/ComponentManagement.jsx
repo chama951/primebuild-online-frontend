@@ -247,7 +247,7 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
                                 required
                             />
 
-                            {/* NEW: Power Source Toggle */}
+                            {/* NEW: PSUCalc Source Toggle */}
                             <div className="flex items-center justify-between p-3 border rounded">
                                 <div className="flex items-center space-x-3">
                                     <div className="flex items-center h-5">

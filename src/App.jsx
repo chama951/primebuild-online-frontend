@@ -19,7 +19,7 @@ import PrivateRoute from "./features/auth/PrivateRoute.jsx";
 import Categories from "./components/features/Categories.jsx";
 import Home from "./components/features/Home.jsx";
 import TrendingProducts from "./components/features/TrendingProducts.jsx";
-import Power from "./components/features/Power.jsx";
+import PSUCalc from "./components/features/PSUCalc.jsx";
 import Footer from "./components/features/Footer.jsx";
 
 const NotFound = () => (
@@ -53,7 +53,7 @@ const HomeLayout = () => (
         <Routes>
             <Route index element={<Home/>}/>
             <Route path="categories" element={<Categories/>}/>
-            <Route path="power" element={<Power/>}/>
+            <Route path="psucalc" element={<PSUCalc/>}/>
             <Route path="trending" element={<TrendingProducts/>}/>
             <Route path="/cart" element={<Cart />} />
         </Routes>

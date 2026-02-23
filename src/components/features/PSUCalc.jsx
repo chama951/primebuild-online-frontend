@@ -1,4 +1,4 @@
-const Power  = () => {
+const PSUCalc  = () => {
     return (
         <div>
             <h1>Power</h1>
@@ -6,4 +6,4 @@ const Power  = () => {
     );
 };
 
-export default Power ;
+export default PSUCalc ;

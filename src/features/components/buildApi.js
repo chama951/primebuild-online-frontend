@@ -1,21 +1,26 @@
-import { baseApi } from "../../services/baseApi.js";
+import {baseApi} from "../../services/baseApi.js";
 
 export const buildApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
 
         getBuilds: builder.query({
-            query: () => "/build",
+            query: () => "/build?user=all",
             providesTags: ["Build"],
         }),
 
         getCurrentUserBuilds: builder.query({
-            query: () => "/build?current_user=true",
+            query: () => "/build?user=current",
+            providesTags: ["Build"],
+        }),
+
+        getStaffMadeBuilds: builder.query({
+            query: () => "/build?user=staff",
             providesTags: ["Build"],
         }),
 
         getBuildById: builder.query({
             query: (id) => `/build/${id}`,
-            providesTags: (result, error, id) => [{ type: "Build", id }],
+            providesTags: (result, error, id) => [{type: "Build", id}],
         }),
 
         createBuild: builder.mutation({
@@ -48,6 +53,7 @@ export const buildApi = baseApi.injectEndpoints({
 });
 
 export const {
+    useGetStaffMadeBuildsQuery,
     useGetBuildsQuery,
     useGetCurrentUserBuildsQuery,
     useGetBuildByIdQuery,

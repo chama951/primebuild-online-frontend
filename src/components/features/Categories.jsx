@@ -1,22 +1,33 @@
 import React, { useState, useMemo } from "react";
 import { useGetComponentsQuery } from "../../features/components/componentApi.js";
-import { useGetItemsByComponentIdQuery } from "../../features/components/itemApi.js";
+import { useGetItemsQuery } from "../../features/components/itemApi.js";
 import { useGetFeatureTypesQuery } from "../../features/components/featureTypeApi.js";
-import ItemDetails from "./ItemDetails.jsx"; // Import modal component
+import { useGetCartQuery, useCreateOrUpdateCartMutation } from "../../features/components/cartApi.js";
+import ItemDetails from "./ItemDetails.jsx";
+import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const Categories = () => {
-    const { data: components, isLoading, isError } = useGetComponentsQuery();
+    // --- API Queries ---
+    const { data: components = [], isLoading: compLoading, isError: compError } = useGetComponentsQuery();
+    const { data: items = [], isLoading: itemsLoading, isError: itemsError } = useGetItemsQuery();
+    const { data: featureTypes = [] } = useGetFeatureTypesQuery();
+    const { data: cartData } = useGetCartQuery();
+    const [updateCart] = useCreateOrUpdateCartMutation();
+
+    // --- State ---
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedFeatures, setSelectedFeatures] = useState({});
     const [selectedManufacturers, setSelectedManufacturers] = useState(new Set());
     const [sortOrder, setSortOrder] = useState("");
-    const [selectedItem, setSelectedItem] = useState(null); // New: for modal
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
+    const [showErrorDialog, setShowErrorDialog] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 12;
 
-    const { data: items = [], isLoading: itemsLoading, isError: itemsError } =
-        useGetItemsByComponentIdQuery(selectedCategory, { skip: !selectedCategory });
-
-    const { data: featureTypes = [] } = useGetFeatureTypesQuery();
-
+    // --- Helper Maps ---
     const featureTypesById = useMemo(() => {
         const map = {};
         featureTypes.forEach(ft => { map[ft.id] = ft.featureTypeName; });
@@ -24,95 +35,112 @@ const Categories = () => {
     }, [featureTypes]);
 
     const featuresByType = useMemo(() => {
-        if (!items.length) return {};
         const map = {};
-        items.forEach(item => {
-            item.itemFeatureList.forEach(f => {
-                const typeName = featureTypesById[f.feature.featureType?.id] || "Other";
-                if (!map[typeName]) map[typeName] = new Set();
-                map[typeName].add(f.feature.featureName);
+        items
+            .filter(item => !selectedCategory || item.component?.id === selectedCategory)
+            .forEach(item => {
+                item.itemFeatureList.forEach(f => {
+                    const typeName = featureTypesById[f.feature.featureType?.id] || "Other";
+                    if (!map[typeName]) map[typeName] = new Set();
+                    map[typeName].add(f.feature.featureName);
+                });
             });
-        });
         Object.keys(map).forEach(k => map[k] = Array.from(map[k]));
         return map;
-    }, [items, featureTypesById]);
+    }, [items, featureTypesById, selectedCategory]);
 
     const manufacturers = useMemo(() => {
         const set = new Set();
-        items.forEach(item => {
-            if (item.manufacturer?.manufacturerName) set.add(item.manufacturer.manufacturerName);
-        });
+        items
+            .filter(item => !selectedCategory || item.component?.id === selectedCategory)
+            .forEach(item => { if (item.manufacturer?.manufacturerName) set.add(item.manufacturer.manufacturerName); });
         return Array.from(set);
-    }, [items]);
+    }, [items, selectedCategory]);
 
-    const toggleFeature = (featureTypeName, featureName) => {
+    // --- Handlers ---
+    const toggleFeature = (typeName, featureName) => {
         setSelectedFeatures(prev => {
             const newSelected = { ...prev };
-            if (!newSelected[featureTypeName]) newSelected[featureTypeName] = new Set();
-            if (newSelected[featureTypeName].has(featureName)) {
-                newSelected[featureTypeName].delete(featureName);
-                if (newSelected[featureTypeName].size === 0) delete newSelected[featureTypeName];
-            } else {
-                newSelected[featureTypeName].add(featureName);
-            }
+            if (newSelected[typeName] === featureName) delete newSelected[typeName];
+            else newSelected[typeName] = featureName;
             return newSelected;
         });
+        setCurrentPage(1);
     };
 
-    const toggleManufacturer = (name) => {
+    const toggleManufacturer = name => {
         setSelectedManufacturers(prev => {
             const newSet = new Set(prev);
             if (newSet.has(name)) newSet.delete(name);
             else newSet.add(name);
             return newSet;
         });
+        setCurrentPage(1);
     };
 
     const clearFilters = () => {
         setSelectedFeatures({});
         setSelectedManufacturers(new Set());
         setSortOrder("");
+        setCurrentPage(1);
     };
 
+    const handleAddToCart = async (item) => {
+        try {
+            const existingItems = cartData?.cartItemList || [];
+            const updatedItemList = existingItems.map(ci => ({ id: ci.item.id, quantity: ci.cartQuantity }));
+            const index = updatedItemList.findIndex(ci => ci.id === item.id);
+            if (index !== -1) updatedItemList[index].quantity += 1;
+            else updatedItemList.push({ id: item.id, quantity: 1 });
+            await updateCart({ itemList: updatedItemList }).unwrap();
+            setSuccessMessage(`Added ${item.itemName} to cart`);
+            setShowSuccessDialog(true);
+        } catch (err) {
+            setErrorMessage(err?.data?.message || "Failed to add to cart");
+            setShowErrorDialog(true);
+        }
+    };
+
+    // --- Filtered & Sorted Items ---
     const filteredItems = useMemo(() => {
-        if (!items.length) return [];
         let filtered = items;
 
-        // Feature filter
+        if (selectedCategory) filtered = filtered.filter(item => item.component?.id === selectedCategory);
+
         const selectedTypes = Object.keys(selectedFeatures);
         if (selectedTypes.length > 0) {
             filtered = filtered.filter(item =>
                 selectedTypes.every(type =>
                     item.itemFeatureList.some(f =>
                         featureTypesById[f.feature.featureType?.id] === type &&
-                        selectedFeatures[type].has(f.feature.featureName)
+                        selectedFeatures[type] === f.feature.featureName
                     )
                 )
             );
         }
 
-        // Manufacturer filter
         if (selectedManufacturers.size > 0) {
-            filtered = filtered.filter(item =>
-                selectedManufacturers.has(item.manufacturer?.manufacturerName)
-            );
+            filtered = filtered.filter(item => selectedManufacturers.has(item.manufacturer?.manufacturerName));
         }
 
-        // Sort by price
-        if (sortOrder === "asc") filtered = filtered.slice().sort((a,b) => a.price - b.price);
-        if (sortOrder === "desc") filtered = filtered.slice().sort((a,b) => b.price - a.price);
+        if (sortOrder === "asc") filtered = filtered.slice().sort((a, b) => a.price - b.price);
+        if (sortOrder === "desc") filtered = filtered.slice().sort((a, b) => b.price - a.price);
 
         return filtered;
-    }, [items, selectedFeatures, featureTypesById, selectedManufacturers, sortOrder]);
+    }, [items, selectedCategory, selectedFeatures, featureTypesById, selectedManufacturers, sortOrder]);
 
-    if (isLoading) return <div className="text-gray-500 py-4">Loading categories...</div>;
-    if (isError) return <div className="text-red-500 py-4">Failed to load categories.</div>;
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    // --- Loading / Error States ---
+    if (compLoading || itemsLoading) return <div className="text-gray-500 py-4">Loading...</div>;
+    if (compError || itemsError) return <div className="text-red-500 py-4">Failed to load data.</div>;
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-4 flex gap-6">
-            {/* Sidebar */}
+
+            {/* Sidebar Filters */}
             <div className="w-64 flex-shrink-0 border-r pr-4 sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto">
-                {/* Feature Filters */}
                 {selectedCategory && Object.keys(featuresByType).length > 0 && (
                     <div className="mb-6">
                         {Object.entries(featuresByType).map(([typeName, featureArr]) => (
@@ -124,7 +152,7 @@ const Categories = () => {
                                             key={feature}
                                             onClick={() => toggleFeature(typeName, feature)}
                                             className={`px-3 py-1 rounded-lg border text-left transition ${
-                                                selectedFeatures[typeName]?.has(feature)
+                                                selectedFeatures[typeName] === feature
                                                     ? "bg-green-600 text-white border-green-600"
                                                     : "bg-white text-gray-700 border-gray-300 hover:bg-green-50"
                                             }`}
@@ -138,7 +166,6 @@ const Categories = () => {
                     </div>
                 )}
 
-                {/* Manufacturer Filters */}
                 {manufacturers.length > 0 && (
                     <div className="mb-6">
                         <h4 className="font-semibold mb-1">Manufacturer</h4>
@@ -172,8 +199,19 @@ const Categories = () => {
 
             {/* Main Content */}
             <div className="flex-1">
-                {/* Category Buttons */}
+
+                {/* Category Tabs */}
                 <div className="flex flex-wrap gap-3 mb-4">
+                    <button
+                        onClick={() => { setSelectedCategory(null); clearFilters(); }}
+                        className={`px-4 py-2 rounded-lg border transition ${
+                            selectedCategory === null
+                                ? "bg-blue-600 text-white border-blue-600"
+                                : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"
+                        }`}
+                    >
+                        All
+                    </button>
                     {components.map(component => (
                         <button
                             key={component.id}
@@ -189,7 +227,7 @@ const Categories = () => {
                     ))}
                 </div>
 
-                {/* Sort Dropdown */}
+                {/* Sorting */}
                 {selectedCategory && (
                     <div className="mb-4">
                         <label className="mr-2 font-medium">Sort by price:</label>
@@ -206,47 +244,100 @@ const Categories = () => {
                 )}
 
                 {/* Items Grid */}
-                {selectedCategory && (
-                    <div>
-                        {itemsLoading && <div className="text-gray-500 py-4">Loading items...</div>}
-                        {itemsError && <div className="text-red-500 py-4">Failed to load items.</div>}
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                            {filteredItems.length > 0 ? (
-                                filteredItems.map(item => (
-                                    <div
-                                        key={item.id}
-                                        onClick={() => setSelectedItem(item)} // Open modal on click
-                                        className="cursor-pointer border rounded-lg p-4 shadow hover:shadow-md transition"
-                                    >
-                                        <h3 className="font-semibold text-lg mb-2">{item.itemName}</h3>
-                                        <p>Price: LKR {item.price.toLocaleString()}</p>
-                                        <p>Quantity: {item.quantity}</p>
-                                        {item.discountPercentage > 0 && <p>Discount: {item.discountPercentage}%</p>}
-                                        <p>Power: {item.powerConsumption}W</p>
-                                        {item.manufacturer && <p>Manufacturer: {item.manufacturer.manufacturerName}</p>}
-                                        {item.itemFeatureList.length > 0 && (
-                                            <p>Features: {item.itemFeatureList.map(f => f.feature.featureName).join(", ")}</p>
-                                        )}
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="text-gray-500 col-span-full py-4">
-                                    No items match the selected filters.
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {paginatedItems.length > 0 ? paginatedItems.map(item => {
+                        const discountedPrice = item.price * (1 - item.discountPercentage / 100);
+                        return (
+                            <div
+                                key={item.id}
+                                className="border rounded-lg p-3 shadow hover:shadow-md transition flex flex-col justify-between h-108 bg-white cursor-pointer"
+                                onClick={() => setSelectedItem(item)}
+                            >
+                                <div className="overflow-hidden">
+                                    <h3 className="font-semibold text-md line-clamp-2">{item.itemName}</h3>
                                 </div>
-                            )}
-                        </div>
+                                <div>
+                                    Image
+                                </div>
+                                <div className="flex flex-col justify-end mt-2">
+                                    {item.discountPercentage > 0 ? (
+                                        <div className="mb-1">
+                                            <p className="text-sm text-gray-400 line-through">
+                                                LKR {item.price.toLocaleString()}
+                                            </p>
+                                            <p className="text-sm text-green-600 font-semibold">
+                                                LKR {discountedPrice.toLocaleString()}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-600 mb-1">
+                                            Price: LKR {item.price.toLocaleString()}
+                                        </p>
+                                    )}
+                                    {item.manufacturer && (
+                                        <p className="text-xs text-gray-500 mb-1">{item.manufacturer.manufacturerName}</p>
+                                    )}
+                                    {item.itemFeatureList.length > 0 && (
+                                        <p className="text-xs text-gray-500 mb-1">
+                                            {item.itemFeatureList.map(f => f.feature.featureName).join(", ")}
+                                        </p>
+                                    )}
+                                    <button
+                                        onClick={e => { e.stopPropagation(); handleAddToCart(item); }}
+                                        className="mt-1 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                                    >
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    }) : (
+                        <div className="text-gray-500 col-span-full py-4">No items match the selected filters.</div>
+                    )}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="flex justify-center gap-2 mt-4">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+                        >
+                            Prev
+                        </button>
+                        {[...Array(totalPages)].map((_, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setCurrentPage(idx + 1)}
+                                className={`px-3 py-1 border rounded ${currentPage === idx + 1 ? "bg-blue-600 text-white" : "hover:bg-gray-100"}`}
+                            >
+                                {idx + 1}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+                        >
+                            Next
+                        </button>
                     </div>
                 )}
             </div>
 
             {/* Item Details Modal */}
-            {selectedItem && (
-                <ItemDetails
-                    item={selectedItem}
-                    onClose={() => setSelectedItem(null)}
-                />
-            )}
+            {selectedItem && <ItemDetails item={selectedItem} onClose={() => setSelectedItem(null)} />}
+
+            {/* Notifications */}
+            <NotificationDialogs
+                showSuccessDialog={showSuccessDialog}
+                setShowSuccessDialog={() => setShowSuccessDialog(false)}
+                successMessage={successMessage}
+                showErrorDialog={showErrorDialog}
+                setShowErrorDialog={() => setShowErrorDialog(false)}
+                errorMessage={errorMessage}
+            />
         </div>
     );
 };
