@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ShoppingCart } from "lucide-react";
 
 import Categories from "./Categories.jsx";
@@ -6,29 +6,38 @@ import PSUCalc from "./PSUCalc.jsx";
 import TrendingProducts from "./TrendingProducts.jsx";
 import BuildCart from "./BuildCart.jsx";
 import Cart from "./Cart.jsx";
-import Footer from "./Footer.jsx";
-
-import { useGetCartQuery } from "../../features/components/cartApi.js";
 import Builds from "./Builds.jsx";
+import Footer from "./Footer.jsx";
+import { useGetCartQuery } from "../../features/components/cartApi.js";
 
 const tabs = [
     { id: "categories", label: "Categories" },
-    { id: "power", label: "PSU Calculator " },
+    { id: "power", label: "PSU Calculator" },
     { id: "trending", label: "Trending Products" },
     { id: "build", label: "Build Your PC" },
-    { id: "prebuilds", label: "Builds" },
-    { id: "cart", label: "Cart" }
+    { id: "prebuilds", label: "Builds" }
 ];
 
 const Home = () => {
     const [activeTab, setActiveTab] = useState("categories");
     const [showMiniCart, setShowMiniCart] = useState(false);
+    const cartRef = useRef(null);
 
-    const { data: cartData, isLoading } = useGetCartQuery();
+    const { data: cartData } = useGetCartQuery();
     const cartItems = cartData?.cartItemList || [];
-    const cartCount = cartItems.reduce((sum, item) => sum + item.cartQuantity, 0);
+    const cartCount = cartItems.reduce((sum, i) => sum + i.cartQuantity, 0);
     const totalAmount = cartData?.totalAmount || 0;
     const totalDiscount = cartData?.discountAmount || 0;
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (cartRef.current && !cartRef.current.contains(event.target)) {
+                setShowMiniCart(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const renderSection = () => {
         switch (activeTab) {
@@ -49,110 +58,87 @@ const Home = () => {
         }
     };
 
-    const toggleMiniCart = () => setShowMiniCart(!showMiniCart);
-
-    const goToCart = () => {
-        setActiveTab("cart");
-        setShowMiniCart(false);
-    };
-
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
-
-            <div className="bg-white border-b shadow-sm sticky top-0 z-40">
-                <div className="max-w-7xl mx-auto px-4 relative flex items-center justify-between py-3">
-
-                    <div className="flex gap-4 flex-wrap">
-                        {tabs
-                            .filter(tab => tab.id !== "cart") // hide cart from main tab list
-                            .map((tab) => {
-                                const isActive = activeTab === tab.id;
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={`relative px-6 py-2 text-sm font-medium rounded-full transition-all duration-300
-                                            ${isActive
-                                            ? "bg-blue-100 text-blue-700 font-semibold shadow-sm"
-                                            : "text-gray-600 hover:bg-gray-100 hover:text-blue-600"
-                                        }`}
-                                    >
-                                        {tab.label}
-                                        {isActive && (
-                                            <span className="absolute left-4 right-4 bottom-0 h-0.5 bg-blue-600 rounded-full"></span>
-                                        )}
-                                    </button>
-                                );
-                            })}
+            {/* Header */}
+            <header className="bg-white shadow sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+                    {/* Tabs */}
+                    <div className="flex gap-2 flex-wrap">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-5 py-2 text-sm font-semibold rounded-full transition ${
+                                    activeTab === tab.id
+                                        ? "bg-blue-500 text-white shadow"
+                                        : "bg-gray-100 text-gray-700 hover:bg-blue-100 hover:text-blue-600"
+                                }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
 
-                    <div className="relative">
+                    {/* Mini Cart */}
+                    <div className="relative" ref={cartRef}>
                         <button
-                            onClick={toggleMiniCart}
-                            className="relative p-2 rounded-full hover:bg-gray-100 transition"
+                            onClick={() => setShowMiniCart(!showMiniCart)}
+                            className="relative p-2 rounded-full hover:bg-gray-100"
                         >
                             <ShoppingCart className="w-6 h-6 text-gray-700" />
-                            {!isLoading && cartCount > 0 && (
+                            {cartCount > 0 && (
                                 <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                                    {cartCount}
-                                </span>
+                  {cartCount}
+                </span>
                             )}
                         </button>
 
                         {showMiniCart && cartItems.length > 0 && (
                             <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-lg border z-50">
-                                <div className="p-3 border-b font-semibold">Cart Items</div>
-
+                                <div className="p-2 border-b font-semibold text-gray-700">Cart Items</div>
                                 <div className="max-h-64 overflow-y-auto">
                                     {cartItems.map(item => (
-                                        <div key={item.id} className="flex justify-between items-center p-2 border-b text-sm">
-                                            <div>
+                                        <div key={item.id} className="flex flex-col p-2 border-b text-sm">
+                                            <div className="flex justify-between">
                                                 <p className="font-medium">{item.item.itemName}</p>
-                                                <p className="text-gray-500 text-xs">
-                                                    Qty: {item.cartQuantity} x Rs. {item.unitPrice?.toLocaleString()}
-                                                </p>
-                                                <p className="text-green-600 text-xs">
-                                                    Discount: Rs. {item.discountSubTotal?.toLocaleString()}
-                                                </p>
+                                                <div className="font-medium">
+                                                    Rs. {(item.cartQuantity * item.unitPrice - (item.discountSubTotal || 0))?.toLocaleString()}
+                                                </div>
                                             </div>
-                                            <div className="font-medium">
-                                                Rs. {(item.cartQuantity * item.unitPrice - item.discountSubTotal)?.toLocaleString()}
+                                            <div className="flex justify-between text-gray-500 text-xs mt-1">
+                                                <span>Qty: {item.cartQuantity} × Rs. {item.unitPrice?.toLocaleString()}</span>
+                                                <span>Discount: Rs. {(item.discountSubTotal || 0)?.toLocaleString()}</span>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-
                                 <div className="p-3 border-t text-sm flex flex-col gap-1">
                                     <div className="flex justify-between font-medium">
                                         <span>Total Discount:</span>
                                         <span className="text-green-600">Rs. {totalDiscount?.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between font-medium">
-                                        <span>Total:</span>
+                                        <span>Total Amount:</span>
                                         <span>Rs. {totalAmount?.toLocaleString()}</span>
                                     </div>
                                 </div>
-
-                                <div className="p-3 flex gap-2">
+                                <div className="p-2 flex gap-2">
                                     <button
-                                        onClick={goToCart}
-                                        className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                                        onClick={() => setActiveTab("cart")}
+                                        className="flex-1 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                                     >
                                         Go to Cart
-                                    </button>
-                                    <button
-                                        className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-50 transition"
-                                    >
-                                        Checkout
                                     </button>
                                 </div>
                             </div>
                         )}
                     </div>
                 </div>
-            </div>
+            </header>
 
-            <main className="flex-grow max-w-7xl mx-auto w-full px-4 py-10 transition-all duration-300">
+            {/* Main Content */}
+            <main className="flex-grow max-w-7xl mx-auto w-full px-4 py-8">
                 {renderSection()}
             </main>
 

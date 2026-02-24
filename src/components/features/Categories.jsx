@@ -7,17 +7,15 @@ import ItemDetails from "./ItemDetails.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const Categories = () => {
-    // --- API Queries ---
     const { data: components = [], isLoading: compLoading, isError: compError } = useGetComponentsQuery();
     const { data: items = [], isLoading: itemsLoading, isError: itemsError } = useGetItemsQuery();
     const { data: featureTypes = [] } = useGetFeatureTypesQuery();
     const { data: cartData } = useGetCartQuery();
     const [updateCart] = useCreateOrUpdateCartMutation();
 
-    // --- State ---
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedFeatures, setSelectedFeatures] = useState({});
-    const [selectedManufacturers, setSelectedManufacturers] = useState(new Set());
+    const [selectedManufacturer, setSelectedManufacturer] = useState(""); // Only single manufacturer
     const [sortOrder, setSortOrder] = useState("");
     const [selectedItem, setSelectedItem] = useState(null);
     const [showSuccessDialog, setShowSuccessDialog] = useState(false);
@@ -27,7 +25,6 @@ const Categories = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 12;
 
-    // --- Helper Maps ---
     const featureTypesById = useMemo(() => {
         const map = {};
         featureTypes.forEach(ft => { map[ft.id] = ft.featureTypeName; });
@@ -57,7 +54,6 @@ const Categories = () => {
         return Array.from(set);
     }, [items, selectedCategory]);
 
-    // --- Handlers ---
     const toggleFeature = (typeName, featureName) => {
         setSelectedFeatures(prev => {
             const newSelected = { ...prev };
@@ -68,19 +64,15 @@ const Categories = () => {
         setCurrentPage(1);
     };
 
-    const toggleManufacturer = name => {
-        setSelectedManufacturers(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(name)) newSet.delete(name);
-            else newSet.add(name);
-            return newSet;
-        });
+    // Only single manufacturer selection
+    const toggleManufacturer = (name) => {
+        setSelectedManufacturer(prev => (prev === name ? "" : name));
         setCurrentPage(1);
     };
 
     const clearFilters = () => {
         setSelectedFeatures({});
-        setSelectedManufacturers(new Set());
+        setSelectedManufacturer("");
         setSortOrder("");
         setCurrentPage(1);
     };
@@ -101,7 +93,6 @@ const Categories = () => {
         }
     };
 
-    // --- Filtered & Sorted Items ---
     const filteredItems = useMemo(() => {
         let filtered = items;
 
@@ -119,20 +110,19 @@ const Categories = () => {
             );
         }
 
-        if (selectedManufacturers.size > 0) {
-            filtered = filtered.filter(item => selectedManufacturers.has(item.manufacturer?.manufacturerName));
+        if (selectedManufacturer) {
+            filtered = filtered.filter(item => item.manufacturer?.manufacturerName === selectedManufacturer);
         }
 
         if (sortOrder === "asc") filtered = filtered.slice().sort((a, b) => a.price - b.price);
         if (sortOrder === "desc") filtered = filtered.slice().sort((a, b) => b.price - a.price);
 
         return filtered;
-    }, [items, selectedCategory, selectedFeatures, featureTypesById, selectedManufacturers, sortOrder]);
+    }, [items, selectedCategory, selectedFeatures, featureTypesById, selectedManufacturer, sortOrder]);
 
     const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
     const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-    // --- Loading / Error States ---
     if (compLoading || itemsLoading) return <div className="text-gray-500 py-4">Loading...</div>;
     if (compError || itemsError) return <div className="text-red-500 py-4">Failed to load data.</div>;
 
@@ -175,7 +165,7 @@ const Categories = () => {
                                     key={man}
                                     onClick={() => toggleManufacturer(man)}
                                     className={`px-3 py-1 rounded-lg border text-left transition ${
-                                        selectedManufacturers.has(man)
+                                        selectedManufacturer === man
                                             ? "bg-blue-600 text-white border-blue-600"
                                             : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"
                                     }`}
@@ -187,7 +177,7 @@ const Categories = () => {
                     </div>
                 )}
 
-                {(Object.keys(selectedFeatures).length > 0 || selectedManufacturers.size > 0 || sortOrder) && (
+                {(Object.keys(selectedFeatures).length > 0 || selectedManufacturer || sortOrder) && (
                     <button
                         onClick={clearFilters}
                         className="mt-2 px-3 py-1 rounded-lg border border-red-500 text-red-500 hover:bg-red-50 w-full"
@@ -197,10 +187,9 @@ const Categories = () => {
                 )}
             </div>
 
-            {/* Main Content */}
+            {/* Items Grid */}
             <div className="flex-1">
 
-                {/* Category Tabs */}
                 <div className="flex flex-wrap gap-3 mb-4">
                     <button
                         onClick={() => { setSelectedCategory(null); clearFilters(); }}
@@ -227,7 +216,6 @@ const Categories = () => {
                     ))}
                 </div>
 
-                {/* Sorting */}
                 {selectedCategory && (
                     <div className="mb-4">
                         <label className="mr-2 font-medium">Sort by price:</label>
@@ -243,7 +231,6 @@ const Categories = () => {
                     </div>
                 )}
 
-                {/* Items Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {paginatedItems.length > 0 ? paginatedItems.map(item => {
                         const discountedPrice = item.price * (1 - item.discountPercentage / 100);
@@ -296,7 +283,6 @@ const Categories = () => {
                     )}
                 </div>
 
-                {/* Pagination */}
                 {totalPages > 1 && (
                     <div className="flex justify-center gap-2 mt-4">
                         <button
@@ -326,10 +312,8 @@ const Categories = () => {
                 )}
             </div>
 
-            {/* Item Details Modal */}
             {selectedItem && <ItemDetails item={selectedItem} onClose={() => setSelectedItem(null)} />}
 
-            {/* Notifications */}
             <NotificationDialogs
                 showSuccessDialog={showSuccessDialog}
                 setShowSuccessDialog={() => setShowSuccessDialog(false)}

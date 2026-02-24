@@ -60,5 +60,4 @@ export const {
     useCreateFeatureMutation,
     useUpdateFeatureMutation,
     useDeleteFeatureMutation,
-    useGetItemByIdMutation,
 } = featureApi;
