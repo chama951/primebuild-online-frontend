@@ -1,10 +1,21 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useGetCartQuery, useCreateOrUpdateCartMutation } from "../../features/components/cartApi";
+import { useIncrementViewCountMutation } from "../../features/components/itemAnalyticsApi";
 
 const ItemDetails = ({ item, onClose }) => {
     const { data: cartData } = useGetCartQuery();
     const [updateCart] = useCreateOrUpdateCartMutation();
+    const [incrementViewCount] = useIncrementViewCountMutation();
     const [showMessage, setShowMessage] = useState("");
+
+    // Increment view on modal open
+    useEffect(() => {
+        if (item?.id) {
+            incrementViewCount(item.id)
+                .unwrap()
+                .catch((err) => console.error("Failed to increment view:", err));
+        }
+    }, [item, incrementViewCount]);
 
     if (!item) return null;
 
@@ -13,10 +24,7 @@ const ItemDetails = ({ item, onClose }) => {
         item.itemFeatureList.forEach((f) => {
             const typeName = f.feature.featureType?.featureTypeName || "Other";
             if (!map[typeName]) map[typeName] = [];
-            map[typeName].push({
-                name: f.feature.featureName,
-                slotCount: f.slotCount,
-            });
+            map[typeName].push({ name: f.feature.featureName, slotCount: f.slotCount });
         });
         return map;
     }, [item]);
@@ -44,22 +52,15 @@ const ItemDetails = ({ item, onClose }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-start pt-12 overflow-auto">
             <div className="bg-white rounded-lg shadow-md max-w-md w-full p-6 relative">
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-2xl"
-                >
-                    ×
-                </button>
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-2xl">×</button>
 
                 <h2 className="text-2xl font-semibold mb-2 text-gray-800">{item.itemName}</h2>
 
-                <p className="text-gray-500 mb-2 text-sm">
-                    {item.manufacturer ? (
-                        <>
-                            Manufacturer: <span className="font-medium text-gray-700">{item.manufacturer.manufacturerName}</span>
-                        </>
-                    ) : null}
-                </p>
+                {item.manufacturer && (
+                    <p className="text-gray-500 mb-2 text-sm">
+                        Manufacturer: <span className="font-medium text-gray-700">{item.manufacturer.manufacturerName}</span>
+                    </p>
+                )}
 
                 {item.component && (
                     <p className="text-gray-500 mb-2 text-sm">
@@ -96,18 +97,11 @@ const ItemDetails = ({ item, onClose }) => {
                     )}
                 </p>
 
-                <button
-                    onClick={handleAddToCart}
-                    className="mt-4 w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium text-sm"
-                >
+                <button onClick={handleAddToCart} className="mt-4 w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium text-sm">
                     Add to Cart
                 </button>
 
-                {showMessage && (
-                    <div className="mt-3 px-4 py-2 bg-green-100 text-green-800 rounded text-sm">
-                        {showMessage}
-                    </div>
-                )}
+                {showMessage && <div className="mt-3 px-4 py-2 bg-green-100 text-green-800 rounded text-sm">{showMessage}</div>}
             </div>
         </div>
     );

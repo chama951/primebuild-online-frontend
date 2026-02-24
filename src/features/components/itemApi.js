@@ -54,5 +54,5 @@ export const {
     useCreateItemMutation,
     useUpdateItemMutation,
     useDeleteItemMutation,
-    useGetItemByIdMutation,
+    useGetItemByIdQuery,
 } = itemApi;

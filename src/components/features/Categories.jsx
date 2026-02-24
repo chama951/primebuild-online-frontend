@@ -15,7 +15,7 @@ const Categories = () => {
 
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedFeatures, setSelectedFeatures] = useState({});
-    const [selectedManufacturer, setSelectedManufacturer] = useState(""); // Only single manufacturer
+    const [selectedManufacturer, setSelectedManufacturer] = useState("");
     const [sortOrder, setSortOrder] = useState("");
     const [selectedItem, setSelectedItem] = useState(null);
     const [showSuccessDialog, setShowSuccessDialog] = useState(false);
@@ -27,7 +27,7 @@ const Categories = () => {
 
     const featureTypesById = useMemo(() => {
         const map = {};
-        featureTypes.forEach(ft => { map[ft.id] = ft.featureTypeName; });
+        featureTypes.forEach(ft => map[ft.id] = ft.featureTypeName);
         return map;
     }, [featureTypes]);
 
@@ -64,7 +64,6 @@ const Categories = () => {
         setCurrentPage(1);
     };
 
-    // Only single manufacturer selection
     const toggleManufacturer = (name) => {
         setSelectedManufacturer(prev => (prev === name ? "" : name));
         setCurrentPage(1);
@@ -110,15 +109,13 @@ const Categories = () => {
             );
         }
 
-        if (selectedManufacturer) {
-            filtered = filtered.filter(item => item.manufacturer?.manufacturerName === selectedManufacturer);
-        }
+        if (selectedManufacturer) filtered = filtered.filter(item => item.manufacturer?.manufacturerName === selectedManufacturer);
 
-        if (sortOrder === "asc") filtered = filtered.slice().sort((a, b) => a.price - b.price);
-        if (sortOrder === "desc") filtered = filtered.slice().sort((a, b) => b.price - a.price);
+        if (sortOrder === "asc") filtered.sort((a, b) => a.price - b.price);
+        if (sortOrder === "desc") filtered.sort((a, b) => b.price - a.price);
 
         return filtered;
-    }, [items, selectedCategory, selectedFeatures, featureTypesById, selectedManufacturer, sortOrder]);
+    }, [items, selectedCategory, selectedFeatures, selectedManufacturer, sortOrder, featureTypesById]);
 
     const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
     const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -129,23 +126,40 @@ const Categories = () => {
     return (
         <div className="max-w-7xl mx-auto px-4 py-4 flex gap-6">
 
-            {/* Sidebar Filters */}
-            <div className="w-64 flex-shrink-0 border-r pr-4 sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto">
-                {selectedCategory && Object.keys(featuresByType).length > 0 && (
-                    <div className="mb-6">
+            <div className="w-64 flex-shrink-0 border-r pr-4 sticky top-4 flex flex-col gap-6">
+
+                {/* Categories */}
+                <div>
+                    <h4 className="font-semibold mb-2">Components</h4>
+                    <button
+                        onClick={() => { setSelectedCategory(null); clearFilters(); }}
+                        className={`px-3 py-2 rounded-lg border text-left mb-2 w-full transition ${selectedCategory === null ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"}`}
+                    >
+                        All
+                    </button>
+                    {components.map(component => (
+                        <button
+                            key={component.id}
+                            onClick={() => { setSelectedCategory(component.id); setCurrentPage(1); }}
+                            className={`px-3 py-2 rounded-lg border text-left mb-2 w-full transition ${selectedCategory === component.id ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"}`}
+                        >
+                            {component.componentName}
+                        </button>
+                    ))}
+                </div>
+
+                {Object.keys(featuresByType).length > 0 && (
+                    <div>
+                        <h4 className="font-semibold mb-2">Features</h4>
                         {Object.entries(featuresByType).map(([typeName, featureArr]) => (
-                            <div key={typeName} className="mb-4">
-                                <h4 className="font-semibold mb-1">{typeName}</h4>
+                            <div key={typeName} className="mb-3">
+                                <h5 className="font-medium mb-1">{typeName}</h5>
                                 <div className="flex flex-col gap-1">
                                     {featureArr.map(feature => (
                                         <button
                                             key={feature}
                                             onClick={() => toggleFeature(typeName, feature)}
-                                            className={`px-3 py-1 rounded-lg border text-left transition ${
-                                                selectedFeatures[typeName] === feature
-                                                    ? "bg-green-600 text-white border-green-600"
-                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-green-50"
-                                            }`}
+                                            className={`px-3 py-1 rounded-lg border text-left transition ${selectedFeatures[typeName] === feature ? "bg-green-600 text-white border-green-600" : "bg-white border-gray-300 hover:bg-green-50"}`}
                                         >
                                             {feature}
                                         </button>
@@ -157,18 +171,14 @@ const Categories = () => {
                 )}
 
                 {manufacturers.length > 0 && (
-                    <div className="mb-6">
-                        <h4 className="font-semibold mb-1">Manufacturer</h4>
+                    <div>
+                        <h4 className="font-semibold mb-2">Manufacturer</h4>
                         <div className="flex flex-col gap-1">
                             {manufacturers.map(man => (
                                 <button
                                     key={man}
                                     onClick={() => toggleManufacturer(man)}
-                                    className={`px-3 py-1 rounded-lg border text-left transition ${
-                                        selectedManufacturer === man
-                                            ? "bg-blue-600 text-white border-blue-600"
-                                            : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"
-                                    }`}
+                                    className={`px-3 py-1 rounded-lg border text-left transition ${selectedManufacturer === man ? "bg-blue-600 text-white border-blue-600" : "bg-white border-gray-300 hover:bg-blue-50"}`}
                                 >
                                     {man}
                                 </button>
@@ -176,6 +186,19 @@ const Categories = () => {
                         </div>
                     </div>
                 )}
+
+                <div className="mt-4">
+                    <label className="font-medium mb-1 block">Sort by price:</label>
+                    <select
+                        value={sortOrder}
+                        onChange={e => setSortOrder(e.target.value)}
+                        className="p-2 border rounded shadow-sm w-full"
+                    >
+                        <option value="">Default</option>
+                        <option value="asc">Low → High</option>
+                        <option value="desc">High → Low</option>
+                    </select>
+                </div>
 
                 {(Object.keys(selectedFeatures).length > 0 || selectedManufacturer || sortOrder) && (
                     <button
@@ -187,50 +210,7 @@ const Categories = () => {
                 )}
             </div>
 
-            {/* Items Grid */}
             <div className="flex-1">
-
-                <div className="flex flex-wrap gap-3 mb-4">
-                    <button
-                        onClick={() => { setSelectedCategory(null); clearFilters(); }}
-                        className={`px-4 py-2 rounded-lg border transition ${
-                            selectedCategory === null
-                                ? "bg-blue-600 text-white border-blue-600"
-                                : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"
-                        }`}
-                    >
-                        All
-                    </button>
-                    {components.map(component => (
-                        <button
-                            key={component.id}
-                            onClick={() => { setSelectedCategory(component.id); clearFilters(); }}
-                            className={`px-4 py-2 rounded-lg border transition ${
-                                selectedCategory === component.id
-                                    ? "bg-blue-600 text-white border-blue-600"
-                                    : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"
-                            }`}
-                        >
-                            {component.componentName}
-                        </button>
-                    ))}
-                </div>
-
-                {selectedCategory && (
-                    <div className="mb-4">
-                        <label className="mr-2 font-medium">Sort by price:</label>
-                        <select
-                            value={sortOrder}
-                            onChange={e => setSortOrder(e.target.value)}
-                            className="p-2 border rounded shadow-sm"
-                        >
-                            <option value="">Default</option>
-                            <option value="asc">Low → High</option>
-                            <option value="desc">High → Low</option>
-                        </select>
-                    </div>
-                )}
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {paginatedItems.length > 0 ? paginatedItems.map(item => {
                         const discountedPrice = item.price * (1 - item.discountPercentage / 100);
@@ -240,34 +220,20 @@ const Categories = () => {
                                 className="border rounded-lg p-3 shadow hover:shadow-md transition flex flex-col justify-between h-108 bg-white cursor-pointer"
                                 onClick={() => setSelectedItem(item)}
                             >
-                                <div className="overflow-hidden">
-                                    <h3 className="font-semibold text-md line-clamp-2">{item.itemName}</h3>
-                                </div>
-                                <div>
-                                    Image
-                                </div>
+                                <h3 className="font-semibold text-md line-clamp-2">{item.itemName}</h3>
+                                <div>Image</div>
                                 <div className="flex flex-col justify-end mt-2">
                                     {item.discountPercentage > 0 ? (
                                         <div className="mb-1">
-                                            <p className="text-sm text-gray-400 line-through">
-                                                LKR {item.price.toLocaleString()}
-                                            </p>
-                                            <p className="text-sm text-green-600 font-semibold">
-                                                LKR {discountedPrice.toLocaleString()}
-                                            </p>
+                                            <p className="text-sm text-gray-400 line-through">LKR {item.price.toLocaleString()}</p>
+                                            <p className="text-sm text-green-600 font-semibold">LKR {discountedPrice.toLocaleString()}</p>
                                         </div>
                                     ) : (
-                                        <p className="text-sm text-gray-600 mb-1">
-                                            Price: LKR {item.price.toLocaleString()}
-                                        </p>
+                                        <p className="text-sm text-gray-600 mb-1">Price: LKR {item.price.toLocaleString()}</p>
                                     )}
-                                    {item.manufacturer && (
-                                        <p className="text-xs text-gray-500 mb-1">{item.manufacturer.manufacturerName}</p>
-                                    )}
+                                    {item.manufacturer && <p className="text-xs text-gray-500 mb-1">{item.manufacturer.manufacturerName}</p>}
                                     {item.itemFeatureList.length > 0 && (
-                                        <p className="text-xs text-gray-500 mb-1">
-                                            {item.itemFeatureList.map(f => f.feature.featureName).join(", ")}
-                                        </p>
+                                        <p className="text-xs text-gray-500 mb-1">{item.itemFeatureList.map(f => f.feature.featureName).join(", ")}</p>
                                     )}
                                     <button
                                         onClick={e => { e.stopPropagation(); handleAddToCart(item); }}
@@ -285,29 +251,11 @@ const Categories = () => {
 
                 {totalPages > 1 && (
                     <div className="flex justify-center gap-2 mt-4">
-                        <button
-                            onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
-                        >
-                            Prev
-                        </button>
+                        <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50">Prev</button>
                         {[...Array(totalPages)].map((_, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => setCurrentPage(idx + 1)}
-                                className={`px-3 py-1 border rounded ${currentPage === idx + 1 ? "bg-blue-600 text-white" : "hover:bg-gray-100"}`}
-                            >
-                                {idx + 1}
-                            </button>
+                            <button key={idx} onClick={() => setCurrentPage(idx + 1)} className={`px-3 py-1 border rounded ${currentPage === idx + 1 ? "bg-blue-600 text-white" : "hover:bg-gray-100"}`}>{idx + 1}</button>
                         ))}
-                        <button
-                            onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
-                        >
-                            Next
-                        </button>
+                        <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50">Next</button>
                     </div>
                 )}
             </div>

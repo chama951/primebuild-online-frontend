@@ -4,48 +4,45 @@ export const compatibilityApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
 
         getCompatibleItemsByComponent: builder.query({
-            query: ({ componentId, selectedItems }) => {
-                console.log('Sending to backend:', {
-                    componentId,
-                    itemListCount: selectedItems?.length || 0,
-                    selectedItems
-                });
+            query: ({componentId, selectedItems}) => {
+                const body = {
+                    itemList: selectedItems?.map((i) => ({id: i.id})) || [],
+                };
+
+                console.log("Sending to backend:", {componentId, body});
 
                 return {
                     url: `/compatibility`,
-                    params: { component: componentId },
+                    params: {component: componentId},
                     method: 'POST',
-                    body: {
-                        itemList: selectedItems || [] // Send full item objects
-                    }
+                    body,
                 };
             },
-            providesTags: (result, error, { componentId }) => [
-                { type: 'CompatibleItems', id: componentId }
+            providesTags: (result, error, {componentId}) => [
+                {type: 'CompatibleItems', id: componentId}
             ],
         }),
 
         getCompatiblePowerSources: builder.query({
-            query: ({ componentId, selectedItems }) => {
-                console.log('Sending to backend:', {
-                    componentId,
-                    itemListCount: selectedItems?.length || 0,
-                    selectedItems
-                });
+            query: ({componentId, selectedItems}) => {
+                const body = {
+                    itemList: selectedItems?.map((i) => ({id: i.id})) || [],
+                };
+
+                console.log("Sending to backend (power sources):", {componentId, body});
 
                 return {
                     url: `/compatibility/power_source`,
-                    params: { component: componentId },
+                    params: {component: componentId},
                     method: 'POST',
-                    body: {
-                        itemList: selectedItems || [] // Send full item objects
-                    }
+                    body,
                 };
             },
-            providesTags: (result, error, { componentId }) => [
-                { type: 'CompatibleItems', id: componentId }
+            providesTags: (result, error, {componentId}) => [
+                {type: 'CompatibleItems', id: componentId}
             ],
         }),
+
     }),
 });
 
