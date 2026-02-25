@@ -1,4 +1,3 @@
-// components/ComponentFeatureSection.jsx
 import { useState } from "react";
 import {
     useGetFeatureTypesQuery,
@@ -11,7 +10,6 @@ import {
     useCreateComponentFeatureTypeMutation,
     useDeleteComponentFeatureTypeMutation,
 } from "../../../features/components/componentFeatureTypeApi.js";
-
 const ComponentFeatureSection = ({
                                      selectedComponent,
                                      showNotification,
@@ -26,12 +24,12 @@ const ComponentFeatureSection = ({
     // API hooks
     const { data: allFeatureTypes = [], refetch: refetchAllFeatureTypes } = useGetFeatureTypesQuery();
     const { data: componentFeatureTypes = [], refetch: refetchComponentFeatureTypes } =
-        useGetComponentFeatureTypesByComponentIdQuery(selectedComponent?.id || null, {
+        useGetComponentFeatureTypesByComponentIdQuery(selectedComponent?.id, {
             skip: !selectedComponent,
         });
 
     // Mutations
-    const [createFeatureType] = useSaveFeatureTypeMutation();
+    const [saveFeatureType] = useSaveFeatureTypeMutation();
     const [updateFeatureType] = useUpdateFeatureTypeMutation();
     const [deleteFeatureType] = useDeleteFeatureTypeMutation();
     const [createComponentFeatureType] = useCreateComponentFeatureTypeMutation();
@@ -49,22 +47,25 @@ const ComponentFeatureSection = ({
 
         setIsSubmitting(true);
         try {
-            const result = await createFeatureType({ featureTypeName: newFeatureTypeName.trim() }).unwrap();
+            const result = await saveFeatureType({
+                featureTypeName: newFeatureTypeName.trim()
+            }).unwrap();
 
             if (selectedComponent) {
                 await createComponentFeatureType({
                     componentId: selectedComponent.id,
                     featureTypeId: result.id,
                 }).unwrap();
-                await refetchComponentFeatureTypes();
             }
 
             await refetchAllFeatureTypes();
+            await refetchComponentFeatureTypes();
+
             setNewFeatureTypeName("");
-            showNotification("success", "Feature type created and assigned!");
+            showNotification("success", result.message || "Feature type created and assigned!");
         } catch (error) {
             console.error("Error creating feature type:", error);
-            showNotification("error", "Error creating feature type.");
+            showNotification("error", error.data?.message || "Error creating feature type.");
         } finally {
             setIsSubmitting(false);
         }
@@ -81,12 +82,14 @@ const ComponentFeatureSection = ({
             }).unwrap();
 
             await refetchAllFeatureTypes();
+            await refetchComponentFeatureTypes();
+
             setEditingFeatureType(null);
             setNewFeatureTypeName("");
             showNotification("success", "Feature type updated!");
         } catch (error) {
             console.error("Error updating feature type:", error);
-            showNotification("error", "Error updating feature type.");
+            showNotification("error", error.data?.message || "Error updating feature type.");
         } finally {
             setIsSubmitting(false);
         }
@@ -104,7 +107,9 @@ const ComponentFeatureSection = ({
                 }).unwrap();
                 showNotification("success", "Feature type added!");
             } else {
-                const componentFeatureType = componentFeatureTypes.find((cft) => cft.featureType?.id === featureType.id);
+                const componentFeatureType = componentFeatureTypes.find(
+                    (cft) => cft.featureType?.id === featureType.id
+                );
                 if (componentFeatureType) {
                     await deleteComponentFeatureType(componentFeatureType.id).unwrap();
                     showNotification("success", "Feature type removed!");
@@ -114,7 +119,7 @@ const ComponentFeatureSection = ({
             await refetchComponentFeatureTypes();
         } catch (error) {
             console.error("Error toggling feature type:", error);
-            showNotification("error", "Error updating feature type assignment.");
+            showNotification("error", error.data?.message || "Error updating feature type assignment.");
         } finally {
             setIsSubmitting(false);
         }
@@ -123,8 +128,17 @@ const ComponentFeatureSection = ({
     const handleDeleteFeatureType = (featureType) => {
         showNotification("error", `Are you sure you want to delete "${featureType.featureTypeName}"?`, {
             callback: async () => {
-                await deleteFeatureType(featureType.id).unwrap();
-                await refetchAllFeatureTypes();
+                try {
+                    const response = await deleteFeatureType(featureType.id).unwrap();
+
+                    await refetchAllFeatureTypes();
+                    await refetchComponentFeatureTypes();
+
+                    showNotification("success", response.message || "Feature type deleted!");
+                } catch (error) {
+                    console.error("Error deleting feature type:", error);
+                    throw error;
+                }
             },
             successMessage: "Feature type deleted!",
             errorMessage: "Error deleting feature type.",
@@ -176,14 +190,14 @@ const ComponentFeatureSection = ({
                             <button
                                 onClick={handleEditFeatureType}
                                 disabled={isSubmitting || !editingFeatureType.featureTypeName.trim()}
-                                className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                                className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 whitespace-nowrap"
                             >
                                 Save
                             </button>
                             <button
                                 onClick={handleCancelEdit}
                                 disabled={isSubmitting}
-                                className="px-3 py-2 border border-gray-300 text-sm rounded hover:bg-gray-50"
+                                className="px-3 py-2 border border-gray-300 text-sm rounded hover:bg-gray-50 whitespace-nowrap"
                             >
                                 Cancel
                             </button>
@@ -192,7 +206,7 @@ const ComponentFeatureSection = ({
                         <button
                             onClick={handleCreateFeatureType}
                             disabled={isSubmitting || !newFeatureTypeName.trim()}
-                            className="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                            className="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 whitespace-nowrap"
                         >
                             Add
                         </button>
@@ -227,10 +241,10 @@ const ComponentFeatureSection = ({
                                             isAssigned ? "bg-green-50 border-green-200" : "bg-white hover:bg-gray-50"
                                         } ${isEditing ? "bg-blue-50 border-blue-200" : ""}`}
                                     >
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
                                             <div
                                                 onClick={() => handleToggleFeatureType(featureType, !isAssigned)}
-                                                className={`w-4 h-4 border rounded flex items-center justify-center cursor-pointer ${
+                                                className={`w-4 h-4 border rounded flex items-center justify-center cursor-pointer flex-shrink-0 ${
                                                     isAssigned
                                                         ? "bg-green-500 border-green-600"
                                                         : "border-gray-300 bg-white hover:bg-gray-100"
@@ -238,20 +252,24 @@ const ComponentFeatureSection = ({
                                             >
                                                 {isAssigned && "✓"}
                                             </div>
-                                            <span className="text-sm">{featureType.featureTypeName}</span>
+                                            <span className="text-sm truncate" title={featureType.featureTypeName}>
+                                                {featureType.featureTypeName}
+                                            </span>
                                         </div>
-                                        <div className="flex gap-1">
+                                        <div className="flex gap-0.5 ml-2">
                                             <button
                                                 onClick={() => handleStartEditFeatureType(featureType)}
-                                                className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                                className="px-1.5 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                                title="Edit"
                                             >
-                                                Edit
+                                                ✎
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteFeatureType(featureType)}
-                                                className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                                                className="px-1.5 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                                                title="Delete"
                                             >
-                                                Delete
+                                                🗑
                                             </button>
                                         </div>
                                     </div>
@@ -259,6 +277,12 @@ const ComponentFeatureSection = ({
                             })}
                         </div>
                     )}
+                </div>
+            )}
+
+            {allFeatureTypes.length === 0 && (
+                <div className="text-center py-4 text-gray-500 text-sm">
+                    No feature types available
                 </div>
             )}
         </div>

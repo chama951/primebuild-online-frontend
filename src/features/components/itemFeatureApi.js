@@ -56,6 +56,7 @@ export const itemFeatureApi = baseApi.injectEndpoints({
 });
 
 export const {
+    useGetItemFeaturesQuery,
     useCreateItemFeatureMutation,
     useDeleteItemFeatureMutation,
     useUpdateItemFeatureMutation

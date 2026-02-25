@@ -1,5 +1,5 @@
-import {useState} from "react";
-import ItemListTable from "../common/ItemListTable.jsx";
+import {useEffect, useState} from "react";
+import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import ComponentFeatureSection from "./component/ComponentFeatureSection.jsx";
 import {
@@ -8,8 +8,9 @@ import {
     useUpdateComponentMutation,
     useSaveComponentMutation,
 } from "../../features/components/componentApi.js";
+import Unauthorized from "../common/Unauthorized.jsx";
 
-const ComponentManagement = () => {
+const ComponentManagement = ({refetchFlag, resetFlag}) => {
     // State
     const [selectedComponent, setSelectedComponent] = useState(null);
     const [componentName, setComponentName] = useState("");
@@ -22,14 +23,38 @@ const ComponentManagement = () => {
         message: "",
         action: null,
     });
+    const [buildPriority, setBuildPriority] = useState("");
+    const [powerSource, setPowerSource] = useState(""); // powerSource
 
     // API hooks (only component-related)
-    const {data: components = [], refetch: refetchComponents} = useGetComponentsQuery();
+    const {
+        data: components = [],
+        error: componentsError, refetch:
+            refetchComponents
+    }
+        = useGetComponentsQuery();
 
     // Mutations (only component-related)
     const [saveComponent] = useSaveComponentMutation();
     const [updateComponent] = useUpdateComponentMutation();
     const [deleteComponent] = useDeleteComponentMutation();
+
+    useEffect(() => {
+        if (refetchFlag) {
+            refetchComponents();    // actually trigger the API refetch
+            resetFlag();  // reset the flag after refetch
+        }
+    }, [refetchFlag]);
+
+// Check unauthorized
+    const isUnauthorized = () => {
+        const errors = [componentsError];
+        return errors.some(err => err?.isUnauthorized);
+    };
+
+    if (isUnauthorized()) {
+        return <Unauthorized/>;
+    }
 
     // Computed values
     const filteredComponents = components.filter((component) =>
@@ -46,11 +71,15 @@ const ComponentManagement = () => {
             const {callback} = notification.action;
             setIsSubmitting(true);
             try {
-                await callback();
-                showNotification("success", notification.action.successMessage || "Action completed!");
+                const result = await callback();
+                // Use response message for success if available
+                const successMessage = result?.data?.message || notification.action.successMessage || "Action completed!";
+                showNotification("success", successMessage);
             } catch (error) {
                 console.error("Error:", error);
-                showNotification("error", notification.action.errorMessage || "Error performing action.");
+                // Use error message from response
+                const errorMessage = error.data?.message || notification.action.errorMessage || "Error performing action.";
+                showNotification("error", errorMessage);
             } finally {
                 setIsSubmitting(false);
                 setNotification((prev) => ({...prev, action: null}));
@@ -68,27 +97,35 @@ const ComponentManagement = () => {
 
         setIsSubmitting(true);
         try {
+            let response;
             if (selectedComponent) {
-                await updateComponent({
+                response = await updateComponent({
                     id: selectedComponent.id,
-                    componentName: componentName.trim(),
-                    buildComponent: isBuildComponent,
+                    data: {
+                        componentName: componentName.trim(),
+                        buildComponent: isBuildComponent,
+                        buildPriority: buildPriority ? buildPriority.valueOf() : 1,
+                        powerSource: powerSource ? powerSource : false, //powerSource
+                    }
                 }).unwrap();
-                showNotification("success", "Component updated successfully!");
             } else {
-                await saveComponent({
+                response = await saveComponent({
                     componentName: componentName.trim(),
                     buildComponent: isBuildComponent,
-                    componentFeatureTypeList: [],
+                    buildPriority: buildPriority ? buildPriority.valueOf() : 1,
+                    powerSource: powerSource ? powerSource : false, // powerSource
                 }).unwrap();
-                showNotification("success", "Component created successfully!");
             }
+
+            // Show success message from API response
+            showNotification("success", response.message || "Operation completed successfully!");
 
             handleResetForm();
             refetchComponents();
         } catch (error) {
             console.error("Error saving component:", error);
-            showNotification("error", "Error saving component.");
+            // Show error message from API response
+            showNotification("error", error.data?.message || "An error occurred while saving.");
         } finally {
             setIsSubmitting(false);
         }
@@ -98,30 +135,46 @@ const ComponentManagement = () => {
         setSelectedComponent(component);
         setComponentName(component.componentName);
         setIsBuildComponent(component.buildComponent ?? false);
+        setBuildPriority(component.buildPriority);
+        setPowerSource(component.powerSource ?? false); // powerSource
     };
 
     const handleResetForm = () => {
         setSelectedComponent(null);
         setComponentName("");
         setIsBuildComponent(false);
+        setBuildPriority("");
+        setPowerSource("");
     };
 
     const handleDeleteComponent = (component) => {
         showNotification("error", `Are you sure you want to delete "${component.componentName}"?`, {
             callback: async () => {
-                await deleteComponent(component.id).unwrap();
-                refetchComponents();
-                if (selectedComponent?.id === component.id) {
-                    handleResetForm();
+                try {
+                    const response = await deleteComponent(component.id).unwrap();
+                    refetchComponents();
+                    if (selectedComponent?.id === component.id) {
+                        handleResetForm();
+                    }
+                    // Return response to handleConfirmAction to extract message
+                    return response;
+                } catch (error) {
+                    console.error("Error deleting component:", error);
+                    throw error; // Re-throw to be caught by handleConfirmAction
                 }
             },
-            successMessage: "Component deleted!",
-            errorMessage: "Error deleting component.",
+            successMessage: "Component deleted successfully!", // Fallback if API doesn't return message
+            errorMessage: "Error deleting component.", // Fallback if API doesn't return message
         });
     };
 
-    // Table columns
+    // DataTable columns
     const columns = [
+        {
+            key: "id",
+            header: "ID",
+            render: (item) => <div className="text-sm text-gray-500">#{item.id}</div>,
+        },
         {
             key: "componentName",
             header: "Component Name",
@@ -129,7 +182,7 @@ const ComponentManagement = () => {
         },
         {
             key: "isBuildComponent",
-            header: "Build Component",
+            header: "Build",
             render: (item) => (
                 <span
                     className={`px-2 py-1 rounded text-xs ${item.buildComponent ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
@@ -138,16 +191,14 @@ const ComponentManagement = () => {
             ),
         },
         {
-            key: "id",
-            header: "ID",
-            render: (item) => <div className="text-sm text-gray-500">#{item.id}</div>,
+            key: "Priority",
+            header: "Priority",
+            render: (item) => <div className="text-sm text-gray-500">{item.buildPriority}</div>,
         },
     ];
 
     return (
         <div className="container mx-auto p-4 space-y-6">
-            <h1 className="text-2xl font-bold">Component Management</h1>
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column: Components List */}
                 <div className="lg:col-span-2 space-y-4">
@@ -171,14 +222,14 @@ const ComponentManagement = () => {
                         </div>
                     </div>
 
-                    <ItemListTable
+                    <DataTable
                         items={filteredComponents}
                         selectedItem={selectedComponent}
                         onSelectItem={handleSelectComponent}
                         onDeleteItemClick={handleDeleteComponent}
                         isLoading={false}
                         columns={columns}
-                        emptyMessage="No components found"
+                        emptyMessage="No components found" // DataTable component handles this internally
                     />
                 </div>
 
@@ -196,23 +247,57 @@ const ComponentManagement = () => {
                                 required
                             />
 
-                            {/* Build Component Toggle */}
-                            <div className="flex items-center space-x-3 p-3 border rounded ">
-                                <div className="flex items-center h-5">
-                                    <input
-                                        id="is-build-component"
-                                        type="checkbox"
-                                        disabled={isSubmitting || !componentName.trim()}
-                                        checked={isBuildComponent}
-                                        onChange={(e) => setIsBuildComponent(e.target.checked)}
-                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                    />
+                            {/* NEW: PSUCalc Source Toggle */}
+                            <div className="flex items-center justify-between p-3 border rounded">
+                                <div className="flex items-center space-x-3">
+                                    <div className="flex items-center h-5">
+                                        <input
+                                            id="power-source"
+                                            type="checkbox"
+                                            checked={powerSource}
+                                            disabled={isSubmitting || !componentName.trim()}
+                                            onChange={(e) => setPowerSource(e.target.checked)}
+                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <label htmlFor="power-source" className="font-medium text-gray-700">
+                                        Power Source
+                                    </label>
                                 </div>
-                                <div className="flex flex-col">
+                            </div>
+
+                            {/* Build Component Toggle - Compact */}
+                            <div className="flex items-center justify-between p-3 border rounded">
+                                <div className="flex items-center space-x-3">
+                                    <div className="flex items-center h-5">
+                                        <input
+                                            id="is-build-component"
+                                            type="checkbox"
+                                            disabled={isSubmitting || !componentName.trim()}
+                                            checked={isBuildComponent}
+                                            onChange={(e) => setIsBuildComponent(e.target.checked)}
+                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                    </div>
                                     <label htmlFor="is-build-component" className="font-medium text-gray-700">
                                         Build Component
                                     </label>
                                 </div>
+
+                                {isBuildComponent && (
+                                    <div className="w-20">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="99"
+                                            value={buildPriority}
+                                            onChange={(e) => setBuildPriority(parseInt(e.target.value) || 1)}
+                                            disabled={isSubmitting}
+                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="Priority"
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex gap-2">

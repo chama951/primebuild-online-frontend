@@ -1,14 +1,15 @@
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {
     useGetManufacturersQuery,
     useSaveManufacturerMutation,
     useUpdateManufacturerMutation,
     useDeleteManufacturerMutation,
 } from "../../features/components/manufacturerApi.js";
-import ItemListTable from "../common/ItemListTable.jsx";
+import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
+import Unauthorized from "../common/Unauthorized.jsx";
 
-const ManufacturerManagement = () => {
+const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
     // state
     const [selectedManufacturer, setSelectedManufacturer] = useState(null);
     const [manufacturerName, setManufacturerName] = useState("");
@@ -24,15 +25,34 @@ const ManufacturerManagement = () => {
     });
 
     // api hooks
-    const {data: manufacturersData = [], refetch: refetchManufacturers} = useGetManufacturersQuery();
+    const {
+        data: manufacturersData = [],
+        error: manufacturersError,
+        refetch: refetchManufacturers
+    } = useGetManufacturersQuery();
 
-    // Mutations
     const [createManufacturer] = useSaveManufacturerMutation();
     const [updateManufacturer] = useUpdateManufacturerMutation();
     const [deleteManufacturer] = useDeleteManufacturerMutation();
 
-    // values and objects
-    // Safe data handling
+    useEffect(() => {
+        if (refetchFlag) {
+            refetchManufacturers();
+            resetFlag();
+        }
+    }, [refetchFlag]);
+
+    // Check unauthorized
+    const isUnauthorized = () => {
+        const errors = [manufacturersError];
+        return errors.some(err => err?.isUnauthorized);
+    };
+
+    if (isUnauthorized()) {
+        return <Unauthorized/>;
+    }
+
+
     const manufacturers = Array.isArray(manufacturersData)
         ? manufacturersData
             .filter((m) => m != null && m.id != null)
@@ -42,12 +62,10 @@ const ManufacturerManagement = () => {
             }))
         : [];
 
-    // Filter manufacturers based on search term
     const filteredManufacturers = manufacturers.filter((manufacturer) =>
         manufacturer.manufacturerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // notification handlers
     const showNotification = (type, message, action = null) => {
         setNotification({show: true, type, message, action});
     };
@@ -57,11 +75,13 @@ const ManufacturerManagement = () => {
             const {callback} = notification.action;
             setIsSubmitting(true);
             try {
-                await callback();
-                showNotification("success", notification.action.successMessage || "Action completed!");
+                const result = await callback();
+                const successMessage = result?.data?.message || notification.action.successMessage || "Action completed!";
+                showNotification("success", successMessage);
             } catch (error) {
                 console.error("Error:", error);
-                showNotification("error", notification.action.errorMessage || "Error performing action.");
+                const errorMessage = error.data?.message || notification.action.errorMessage || "Error performing action.";
+                showNotification("error", errorMessage);
             } finally {
                 setIsSubmitting(false);
                 setNotification((prev) => ({...prev, action: null}));
@@ -69,7 +89,6 @@ const ManufacturerManagement = () => {
         }
     };
 
-    // handlers
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!manufacturerName.trim()) {
@@ -79,24 +98,25 @@ const ManufacturerManagement = () => {
 
         setIsSubmitting(true);
         try {
+            let response;
             if (selectedManufacturer) {
-                await updateManufacturer({
+                response = await updateManufacturer({
                     id: selectedManufacturer.id,
                     manufacturerName: manufacturerName.trim(),
                 }).unwrap();
-                showNotification("success", "Manufacturer updated successfully!");
             } else {
-                await createManufacturer({
+                response = await createManufacturer({
                     manufacturerName: manufacturerName.trim(),
                 }).unwrap();
-                showNotification("success", "Manufacturer created successfully!");
             }
+
+            showNotification("success", response.message || "Operation completed successfully!");
 
             handleResetForm();
             refetchManufacturers();
         } catch (error) {
             console.error("Error saving manufacturer:", error);
-            showNotification("error", "Error saving manufacturer.");
+            showNotification("error", error.data?.message || "An error occurred while saving.");
         } finally {
             setIsSubmitting(false);
         }
@@ -113,12 +133,19 @@ const ManufacturerManagement = () => {
     };
 
     const handleDeleteManufacturer = (manufacturer) => {
+
         showNotification("error", `Are you sure you want to delete "${manufacturer.manufacturerName}"?`, {
             callback: async () => {
-                await deleteManufacturer(manufacturer.id).unwrap();
-                refetchManufacturers();
-                if (selectedManufacturer?.id === manufacturer.id) {
-                    handleResetForm();
+                try {
+                    const response = await deleteManufacturer(manufacturer.id).unwrap();
+                    refetchManufacturers();
+                    if (selectedManufacturer?.id === manufacturer.id) {
+                        handleResetForm();
+                    }
+                    return response;
+                } catch (error) {
+                    console.error("Error deleting manufacturer:", error);
+                    throw error;
                 }
             },
             successMessage: "Manufacturer deleted successfully!",
@@ -126,24 +153,21 @@ const ManufacturerManagement = () => {
         });
     };
 
-    // render
     const columns = [
-        {
-            key: "manufacturerName",
-            header: "Manufacturer Name",
-            render: (item) => <div className="text-sm font-medium">{item.manufacturerName}</div>,
-        },
         {
             key: "id",
             header: "ID",
             render: (item) => <div className="text-sm text-gray-500">#{item.id}</div>,
         },
+        {
+            key: "manufacturerName",
+            header: "Manufacturer Name",
+            render: (item) => <div className="text-sm font-medium">{item.manufacturerName}</div>,
+        },
     ];
 
     return (
         <div className="container mx-auto p-4 space-y-6">
-            <h1 className="text-2xl font-bold">Manufacturer Management</h1>
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column: Manufacturer List */}
                 <div className="lg:col-span-2 space-y-4">
@@ -167,7 +191,7 @@ const ManufacturerManagement = () => {
                         </div>
                     </div>
 
-                    <ItemListTable
+                    <DataTable
                         items={filteredManufacturers}
                         selectedItem={selectedManufacturer}
                         onSelectItem={handleSelectManufacturer}

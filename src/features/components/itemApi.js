@@ -50,8 +50,9 @@ export const itemApi = baseApi.injectEndpoints({
 
 export const {
     useGetItemsQuery,
-    useGetItemByIdQuery,
+    useGetItemsByComponentIdQuery,
     useCreateItemMutation,
     useUpdateItemMutation,
     useDeleteItemMutation,
+    useGetItemByIdQuery,
 } = itemApi;
