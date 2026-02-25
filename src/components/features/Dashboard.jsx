@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect} from "react";
 import {
     Cpu,
-    Building,
+    Factory,
     Package,
     Settings,
     Users,
@@ -12,7 +12,10 @@ import {
     UserCog,
     CreditCard,
     UserCircle,
-    TrendingUp
+    TrendingUp,
+    DollarSign,
+    ChartSpline,
+    ChartPie
 } from "lucide-react";
 
 import ComponentManagement from "./ComponentManagement.jsx";
@@ -25,6 +28,9 @@ import MyAccount from "./MyAccount.jsx";
 import InvoiceManagement from "./InvoiceManagement.jsx";
 import PaymentManagement from "./PaymentManagement.jsx";
 import Reports from "./Reports.jsx";
+import ExchangeRate from "./ExchangeRate.jsx";
+import ItemData from "./ItemData.jsx";
+import ItemAnalytics from "./ItemAnalytics.jsx";
 
 const Dashboard = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -41,7 +47,10 @@ const Dashboard = () => {
         myAccount: false,
         invoices: false,
         payments: false,
-        reports: false
+        reports: false,
+        exchangeRate: false,
+        itemData: false,
+        itemAnalytics: false,
     });
 
     useEffect(() => {
@@ -56,51 +65,92 @@ const Dashboard = () => {
             invoices: "invoices",
             payments: "payments",
             reports: "reports",
+            exchangeRate: "exchangeRate",
+            itemData: "itemData",
+            itemAnalytics: "itemAnalytics",
         };
         const flag = flagMap[activePage];
         if (flag) {
-            setRefetchFlags(prev => ({ ...prev, [flag]: true }));
+            setRefetchFlags(prev => ({...prev, [flag]: true}));
         }
     }, [activePage]);
 
     const navigation = [
-        { id: "manufacturers", label: "Manufacturers", icon: Building },
-        { id: "components", label: "Components", icon: Cpu },
-        { id: "items", label: "Items", icon: Package },
-        { id: "build", label: "Build", icon: Settings },
-        { id: "users", label: "Users", icon: Users },
-        { id: "roles", label: "Roles", icon: UserCog },
-        { id: "invoices", label: "Invoices", icon: FileText },
-        { id: "payments", label: "Payments", icon: CreditCard },
-        { id: "myAccount", label: "My Account", icon: UserCircle },
-        { id: "reports", label: "Reports", icon: TrendingUp },
+        {id: "manufacturers", label: "Manufacturers", icon: Factory},
+        {id: "components", label: "Components", icon: Cpu},
+        {id: "items", label: "Items", icon: Package},
+        {id: "build", label: "Build", icon: Settings},
+        {id: "users", label: "Users", icon: Users},
+        {id: "roles", label: "Roles", icon: UserCog},
+        {id: "invoices", label: "Invoices", icon: FileText},
+        {id: "payments", label: "Payments", icon: CreditCard},
+        {id: "reports", label: "Reports", icon: TrendingUp},
+        {id: "exchangeRate", label: "Exchange Rate", icon: DollarSign},
+        {id: "itemData", label: "Item Data", icon: ChartSpline},
+        {id: "itemAnalytics", label: "Item Analytics", icon: ChartPie},
+        {id: "myAccount", label: "My Account", icon: UserCircle},
     ];
 
     const renderContent = () => {
         switch (activePage) {
             case "components":
-                return <ComponentManagement refetchFlag={refetchFlags.components} resetFlag={() => setRefetchFlags(prev => ({ ...prev, components: false }))} />;
+                return <ComponentManagement refetchFlag={refetchFlags.components}
+                                            resetFlag={() => setRefetchFlags(prev => ({...prev, components: false}))}/>;
             case "manufacturers":
-                return <ManufacturerManagement refetchFlag={refetchFlags.manufacturers} resetFlag={() => setRefetchFlags(prev => ({ ...prev, manufacturers: false }))} />;
+                return <ManufacturerManagement refetchFlag={refetchFlags.manufacturers}
+                                               resetFlag={() => setRefetchFlags(prev => ({
+                                                   ...prev,
+                                                   manufacturers: false
+                                               }))}/>;
             case "items":
-                return <ItemManagement refetchFlag={refetchFlags.items} resetFlag={() => setRefetchFlags(prev => ({ ...prev, items: false }))} />;
+                return <ItemManagement refetchFlag={refetchFlags.items}
+                                       resetFlag={() => setRefetchFlags(prev => ({...prev, items: false}))}/>;
             case "build":
-                return <BuildCart refetchFlag={refetchFlags.build} resetFlag={() => setRefetchFlags(prev => ({ ...prev, build: false }))} />;
+                return <BuildCart refetchFlag={refetchFlags.build}
+                                  resetFlag={() => setRefetchFlags(prev => ({...prev, build: false}))}/>;
             case "roles":
-                return <RoleManagement refetchFlag={refetchFlags.roles} resetFlag={() => setRefetchFlags(prev => ({ ...prev, roles: false }))} />;
+                return <RoleManagement refetchFlag={refetchFlags.roles}
+                                       resetFlag={() => setRefetchFlags(prev => ({...prev, roles: false}))}/>;
             case "users":
-                return <UserManagement refetchFlag={refetchFlags.users} resetFlag={() => setRefetchFlags(prev => ({ ...prev, users: false }))} />;
+                return <UserManagement refetchFlag={refetchFlags.users}
+                                       resetFlag={() => setRefetchFlags(prev => ({...prev, users: false}))}/>;
             case "myAccount":
-                return <MyAccount refetchFlag={refetchFlags.myAccount} resetFlag={() => setRefetchFlags(prev => ({ ...prev, myAccount: false }))} />;
+                return <MyAccount refetchFlag={refetchFlags.myAccount}
+                                  resetFlag={() => setRefetchFlags(prev => ({...prev, myAccount: false}))}/>;
             case "invoices":
-                return <InvoiceManagement refetchFlag={refetchFlags.invoices} resetFlag={() => setRefetchFlags(prev => ({ ...prev, invoices: false }))} />;
+                return <InvoiceManagement refetchFlag={refetchFlags.invoices}
+                                          resetFlag={() => setRefetchFlags(prev => ({...prev, invoices: false}))}/>;
             case "payments":
-                return <PaymentManagement
-                    refetchFlag={refetchFlags.payments}
-                    resetFlag={() => setRefetchFlags(prev => ({ ...prev, payments: false }))}
-                />;
+                return <PaymentManagement refetchFlag={refetchFlags.payments}
+                                          resetFlag={() => setRefetchFlags(prev => ({...prev, payments: false}))}/>;
             case "reports":
-                return <Reports refetchFlag={refetchFlags.reports} resetFlag={() => setRefetchFlags(prev => ({ ...prev, reports: false }))} />;
+                return <Reports refetchFlag={refetchFlags.reports}
+                                resetFlag={() => setRefetchFlags(prev => ({...prev, reports: false}))}/>;
+            case "exchangeRate":
+                return (
+                    <ExchangeRate
+                        refetchFlag={refetchFlags.exchangeRate}
+                        resetFlag={() =>
+                            setRefetchFlags(prev => ({...prev, exchangeRate: false}))
+                        }
+                    />
+                );
+            case "itemAnalytics":
+                return (
+                    <ItemAnalytics
+                        refetchFlag={refetchFlags.itemAnalytics}
+                        resetFlag={() => setRefetchFlags(prev => ({...prev, itemAnalytics: false}))}
+                    />
+                );
+            case "itemData":
+                return (
+                    <ItemData
+                        refetchFlag={refetchFlags.itemData}
+                        resetFlag={() =>
+                            setRefetchFlags(prev => ({...prev, itemData: false}))
+                        }
+                    />
+                );
             default:
                 return (
                     <div className="p-6">
@@ -111,7 +161,8 @@ const Dashboard = () => {
                                 <div key={nav.id} className="bg-white p-6 rounded-lg shadow border">
                                     <h3 className="font-semibold text-gray-800 mb-2">{nav.label}</h3>
                                     <p className="text-gray-600 text-sm">Manage {nav.label.toLowerCase()}</p>
-                                    <button onClick={() => setActivePage(nav.id)} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                    <button onClick={() => setActivePage(nav.id)}
+                                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                                         Go to {nav.label}
                                     </button>
                                 </div>
@@ -136,7 +187,8 @@ const Dashboard = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b">
                     <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded flex items-center justify-center">
+                        <div
+                            className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded flex items-center justify-center">
                             <Cpu className="w-5 h-5 text-white"/>
                         </div>
                         {!sidebarMinimized && (
@@ -149,8 +201,8 @@ const Dashboard = () => {
                         title={sidebarMinimized ? "Expand sidebar" : "Minimize sidebar"}
                     >
                         {sidebarMinimized ?
-                            <ChevronRight className="w-5 h-5 text-gray-600" /> :
-                            <ChevronLeft className="w-5 h-5 text-gray-600" />
+                            <ChevronRight className="w-5 h-5 text-gray-600"/> :
+                            <ChevronLeft className="w-5 h-5 text-gray-600"/>
                         }
                     </button>
                 </div>
@@ -168,7 +220,7 @@ const Dashboard = () => {
                             }`}
                             title={sidebarMinimized ? item.label : ""}
                         >
-                            <item.icon className="w-5 h-5 flex-shrink-0" />
+                            <item.icon className="w-5 h-5 flex-shrink-0"/>
                             {!sidebarMinimized && (
                                 <span className="flex-1 text-left text-sm font-medium">{item.label}</span>
                             )}
@@ -180,7 +232,7 @@ const Dashboard = () => {
                 {sidebarMinimized && (
                     <div className="p-3 border-t">
                         <div className="w-8 h-8 mx-auto bg-gray-200 rounded-full flex items-center justify-center">
-                            <UserCircle className="w-4 h-4 text-gray-600" />
+                            <UserCircle className="w-4 h-4 text-gray-600"/>
                         </div>
                     </div>
                 )}
@@ -192,7 +244,7 @@ const Dashboard = () => {
                     onClick={() => setSidebarOpen(true)}
                     className="fixed top-4 left-4 lg:hidden z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50"
                 >
-                    <Menu className="w-5 h-5 text-gray-600" />
+                    <Menu className="w-5 h-5 text-gray-600"/>
                 </button>
             )}
 

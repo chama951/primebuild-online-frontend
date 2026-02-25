@@ -1,7 +1,7 @@
 import {useState, useRef, useMemo} from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import InvoicePrintTemplate from "./invoice/InvoicePrintTemplate.jsx";
+import InvoicePrintTemplate from "./InvoicePrintTemplate.jsx";
 
 const InvoiceDetails = ({invoice, onClose, onUpdate, isSubmitting}) => {
     const [invoiceStatus, setInvoiceStatus] = useState(invoice.invoiceStatus);
@@ -30,6 +30,12 @@ const InvoiceDetails = ({invoice, onClose, onUpdate, isSubmitting}) => {
 
     const handleUpdate = () => {
         onUpdate(invoiceStatus);
+    };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-LK', {
+            minimumFractionDigits: 2
+        }).format(amount);
     };
 
     return (
@@ -94,7 +100,7 @@ const InvoiceDetails = ({invoice, onClose, onUpdate, isSubmitting}) => {
                         <div className="text-lg font-semibold text-gray-800">
                             Total:{" "}
                             <span className="text-green-600">
-                                Rs {Number(totalAmount).toLocaleString()}
+                                Rs {formatCurrency(totalAmount)}
                             </span>
                         </div>
 
@@ -142,19 +148,19 @@ const InvoiceDetails = ({invoice, onClose, onUpdate, isSubmitting}) => {
                                 <p className="text-gray-600 text-sm">
                                     Unit Price:{" "}
                                     <span className="font-medium">
-                                        Rs {item.unitPrice.toLocaleString()}
+                                        Rs {formatCurrency(item.unitPrice)}
                                     </span>
                                 </p>
 
                                 {item.discountPerUnite > 0 && (
                                     <p className="text-green-600 text-sm">
                                         Discounted: Rs{" "}
-                                        {discountedUnit.toLocaleString()}
+                                        {formatCurrency(discountedUnit)}
                                     </p>
                                 )}
 
                                 <div className="mt-2 text-sm font-semibold text-gray-800">
-                                    Subtotal: Rs {item.subtotal.toLocaleString()}
+                                    Subtotal: Rs {formatCurrency(item.subtotal)}
                                 </div>
                             </div>
                         );

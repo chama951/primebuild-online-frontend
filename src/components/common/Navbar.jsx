@@ -2,7 +2,11 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FiBell } from "react-icons/fi";
 import { formatDistanceToNow } from "date-fns";
-import { useGetNotificationsQuery, useReadNotificationsMutation } from "../../features/components/notificationsApi.js";
+import {
+    useGetNotificationsQuery,
+    useReadNotificationsMutation,
+    useDeleteAllNotificationsMutation
+} from "../../features/components/notificationsApi.js";
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -20,6 +24,8 @@ const Navbar = () => {
         pollingInterval: 10000,
     });
     const [markAsRead] = useReadNotificationsMutation();
+    const [deleteAllNotifications, { isLoading: deleting }] = useDeleteAllNotificationsMutation();
+
     const unreadCount = notifications.filter(n => !n.read).length;
 
     const handleLogout = () => {
@@ -29,22 +35,21 @@ const Navbar = () => {
         navigate("/login");
     };
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
     const handleMarkAsRead = () => {
         const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
         if (unreadIds.length > 0) {
             markAsRead({
                 notificationList: unreadIds.map(id => ({ id })),
             });
+        }
+    };
+
+    const handleDeleteAll = async () => {
+        try {
+            await deleteAllNotifications().unwrap();
+            setOpen(false);
+        } catch (err) {
+            console.error("Failed to delete notifications:", err);
         }
     };
 
@@ -81,6 +86,16 @@ const Navbar = () => {
         }
     };
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     return (
         <nav className="bg-white shadow-md border border-gray-300 rounded-lg py-3 px-6 flex justify-between items-center">
             <div
@@ -110,7 +125,17 @@ const Navbar = () => {
 
                         {open && (
                             <div className="absolute right-0 mt-3 w-80 bg-white shadow-lg rounded-lg border z-50">
-                                <div className="p-3 border-b font-semibold">Notifications</div>
+                                <div className="p-3 border-b font-semibold flex justify-between items-center">
+                                    <span>Notifications</span>
+                                    <button
+                                        onClick={handleDeleteAll}
+                                        disabled={deleting}
+                                        className="text-red-500 text-sm hover:text-red-700"
+                                    >
+                                        {deleting ? "Deleting..." : "Clear All"}
+                                    </button>
+                                </div>
+
                                 <div className="max-h-96 overflow-y-auto">
                                     {notifications.length === 0 ? (
                                         <p className="p-4 text-gray-500 text-sm">No notifications</p>
@@ -125,6 +150,9 @@ const Navbar = () => {
                                                         !n.read ? "bg-blue-50 font-medium" : ""
                                                     }`}
                                                 >
+                                                    <p className="text-xm font-bold text-gray-800 hover:text-blue-600 transition-colors">
+                                                        {n.title}
+                                                    </p>
                                                     <p>{n.message}</p>
                                                     <p className="text-xs text-gray-400 mt-1">
                                                         {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
@@ -132,15 +160,6 @@ const Navbar = () => {
                                                 </div>
                                             ))
                                     )}
-                                </div>
-                                <div
-                                    className="p-2 text-center text-blue-600 text-sm cursor-pointer hover:bg-gray-50"
-                                    onClick={() => {
-                                        setOpen(false);
-                                        navigate("/notification");
-                                    }}
-                                >
-                                    View All
                                 </div>
                             </div>
                         )}

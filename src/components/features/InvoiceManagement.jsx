@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import Unauthorized from "../common/Unauthorized.jsx";
-import InvoiceDetails from "./InvoiceDetails.jsx";
+import InvoiceDetails from "./invoice/InvoiceDetails.jsx";
 
 import {
     useGetInvoicesQuery,
@@ -175,7 +175,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
             render: inv => (
                 <div >
                     <span
-                        className={`px-2 py-1 rounded text-sm font-medium ${
+                        className={`px-2 py-1 rounded text-xs font-medium ${
                             inv.invoiceStatus === "PAID"
                                 ? "bg-green-100 text-green-800"
                                 : "bg-yellow-100 text-yellow-800"
@@ -199,7 +199,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
             key: "createdAt",
             header: "Created At",
             render: inv => (
-                <div className="text-xs text-center">
+                <div className="text-xs">
                     {formatDate(inv.createdAt)}
                 </div>
             )

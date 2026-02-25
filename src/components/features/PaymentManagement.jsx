@@ -1,4 +1,5 @@
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
+import { X, Calendar, Filter } from "lucide-react";
 import {
     useGetPaymentsQuery,
     useGetPaymentsByDateQuery,
@@ -7,17 +8,14 @@ import {
     useDeletePaymentMutation,
 } from "../../features/components/paymentApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
-import {X, Calendar, Filter} from "lucide-react";
 import Unauthorized from "../common/Unauthorized.jsx";
+import PaymentDetails from "./payment/PaymentDetails.jsx";
 
-const PaymentManagement = ({refetchFlag, resetFlag}) => {
-    const [selectedPayment, setSelectedPayment] = useState(null);
+const PaymentManagement = ({ refetchFlag, resetFlag }) => {
+    const [selectedPaymentId, setSelectedPaymentId] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("");
     const [filterDate, setFilterDate] = useState("");
-    const [editingPaymentId, setEditingPaymentId] = useState(null);
-    const [editingStatus, setEditingStatus] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [notification, setNotification] = useState({
         show: false,
         type: "",
@@ -29,52 +27,37 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
         data: allPayments = [],
         isLoading: loadingAll,
         error: errorAll,
-        refetch: refetchAll
-    } = useGetPaymentsQuery(undefined, {
-        skip: filterStatus !== "" || filterDate !== ""
-    });
+        refetch: refetchAll,
+    } = useGetPaymentsQuery(undefined, { skip: filterStatus !== "" || filterDate !== "" });
 
     const {
         data: paymentsByDate = [],
         isLoading: loadingByDate,
         error: errorByDate,
-        refetch: refetchByDate
-    } = useGetPaymentsByDateQuery(filterDate, {
-        skip: !filterDate
-    });
+        refetch: refetchByDate,
+    } = useGetPaymentsByDateQuery(filterDate, { skip: !filterDate });
 
     const {
         data: paymentsByStatus = [],
         isLoading: loadingByStatus,
         error: errorByStatus,
-        refetch: refetchByStatus
-    } = useGetPaymentsByStatusQuery(filterStatus, {
-        skip: !filterStatus
-    });
+        refetch: refetchByStatus,
+    } = useGetPaymentsByStatusQuery(filterStatus, { skip: !filterStatus });
 
     const [updatePayment] = useUpdatePaymentMutation();
     const [deletePayment] = useDeletePaymentMutation();
 
     const getFilteredPayments = () => {
-        if (filterDate && filterStatus) {
-            return paymentsByDate.filter(p => p.paymentStatus === filterStatus);
-        } else if (filterDate) {
-            return paymentsByDate;
-        } else if (filterStatus) {
-            return paymentsByStatus;
-        } else {
-            return allPayments;
-        }
+        if (filterDate && filterStatus) return paymentsByDate.filter((p) => p.paymentStatus === filterStatus);
+        if (filterDate) return paymentsByDate;
+        if (filterStatus) return paymentsByStatus;
+        return allPayments;
     };
 
     const isLoading = () => {
-        if (filterDate && filterStatus) {
-            return loadingByDate || loadingByStatus;
-        } else if (filterDate) {
-            return loadingByDate;
-        } else if (filterStatus) {
-            return loadingByStatus;
-        }
+        if (filterDate && filterStatus) return loadingByDate || loadingByStatus;
+        if (filterDate) return loadingByDate;
+        if (filterStatus) return loadingByStatus;
         return loadingAll;
     };
 
@@ -90,88 +73,24 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
 
     const handleRefetch = async () => {
         try {
-            if (filterDate) {
-                await refetchByDate();
-            }
-            if (filterStatus) {
-                await refetchByStatus();
-            }
-            if (!filterDate && !filterStatus) {
-                await refetchAll();
-            }
+            if (filterDate) await refetchByDate();
+            if (filterStatus) await refetchByStatus();
+            if (!filterDate && !filterStatus) await refetchAll();
         } catch (error) {
             console.error("Error refetching:", error);
         }
     };
 
     const error = errorAll || errorByDate || errorByStatus;
-    if (error?.status === 401 || error?.status === 403) {
-        return <Unauthorized />;
-    }
+    if (error?.status === 401 || error?.status === 403) return <Unauthorized />;
 
-    const filteredPayments = basePayments.filter(payment => {
+    const filteredPayments = basePayments.filter((payment) => {
         if (!searchTerm) return true;
-
         const searchLower = searchTerm.toLowerCase();
         const username = payment.user?.username?.toLowerCase() || "";
         const email = payment.user?.email?.toLowerCase() || "";
-
         return username.includes(searchLower) || email.includes(searchLower);
     });
-
-    const handleUpdateStatus = async (paymentId) => {
-        setIsSubmitting(true);
-        try {
-            const response = await updatePayment({
-                id: paymentId,
-                paymentStatus: editingStatus
-            }).unwrap();
-
-            showNotification("success", response.message || `Payment status updated to ${editingStatus}`);
-            await handleRefetch();
-            setEditingPaymentId(null);
-            setEditingStatus("");
-
-            if (selectedPayment?.id === paymentId) {
-                setSelectedPayment(null);
-            }
-        } catch (error) {
-            console.error("Error updating payment status:", error);
-            showNotification("error", error.data?.message || "Failed to update payment status");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleEditClick = (payment) => {
-        setEditingPaymentId(payment.id);
-        setEditingStatus(payment.paymentStatus);
-    };
-
-    const handleCancelEdit = () => {
-        setEditingPaymentId(null);
-        setEditingStatus("");
-    };
-
-    const handleDeletePayment = (payment) => {
-        showNotification("error", `Are you sure you want to delete payment #${payment.id}?`, {
-            callback: async () => {
-                try {
-                    const response = await deletePayment(payment.id).unwrap();
-                    await handleRefetch();
-                    if (selectedPayment?.id === payment.id) {
-                        setSelectedPayment(null);
-                    }
-                    return response;
-                } catch (error) {
-                    console.error("Error deleting payment:", error);
-                    throw error;
-                }
-            },
-            successMessage: "Payment deleted successfully!",
-            errorMessage: "Failed to delete payment.",
-        });
-    };
 
     const handleClearFilters = () => {
         setFilterStatus("");
@@ -179,88 +98,43 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
         setSearchTerm("");
     };
 
-    const handleDateChange = (e) => {
-        setFilterDate(e.target.value);
-    };
-
-    const handleStatusChange = (e) => {
-        setFilterStatus(e.target.value);
-    };
-
     const showNotification = (type, message, action = null) => {
-        setNotification({show: true, type, message, action});
+        setNotification({ show: true, type, message, action });
     };
 
-    const handleConfirmAction = async () => {
-        if (notification.action) {
-            const {callback} = notification.action;
-            setIsSubmitting(true);
-            try {
-                const result = await callback();
-                const successMessage = result?.message || notification.action.successMessage || "Action completed!";
-                showNotification("success", successMessage);
-            } catch (error) {
-                const errorMessage = error.data?.message || notification.action.errorMessage || "Error performing action.";
-                showNotification("error", errorMessage);
-            } finally {
-                setIsSubmitting(false);
-                setNotification((prev) => ({...prev, action: null}));
-            }
-        }
-    };
+    const formatDate = (dateString) => (!dateString ? "N/A" : new Date(dateString).toLocaleString());
+
+    const formatCurrency = (amount, currency = "LKR") =>
+        new Intl.NumberFormat("en-LK", { style: "currency", currency, minimumFractionDigits: 2 }).format(amount);
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case "PAID":
-                return "bg-green-100 text-green-800 border-green-200";
-            case "PENDING":
-                return "bg-yellow-100 text-yellow-800 border-yellow-200";
-            case "CANCELLED":
-                return "bg-red-100 text-red-800 border-red-200";
-            case "REFUNDED":
-                return "bg-purple-100 text-purple-800 border-purple-200";
-            default:
-                return "bg-gray-100 text-gray-800 border-gray-200";
+            case "PAID": return "bg-green-100 text-green-800 border-green-200";
+            case "PENDING": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+            case "CANCELLED": return "bg-red-100 text-red-800 border-red-200";
+            case "REFUNDED": return "bg-purple-100 text-purple-800 border-purple-200";
+            default: return "bg-gray-100 text-gray-800 border-gray-200";
         }
     };
-
-    const formatDate = (dateString) => {
-        if (!dateString) return "N/A";
-        return new Date(dateString).toLocaleString();
-    };
-
-    const formatCurrency = (amount, currency = "LKR") => {
-        return new Intl.NumberFormat('en-LK', {
-            style: 'currency',
-            currency: currency,
-            minimumFractionDigits: 2
-        }).format(amount);
-    };
-
-    if (loading) {
-        return (
-            <div className="container mx-auto p-4">
-                <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                    <span className="ml-3 text-gray-600">Loading payments...</span>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="container mx-auto p-4 space-y-6">
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
-                setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
+                setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
-                setShowErrorDialog={() => setNotification({show: false, type: "", message: "", action: null})}
+                setShowErrorDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
                 errorMessage={notification.message}
-                errorAction={notification.action}
-                onErrorAction={handleConfirmAction}
-                isActionLoading={isSubmitting}
             />
+
+            {selectedPaymentId && (
+                <PaymentDetails
+                    paymentId={selectedPaymentId}
+                    onClose={() => setSelectedPaymentId(null)}
+                    refetchPayments={handleRefetch}
+                />
+            )}
 
             <div className="bg-white rounded-lg border p-4 space-y-4">
                 <div className="relative">
@@ -276,7 +150,7 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
                             onClick={() => setSearchTerm("")}
                             className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
                         >
-                            <X className="w-5 h-5"/>
+                            <X className="w-5 h-5" />
                         </button>
                     )}
                 </div>
@@ -287,16 +161,15 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
                             type="date"
                             className="w-full pl-8 pr-3 py-2 border rounded-lg text-sm"
                             value={filterDate}
-                            onChange={handleDateChange}
-                            placeholder="Filter by date"
+                            onChange={(e) => setFilterDate(e.target.value)}
                         />
-                        <Calendar className="absolute left-2 top-2.5 w-4 h-4 text-gray-400"/>
+                        <Calendar className="absolute left-2 top-2.5 w-4 h-4 text-gray-400" />
                     </div>
 
                     <select
                         className="px-3 py-2 border rounded-lg text-sm"
                         value={filterStatus}
-                        onChange={handleStatusChange}
+                        onChange={(e) => setFilterStatus(e.target.value)}
                     >
                         <option value="">All Statuses</option>
                         <option value="PENDING">PENDING</option>
@@ -310,17 +183,19 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
                         className="px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2"
                         disabled={!filterDate && !filterStatus && !searchTerm}
                     >
-                        <Filter className="w-4 h-4"/>
-                        Clear Filters
+                        <Filter className="w-4 h-4" /> Clear Filters
                     </button>
                 </div>
             </div>
 
             <div className="bg-white rounded-lg border overflow-hidden">
-                {filteredPayments.length === 0 ? (
-                    <div className="p-8 text-center">
-                        <p className="text-gray-500">No payments found</p>
+                {loading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        <span className="ml-3 text-gray-600">Loading payments...</span>
                     </div>
+                ) : filteredPayments.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">No payments found</div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
@@ -329,116 +204,28 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid
-                                    Date
-                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid Date</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                             </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredPayments.map((payment) => {
-                                const isSelected = selectedPayment?.id === payment.id;
-                                const isEditing = editingPaymentId === payment.id;
-
-                                return (
-                                    <tr
-                                        key={payment.id}
-                                        className={`hover:bg-gray-50 ${isSelected ? "bg-blue-50" : ""}`}
-                                    >
-                                        <td className="px-6 py-4 whitespace-normal break-words">
-                                            <div className="text-sm font-medium text-gray-900">#{payment.id}</div>
-                                        </td>
-
-                                        <td className="px-6 py-4 whitespace-normal break-words">
-                                            <div className="space-y-1">
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {payment.user?.username || "N/A"}
-                                                </div>
-                                                {/*<div className="text-xs text-gray-500">*/}
-                                                {/*    {payment.user?.email || "No email"}*/}
-                                                {/*</div>*/}
-                                            </div>
-                                        </td>
-
-                                        <td className="px-6 py-4 whitespace-normal break-words">
-                                            <div className="space-y-1">
-                                                <div className="text-sm font-bold text-blue-600">
-                                                    {formatCurrency(payment.amount, payment.currency)}
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        <td className="px-6 py-4 whitespace-normal break-words">
-                                            <div className="text-xs">
-                                                {formatDate(payment.paidAt)}
-                                            </div>
-                                        </td>
-
-                                        <td className="px-6 py-4 whitespace-normal break-words">
-                                            {isEditing ? (
-                                                <div className="flex items-center gap-2">
-                                                    <select
-                                                        value={editingStatus}
-                                                        onChange={(e) => setEditingStatus(e.target.value)}
-                                                        className="text-xs border rounded px-2 py-1 bg-white"
-                                                        disabled={isSubmitting}
-                                                        autoFocus
-                                                    >
-                                                        <option value="PENDING">PENDING</option>
-                                                        <option value="PAID">PAID</option>
-                                                        <option value="CANCELLED">CANCELLED</option>
-                                                        <option value="REFUNDED">REFUNDED</option>
-                                                    </select>
-                                                </div>
-                                            ) : (
-                                                <span
-                                                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusBadge(payment.paymentStatus)}`}>
-                                                        {payment.paymentStatus}
-                                                    </span>
-                                            )}
-                                        </td>
-
-                                        <td className="px-6 py-4 whitespace-normal break-words">
-                                            {isEditing ? (
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => handleUpdateStatus(payment.id)}
-                                                        className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
-                                                        disabled={isSubmitting}
-                                                    >
-                                                        Save
-                                                    </button>
-                                                    <button
-                                                        onClick={handleCancelEdit}
-                                                        className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
-                                                        disabled={isSubmitting}
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => handleEditClick(payment)}
-                                                        className="px-3 py-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded hover:bg-blue-100 whitespace-nowrap"
-                                                        disabled={isSubmitting}
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeletePayment(payment)}
-                                                        className="px-3 py-1 text-xs bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-100 whitespace-nowrap"
-                                                        disabled={true}
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                            {filteredPayments.map((payment) => (
+                                <tr
+                                    key={payment.id}
+                                    className="hover:bg-gray-50 cursor-pointer"
+                                    onClick={() => setSelectedPaymentId(payment.id)}
+                                >
+                                    <td className="px-6 py-4 text-sm text-gray-500">#{payment.id}</td>
+                                    <td className="px-6 py-4 text-sm">{payment.user?.username || "N/A"}</td>
+                                    <td className="px-6 py-4 text-sm font-bold text-blue-600">{formatCurrency(payment.amount, payment.currency)}</td>
+                                    <td className="px-6 py-4 text-xs">{formatDate(payment.paidAt)}</td>
+                                    <td className="px-6 py-4 text-xs">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${getStatusBadge(payment.paymentStatus)}`}>
+                                                {payment.paymentStatus}
+                                            </span>
+                                    </td>
+                                </tr>
+                            ))}
                             </tbody>
                         </table>
                     </div>

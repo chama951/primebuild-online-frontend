@@ -1,4 +1,4 @@
-import { baseApi } from "../../services/baseApi.js";
+import {baseApi} from "../../services/baseApi.js";
 
 export const notificationsApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
@@ -17,10 +17,19 @@ export const notificationsApi = baseApi.injectEndpoints({
             invalidatesTags: ["Notification"],
         }),
 
+        deleteAllNotifications: builder.mutation({
+            query: () => ({
+                url: "/notification",
+                method: "DELETE",
+            }),
+            invalidatesTags: ["Notification"],
+        }),
+
     }),
 });
 
 export const {
     useGetNotificationsQuery,
     useReadNotificationsMutation,
+    useDeleteAllNotificationsMutation,
 } = notificationsApi;

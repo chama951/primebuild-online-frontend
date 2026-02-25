@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { ShoppingCart } from "lucide-react";
+import {useState, useRef, useEffect} from "react";
+import {ShoppingCart} from "lucide-react";
 
 import Categories from "./Categories.jsx";
 import PSUCalc from "./PSUCalc.jsx";
@@ -8,14 +8,16 @@ import BuildCart from "./BuildCart.jsx";
 import Cart from "./Cart.jsx";
 import Builds from "./Builds.jsx";
 import Footer from "./Footer.jsx";
-import { useGetCartQuery } from "../../features/components/cartApi.js";
+import PrimeBuildPriceTrends from "./PrimeBuildPriceTrends.jsx";
+import {useGetCartQuery} from "../../features/components/cartApi.js";
 
 const tabs = [
-    { id: "categories", label: "Categories" },
-    { id: "power", label: "PSU Calculator" },
-    { id: "trending", label: "Trending Products" },
-    { id: "build", label: "Build Your PC" },
-    { id: "prebuilds", label: "Builds" }
+    {id: "categories", label: "Categories"},
+    {id: "power", label: "PSU Calculator"},
+    {id: "trending", label: "Trending Products"},
+    {id: "build", label: "Build Your PC"},
+    {id: "prebuilds", label: "Builds"},
+    {id: "priceCharts", label: "Price Charts"},
 ];
 
 const Home = () => {
@@ -23,7 +25,7 @@ const Home = () => {
     const [showMiniCart, setShowMiniCart] = useState(false);
     const cartRef = useRef(null);
 
-    const { data: cartData } = useGetCartQuery();
+    const {data: cartData} = useGetCartQuery();
     const cartItems = cartData?.cartItemList || [];
     const cartCount = cartItems.reduce((sum, i) => sum + i.cartQuantity, 0);
     const totalAmount = cartData?.totalAmount || 0;
@@ -42,19 +44,21 @@ const Home = () => {
     const renderSection = () => {
         switch (activeTab) {
             case "categories":
-                return <Categories />;
+                return <Categories/>;
             case "power":
-                return <PSUCalc />;
+                return <PSUCalc/>;
             case "trending":
-                return <TrendingProducts />;
+                return <TrendingProducts/>;
             case "build":
-                return <BuildCart />;
+                return <BuildCart/>;
             case "prebuilds":
-                return <Builds />;
+                return <Builds/>;
             case "cart":
-                return <Cart />;
+                return <Cart/>;
+            case "priceCharts":
+                return <PrimeBuildPriceTrends/>;
             default:
-                return <Categories />;
+                return <Categories/>;
         }
     };
 
@@ -86,9 +90,10 @@ const Home = () => {
                             onClick={() => setShowMiniCart(!showMiniCart)}
                             className="relative p-2 rounded-full hover:bg-gray-100"
                         >
-                            <ShoppingCart className="w-6 h-6 text-gray-700" />
+                            <ShoppingCart className="w-6 h-6 text-gray-700"/>
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                                <span
+                                    className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
                   {cartCount}
                 </span>
                             )}
@@ -142,7 +147,7 @@ const Home = () => {
                 {renderSection()}
             </main>
 
-            <Footer />
+            <Footer/>
         </div>
     );
 };
