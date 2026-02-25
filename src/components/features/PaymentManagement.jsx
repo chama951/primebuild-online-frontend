@@ -11,7 +11,6 @@ import {X, Calendar, Filter} from "lucide-react";
 import Unauthorized from "../common/Unauthorized.jsx";
 
 const PaymentManagement = ({refetchFlag, resetFlag}) => {
-    // State
     const [selectedPayment, setSelectedPayment] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("");
@@ -26,7 +25,6 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
         action: null,
     });
 
-    // API hooks
     const {
         data: allPayments = [],
         isLoading: loadingAll,
@@ -54,11 +52,9 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
         skip: !filterStatus
     });
 
-    // Mutations
     const [updatePayment] = useUpdatePaymentMutation();
     const [deletePayment] = useDeletePaymentMutation();
 
-    // Combine filters - apply both date and status filters
     const getFilteredPayments = () => {
         if (filterDate && filterStatus) {
             return paymentsByDate.filter(p => p.paymentStatus === filterStatus);
@@ -85,7 +81,6 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
     const basePayments = getFilteredPayments();
     const loading = isLoading();
 
-    // Refetch when refetchFlag changes
     useEffect(() => {
         if (refetchFlag) {
             handleRefetch();
@@ -114,8 +109,6 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
         return <Unauthorized />;
     }
 
-
-    // Filter payments locally by search term
     const filteredPayments = basePayments.filter(payment => {
         if (!searchTerm) return true;
 
@@ -126,7 +119,6 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
         return username.includes(searchLower) || email.includes(searchLower);
     });
 
-    // Handle status update
     const handleUpdateStatus = async (paymentId) => {
         setIsSubmitting(true);
         try {
@@ -151,19 +143,16 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
         }
     };
 
-    // Handle edit - sets the payment in editing mode
     const handleEditClick = (payment) => {
         setEditingPaymentId(payment.id);
         setEditingStatus(payment.paymentStatus);
     };
 
-    // Handle cancel edit
     const handleCancelEdit = () => {
         setEditingPaymentId(null);
         setEditingStatus("");
     };
 
-    // Handle delete
     const handleDeletePayment = (payment) => {
         showNotification("error", `Are you sure you want to delete payment #${payment.id}?`, {
             callback: async () => {
@@ -184,24 +173,20 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
         });
     };
 
-    // Clear all filters
     const handleClearFilters = () => {
         setFilterStatus("");
         setFilterDate("");
         setSearchTerm("");
     };
 
-    // Handle date filter change
     const handleDateChange = (e) => {
         setFilterDate(e.target.value);
     };
 
-    // Handle status filter change
     const handleStatusChange = (e) => {
         setFilterStatus(e.target.value);
     };
 
-    // Show notification
     const showNotification = (type, message, action = null) => {
         setNotification({show: true, type, message, action});
     };
@@ -224,7 +209,6 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
         }
     };
 
-    // Get status badge color
     const getStatusBadge = (status) => {
         switch (status) {
             case "PAID":
@@ -240,13 +224,11 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
         }
     };
 
-    // Format date
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
         return new Date(dateString).toLocaleString();
     };
 
-    // Format currency
     const formatCurrency = (amount, currency = "LKR") => {
         return new Intl.NumberFormat('en-LK', {
             style: 'currency',
@@ -255,7 +237,6 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
         }).format(amount);
     };
 
-    // Render loading state
     if (loading) {
         return (
             <div className="container mx-auto p-4">
@@ -281,9 +262,7 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
                 isActionLoading={isSubmitting}
             />
 
-            {/* Filters Section */}
             <div className="bg-white rounded-lg border p-4 space-y-4">
-                {/* Search Bar */}
                 <div className="relative">
                     <input
                         type="text"
@@ -302,9 +281,7 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
                     )}
                 </div>
 
-                {/* Filter Controls */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Date Filter */}
                     <div className="relative">
                         <input
                             type="date"
@@ -316,7 +293,6 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
                         <Calendar className="absolute left-2 top-2.5 w-4 h-4 text-gray-400"/>
                     </div>
 
-                    {/* Status Filter */}
                     <select
                         className="px-3 py-2 border rounded-lg text-sm"
                         value={filterStatus}
@@ -329,7 +305,6 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
                         <option value="REFUNDED">REFUNDED</option>
                     </select>
 
-                    {/* Clear Filters */}
                     <button
                         onClick={handleClearFilters}
                         className="px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2"
@@ -341,7 +316,6 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
                 </div>
             </div>
 
-            {/* Payments Table - Custom implementation without DataTable */}
             <div className="bg-white rounded-lg border overflow-hidden">
                 {filteredPayments.length === 0 ? (
                     <div className="p-8 text-center">
@@ -372,24 +346,21 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
                                         key={payment.id}
                                         className={`hover:bg-gray-50 ${isSelected ? "bg-blue-50" : ""}`}
                                     >
-                                        {/* ID */}
                                         <td className="px-6 py-4 whitespace-normal break-words">
                                             <div className="text-sm font-medium text-gray-900">#{payment.id}</div>
                                         </td>
 
-                                        {/* User */}
                                         <td className="px-6 py-4 whitespace-normal break-words">
                                             <div className="space-y-1">
                                                 <div className="text-sm font-medium text-gray-900">
                                                     {payment.user?.username || "N/A"}
                                                 </div>
-                                                <div className="text-xs text-gray-500">
-                                                    {payment.user?.email || "No email"}
-                                                </div>
+                                                {/*<div className="text-xs text-gray-500">*/}
+                                                {/*    {payment.user?.email || "No email"}*/}
+                                                {/*</div>*/}
                                             </div>
                                         </td>
 
-                                        {/* Amount */}
                                         <td className="px-6 py-4 whitespace-normal break-words">
                                             <div className="space-y-1">
                                                 <div className="text-sm font-bold text-blue-600">
@@ -398,14 +369,12 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
                                             </div>
                                         </td>
 
-                                        {/* Paid Date */}
                                         <td className="px-6 py-4 whitespace-normal break-words">
                                             <div className="text-xs">
                                                 {formatDate(payment.paidAt)}
                                             </div>
                                         </td>
 
-                                        {/* Status */}
                                         <td className="px-6 py-4 whitespace-normal break-words">
                                             {isEditing ? (
                                                 <div className="flex items-center gap-2">
@@ -430,7 +399,6 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
                                             )}
                                         </td>
 
-                                        {/* Actions */}
                                         <td className="px-6 py-4 whitespace-normal break-words">
                                             {isEditing ? (
                                                 <div className="flex items-center gap-2">

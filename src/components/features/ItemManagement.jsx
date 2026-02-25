@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import ItemFeaturesSection from "./item/ItemFeaturesSection.jsx";
@@ -8,11 +8,11 @@ import {
     useUpdateItemMutation,
     useDeleteItemMutation,
 } from "../../features/components/itemApi.js";
-import { useGetComponentsQuery } from "../../features/components/componentApi.js";
-import { useGetManufacturersQuery } from "../../features/components/manufacturerApi.js";
+import {useGetComponentsQuery} from "../../features/components/componentApi.js";
+import {useGetManufacturersQuery} from "../../features/components/manufacturerApi.js";
 import Unauthorized from "../common/Unauthorized.jsx";
 
-const ItemManagement = ({ refetchFlag, resetFlag }) => {
+const ItemManagement = ({refetchFlag, resetFlag}) => {
     const [selectedItem, setSelectedItem] = useState(null);
     const [formData, setFormData] = useState({
         itemName: "",
@@ -38,9 +38,9 @@ const ItemManagement = ({ refetchFlag, resetFlag }) => {
     const [updateItem] = useUpdateItemMutation();
     const [deleteItem] = useDeleteItemMutation();
 
-    const { data: items = [], error: itemsError, refetch: refetchItems } = useGetItemsQuery();
-    const { data: components = [], error: componentsError } = useGetComponentsQuery();
-    const { data: manufacturers = [], error: manufacturersError } = useGetManufacturersQuery();
+    const {data: items = [], error: itemsError, refetch: refetchItems} = useGetItemsQuery();
+    const {data: components = [], error: componentsError} = useGetComponentsQuery();
+    const {data: manufacturers = [], error: manufacturersError} = useGetManufacturersQuery();
 
     useEffect(() => {
         if (refetchFlag) {
@@ -72,7 +72,7 @@ const ItemManagement = ({ refetchFlag, resetFlag }) => {
             error => error?.status === 401 || error?.status === 403
         );
 
-    if (isUnauthorized()) return <Unauthorized />;
+    if (isUnauthorized()) return <Unauthorized/>;
 
     const filteredItems = items.filter(item =>
         (item.itemName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -83,11 +83,11 @@ const ItemManagement = ({ refetchFlag, resetFlag }) => {
     const selectedComponent = components.find(c => c.id === parseInt(formData.componentId));
 
     const showNotification = (type, message, action = null) =>
-        setNotification({ show: true, type, message, action });
+        setNotification({show: true, type, message, action});
 
     const handleConfirmAction = async () => {
         if (!notification.action) return;
-        const { callback } = notification.action;
+        const {callback} = notification.action;
         setIsSubmitting(true);
         try {
             const result = await callback();
@@ -98,12 +98,12 @@ const ItemManagement = ({ refetchFlag, resetFlag }) => {
             showNotification("error", error.data?.message || "Error performing action.");
         } finally {
             setIsSubmitting(false);
-            setNotification(prev => ({ ...prev, action: null }));
+            setNotification(prev => ({...prev, action: null}));
         }
     };
 
     const handleInputChange = (e) =>
-        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+        setFormData(prev => ({...prev, [e.target.name]: e.target.value}));
 
     const handleSelectItem = (item) => {
         setSelectedItem(item);
@@ -142,7 +142,7 @@ const ItemManagement = ({ refetchFlag, resetFlag }) => {
 
         try {
             const response = selectedItem
-                ? await updateItem({ id: selectedItem.id, ...itemData }).unwrap()
+                ? await updateItem({id: selectedItem.id, ...itemData}).unwrap()
                 : await createItem(itemData).unwrap();
 
             showNotification("success", response.message || "Operation completed successfully!");
@@ -180,12 +180,17 @@ const ItemManagement = ({ refetchFlag, resetFlag }) => {
         setRefreshKey(prev => prev + 1);
     };
 
+    const formatCurrency = (price) => {
+        return new Intl.NumberFormat('en-LK', {
+            minimumFractionDigits: 2
+        }).format(price);
+    };
+
     const handleItemUpdated = async () => {
         await refetchItems();
         setRefreshKey(prev => prev + 1);
     };
 
-    // ✅ CLEANED TABLE (NO DISCOUNT LOGIC)
     const columns = [
         {
             key: "id",
@@ -217,7 +222,7 @@ const ItemManagement = ({ refetchFlag, resetFlag }) => {
             header: "Price",
             render: (item) => (
                 <div className="text-sm">
-                    Rs {parseFloat(item.price || 0).toFixed(2)}
+                    Rs {formatCurrency(item.price || 0)}
                 </div>
             )
         },
@@ -378,12 +383,12 @@ const ItemManagement = ({ refetchFlag, resetFlag }) => {
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
                 setShowSuccessDialog={() =>
-                    setNotification({ show: false, type: "", message: "", action: null })
+                    setNotification({show: false, type: "", message: "", action: null})
                 }
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
                 setShowErrorDialog={() =>
-                    setNotification({ show: false, type: "", message: "", action: null })
+                    setNotification({show: false, type: "", message: "", action: null})
                 }
                 errorMessage={notification.message}
                 errorAction={notification.action}

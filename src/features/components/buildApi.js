@@ -41,6 +41,11 @@ export const buildApi = baseApi.injectEndpoints({
             invalidatesTags: ["Build"],
         }),
 
+        getDraftBuilds: builder.query({
+            query: () => "/build?status=DRAFT",
+            providesTags: ["Build"],
+        }),
+
         deleteBuild: builder.mutation({
             query: (id) => ({
                 url: `/build/${id}`,
@@ -60,4 +65,5 @@ export const {
     useCreateBuildMutation,
     useUpdateBuildMutation,
     useDeleteBuildMutation,
+    useGetDraftBuildsQuery,
 } = buildApi;
