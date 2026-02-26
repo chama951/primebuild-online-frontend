@@ -3,16 +3,16 @@ import {
     useCreateItemFeatureMutation,
     useUpdateItemFeatureMutation,
     useDeleteItemFeatureMutation,
-} from "../../../features/components/itemFeatureApi.js";
+} from "../../../services/itemFeatureApi.js";
 import {
     useGetFeaturesQuery,
     useCreateFeatureMutation,
     useUpdateFeatureMutation,
     useDeleteFeatureMutation,
-} from "../../../features/components/featureApi.js";
+} from "../../../services/featureApi.js";
 import {
     useGetComponentFeatureTypesByComponentIdQuery
-} from "../../../features/components/componentFeatureTypeApi.js";
+} from "../../../services/componentFeatureTypeApi.js";
 
 const ItemFeaturesSection = ({
                                  selectedComponent,

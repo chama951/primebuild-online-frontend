@@ -8,7 +8,7 @@ import {
     useGetInvoicesQuery,
     useUpdateInvoiceMutation,
     useDeleteInvoiceMutation
-} from "../../features/components/InvoiceApi.js";
+} from "../../services/InvoiceApi.js";
 
 const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
     const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -190,7 +190,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
             key: "total",
             header: "Total (Rs)",
             render: inv => (
-                <div className="text-sm font-bold">
+                <div className="text-sm font-semibold">
                     Rs {formatCurrency(inv.totalAmount)}
                 </div>
             )

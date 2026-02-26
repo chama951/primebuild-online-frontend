@@ -3,8 +3,8 @@ import { Trash2, Plus, Minus } from "lucide-react";
 import {
     useGetCartQuery,
     useCreateOrUpdateCartMutation,
-} from "../../features/components/cartApi";
-import { useCreateInvoiceMutation } from "../../features/components/invoiceApi.js";
+} from "../../services/cartApi.js";
+import { useCreateInvoiceMutation } from "../../services/InvoiceApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const Cart = ({ roles = [] }) => {

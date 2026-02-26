@@ -1,4 +1,4 @@
-import {baseApi} from "../../services/baseApi";
+import {baseApi} from "./baseApi.js";
 
 export const compatibilityApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({

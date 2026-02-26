@@ -7,9 +7,9 @@ import {
     useCreateItemMutation,
     useUpdateItemMutation,
     useDeleteItemMutation,
-} from "../../features/components/itemApi.js";
-import {useGetComponentsQuery} from "../../features/components/componentApi.js";
-import {useGetManufacturersQuery} from "../../features/components/manufacturerApi.js";
+} from "../../services/itemApi.js";
+import {useGetComponentsQuery} from "../../services/componentApi.js";
+import {useGetManufacturersQuery} from "../../services/manufacturerApi.js";
 import Unauthorized from "../common/Unauthorized.jsx";
 
 const ItemManagement = ({refetchFlag, resetFlag}) => {
@@ -333,7 +333,7 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                                 <input
                                     type="number"
                                     name="powerConsumption"
-                                    placeholder="PSUCalc (W)"
+                                    placeholder="Power(W)"
                                     className="p-2 border rounded"
                                     value={formData.powerConsumption}
                                     onChange={handleInputChange}

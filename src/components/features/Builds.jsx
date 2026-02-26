@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
-import { useGetStaffMadeBuildsQuery, useGetCurrentUserBuildsQuery } from "../../features/components/buildApi.js";
+import { useGetStaffMadeBuildsQuery, useGetCurrentUserBuildsQuery } from "../../services/buildApi.js";
 import BuildDetails from "./BuildDetails.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
-import { useCreateOrUpdateCartMutation, useGetCartQuery } from "../../features/components/cartApi";
+import { useCreateOrUpdateCartMutation, useGetCartQuery } from "../../services/cartApi.js";
 
 const Builds = () => {
     const [activeTab, setActiveTab] = useState("prime");

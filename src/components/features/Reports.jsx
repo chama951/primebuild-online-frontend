@@ -4,7 +4,7 @@ import {
     useGetPaymentsByDateQuery,
     useGetPaymentsByStatusQuery,
     useGetPaymentsByUsernameQuery,
-} from "../../features/components/paymentApi.js";
+} from "../../services/PaymentApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import {
     Download,

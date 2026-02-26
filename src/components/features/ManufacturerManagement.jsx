@@ -4,7 +4,7 @@ import {
     useSaveManufacturerMutation,
     useUpdateManufacturerMutation,
     useDeleteManufacturerMutation,
-} from "../../features/components/manufacturerApi.js";
+} from "../../services/manufacturerApi.js";
 import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import Unauthorized from "../common/Unauthorized.jsx";

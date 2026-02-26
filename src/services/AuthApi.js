@@ -1,4 +1,4 @@
-import {baseApi} from "../../services/baseApi.js";
+import {baseApi} from "./baseApi.js";
 
 export const authApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
@@ -25,11 +25,20 @@ export const authApi = baseApi.injectEndpoints({
                 body,
             }),
         }),
+        isCustomerLoggedIn: builder.query({
+            query: () => ({
+                url: "/auth/is_customer_logged_in",
+                method: "GET",
+            }),
+        }),
+
+
     }),
 });
 
 export const {
     useLoginMutation,
     useSignupCustomerMutation,
+    useIsCustomerLoggedInQuery,
     useSignupStaffMutation
 } = authApi;

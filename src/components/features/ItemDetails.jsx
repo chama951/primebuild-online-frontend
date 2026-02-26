@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { useGetCartQuery, useCreateOrUpdateCartMutation } from "../../features/components/cartApi";
-import { useIncrementViewCountMutation } from "../../features/components/itemAnalyticsApi";
+import { useGetCartQuery, useCreateOrUpdateCartMutation } from "../../services/cartApi.js";
+import { useIncrementViewCountMutation } from "../../services/itemAnalyticsApi.js";
 
 const ItemDetails = ({ item, onClose }) => {
     const { data: cartData } = useGetCartQuery();

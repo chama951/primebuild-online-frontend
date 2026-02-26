@@ -3,7 +3,7 @@ import {
     useGetExchangeRateQuery,
     useGetExchangeRateByDaysQuery,
     useConvertUsdToLkrMutation
-} from "../../features/components/exchangeRateApi.js";
+} from "../../services/exchangeRateApi.js";
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
@@ -36,7 +36,7 @@ const ExchangeRate = () => {
     return (
         <div className="container mx-auto p-4 space-y-6">
 
-            <div className="bg-white rounded-lg border p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 h-28">
+            <div className="bg-white rounded-lg border p-4 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 h-28">
 
                 <div className="flex-1 flex flex-col justify-center gap-1 text-sm">
                     {loadingRate ? (
@@ -104,8 +104,8 @@ const ExchangeRate = () => {
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                                <YAxis domain={['dataMin', 'dataMax']} tick={{ fontSize: 10 }} />
+                                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                                <YAxis domain={['dataMin', 'dataMax']} tick={{ fontSize: 12 }} />
                                 <Tooltip />
                                 <Line type="monotone" dataKey="rate" stroke="#3b82f6" strokeWidth={2} dot={false} />
                             </LineChart>

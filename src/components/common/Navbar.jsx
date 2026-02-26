@@ -6,7 +6,9 @@ import {
     useGetNotificationsQuery,
     useReadNotificationsMutation,
     useDeleteAllNotificationsMutation
-} from "../../features/components/notificationsApi.js";
+} from "../../services/notificationsApi.js";
+
+import { useIsCustomerLoggedInQuery } from "../../services/authApi.js";
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -16,8 +18,10 @@ const Navbar = () => {
 
     const token = localStorage.getItem("jwtToken");
     const username = localStorage.getItem("username") || "";
-    const roles = JSON.parse(localStorage.getItem("roles") || "[]");
-    const isOnlyCustomer = roles.length === 1 && roles.includes("CUSTOMER");
+
+    const { data: isCustomerLoggedIn = false} = useIsCustomerLoggedInQuery(undefined, {
+        skip: !token,
+    });
 
     const { data: notifications = [] } = useGetNotificationsQuery(undefined, {
         skip: !token,
@@ -54,7 +58,7 @@ const Navbar = () => {
     };
 
     const getDashboardButton = () => {
-        if (!token || isOnlyCustomer) return null;
+        if (!token || isCustomerLoggedIn) return null;
 
         if (location.pathname === "/home") {
             return (
@@ -169,7 +173,6 @@ const Navbar = () => {
                 {token && (
                     <div className="text-gray-700 text-right">
                         <p className="font-medium">{username}</p>
-                        {roles.length > 0 && <p className="text-sm text-gray-500">{roles.join(", ")}</p>}
                     </div>
                 )}
 

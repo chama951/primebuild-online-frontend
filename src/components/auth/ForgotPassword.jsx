@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useForgotPasswordMutation, useResetPasswordMutation } from "../components/userApi";
+import { useForgotPasswordMutation, useResetPasswordMutation } from "../../services/UserApi.js";
 import { useNavigate } from "react-router-dom";
 
 export default function ForgotPassword() {

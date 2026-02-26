@@ -2,26 +2,24 @@ import React, { useState } from "react";
 import {
     useGetAnalyticsByAttributeQuery,
     useGetTrendingItemsQuery
-} from "../../features/components/itemAnalyticsApi.js";
+} from "../../services/itemAnalyticsApi.js";
 
 const AnalyticsAttributes = ["views", "sales", "carts", "trend"];
 
 const ItemAnalytics = () => {
     const [selectedAttribute, setSelectedAttribute] = useState("trend");
 
-    // Decide which query to use
     const { data: analyticsData, isLoading, error, refetch } =
         selectedAttribute === "trend"
             ? useGetTrendingItemsQuery(undefined, {
-                refetchOnMountOrArgChange: true, // Automatically fetch on mount
+                refetchOnMountOrArgChange: true,
             })
             : useGetAnalyticsByAttributeQuery(selectedAttribute, {
-                refetchOnMountOrArgChange: true, // Automatically fetch on mount
+                refetchOnMountOrArgChange: true,
             });
 
     return (
         <div className="container mx-auto p-4 space-y-6">
-            {/* Attribute Selector */}
             <div className="bg-white rounded-lg border p-4 flex items-center gap-4">
                 <label className="font-medium text-gray-700">Select Analytics:</label>
                 <select
@@ -35,7 +33,6 @@ const ItemAnalytics = () => {
                 </select>
             </div>
 
-            {/* Analytics Table */}
             <div className="bg-white rounded-lg border p-4 overflow-x-auto">
                 {isLoading ? (
                     <span className="text-gray-500">Loading analytics...</span>

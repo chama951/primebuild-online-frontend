@@ -3,13 +3,12 @@ import { useNavigate } from "react-router-dom";
 import {
     useGetCurrentUserQuery,
     useUpdateUserMutation
-} from "../../features/components/userApi.js";
+} from "../../services/UserApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const MyAccount = () => {
     const navigate = useNavigate();
 
-    // Form state
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [notification, setNotification] = useState({
@@ -125,7 +124,6 @@ const MyAccount = () => {
     return (
         <div className="container mx-auto p-6 max-w-3xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Account Info Card */}
                 <div className="bg-white rounded-lg shadow p-6 border">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">Account Summary</h2>
                     <ul className="space-y-3 text-sm text-gray-700">
@@ -158,7 +156,6 @@ const MyAccount = () => {
                     </ul>
                 </div>
 
-                {/* Edit Account Form */}
                 <div className="bg-white rounded-lg shadow p-6 border">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">Edit Account</h2>
                     <form className="space-y-4" onSubmit={handleSubmit}>
@@ -216,7 +213,6 @@ const MyAccount = () => {
                 </div>
             </div>
 
-            {/* Global Notification Dialog */}
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
                 setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "", action: null })}

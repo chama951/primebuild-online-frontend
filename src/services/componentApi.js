@@ -1,4 +1,4 @@
-import {baseApi} from "../../services/baseApi.js";
+import {baseApi} from "./baseApi.js";
 
 export const componentApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({

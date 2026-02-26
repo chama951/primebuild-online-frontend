@@ -2,8 +2,8 @@ import {useEffect, useState} from "react";
 import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import Unauthorized from "../common/Unauthorized.jsx";
-import { useGetUsersQuery, useUpdateUserMutation, useDeleteUserMutation } from "../../features/components/userApi.js";
-import { useGetRolesQuery } from "../../features/components/roleApi.js";
+import { useGetUsersQuery, useUpdateUserMutation, useDeleteUserMutation } from "../../services/UserApi.js";
+import { useGetRolesQuery } from "../../services/roleApi.js";
 
 const UserManagement = ({refetchFlag, resetFlag}) => {
     const [selectedUser, setSelectedUser] = useState(null);

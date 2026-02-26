@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import {
     useGetPaymentByIdQuery,
     useUpdatePaymentMutation,
-} from "../../../features/components/paymentApi.js";
+} from "../../../services/PaymentApi.js";
 import NotificationDialogs from "../../common/NotificationDialogs.jsx";
 
 const PaymentDetails = ({ paymentId, onClose, refetchPayments }) => {

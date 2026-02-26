@@ -7,7 +7,7 @@ import {
     useGetComponentsQuery,
     useUpdateComponentMutation,
     useSaveComponentMutation,
-} from "../../features/components/componentApi.js";
+} from "../../services/componentApi.js";
 import Unauthorized from "../common/Unauthorized.jsx";
 
 const ComponentManagement = ({refetchFlag, resetFlag}) => {

@@ -1,19 +1,19 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Trash2, Plus, Minus } from "lucide-react";
-import { useGetBuildComponentsQuery } from "../../features/components/componentApi.js";
-import { useGetItemsByComponentIdQuery } from "../../features/components/itemApi.js";
+import { useGetBuildComponentsQuery } from "../../services/componentApi.js";
+import { useGetItemsByComponentIdQuery } from "../../services/itemApi.js";
 import {
     useGetCompatibleItemsByComponentQuery,
     useGetCompatiblePowerSourcesQuery,
-} from "../../features/components/compatibilityApi";
+} from "../../services/compatibilityApi.js";
 import {
     useCreateBuildMutation,
     useUpdateBuildMutation,
     useDeleteBuildMutation,
     useGetCurrentUserBuildsQuery,
-} from "../../features/components/buildApi";
+} from "../../services/buildApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
-import { useCreateOrUpdateCartMutation, useGetCartQuery } from "../../features/components/cartApi.js";
+import { useCreateOrUpdateCartMutation, useGetCartQuery } from "../../services/cartApi.js";
 
 const isPowerSourceComp = (comp) => comp?.powerSource === true;
 
@@ -30,6 +30,13 @@ const BuildCart = () => {
     const { data: components = [], isLoading: loadingComponents } = useGetBuildComponentsQuery(true, {
         refetchOnMountOrArgChange: true,
     });
+
+    useEffect(() => {
+        if (!loadingComponents && components.length > 0 && !selectedComponent) {
+            setSelectedComponent(components[0]);
+        }
+    }, [loadingComponents, components, selectedComponent]);
+
     const { data: userBuilds = [], refetch: refetchUserBuilds } = useGetCurrentUserBuildsQuery(undefined, {
         refetchOnMountOrArgChange: true,
     });

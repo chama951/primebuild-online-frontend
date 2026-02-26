@@ -6,7 +6,7 @@ import {
     useGetPaymentsByStatusQuery,
     useUpdatePaymentMutation,
     useDeletePaymentMutation,
-} from "../../features/components/paymentApi.js";
+} from "../../services/PaymentApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import Unauthorized from "../common/Unauthorized.jsx";
 import PaymentDetails from "./payment/PaymentDetails.jsx";

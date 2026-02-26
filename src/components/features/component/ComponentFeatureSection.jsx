@@ -4,12 +4,12 @@ import {
     useSaveFeatureTypeMutation,
     useUpdateFeatureTypeMutation,
     useDeleteFeatureTypeMutation,
-} from "../../../features/components/featureTypeApi.js";
+} from "../../../services/featureTypeApi.js";
 import {
     useGetComponentFeatureTypesByComponentIdQuery,
     useCreateComponentFeatureTypeMutation,
     useDeleteComponentFeatureTypeMutation,
-} from "../../../features/components/componentFeatureTypeApi.js";
+} from "../../../services/componentFeatureTypeApi.js";
 const ComponentFeatureSection = ({
                                      selectedComponent,
                                      showNotification,

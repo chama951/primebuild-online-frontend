@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from "react";
-import { useGetComponentsQuery } from "../../features/components/componentApi.js";
-import { useGetItemsQuery } from "../../features/components/itemApi.js";
-import { useGetFeatureTypesQuery } from "../../features/components/featureTypeApi.js";
-import { useGetCartQuery, useCreateOrUpdateCartMutation } from "../../features/components/cartApi.js";
-import { useGetTrendingItemsQuery, useGetAnalyticsByAttributeQuery } from "../../features/components/itemAnalyticsApi.js";
+import { useGetComponentsQuery } from "../../services/componentApi.js";
+import { useGetItemsQuery } from "../../services/itemApi.js";
+import { useGetFeatureTypesQuery } from "../../services/featureTypeApi.js";
+import { useGetCartQuery, useCreateOrUpdateCartMutation } from "../../services/cartApi.js";
+import { useGetTrendingItemsQuery, useGetAnalyticsByAttributeQuery } from "../../services/itemAnalyticsApi.js";
 import ItemDetails from "./ItemDetails.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 

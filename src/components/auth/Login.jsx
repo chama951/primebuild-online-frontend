@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useLoginMutation } from "../components/authApi.js";
+import { useLoginMutation } from "../../services/AuthApi.js";
 import Signup from "./Signup.jsx";
 
 export default function Login() {

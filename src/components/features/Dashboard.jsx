@@ -15,7 +15,8 @@ import {
     TrendingUp,
     DollarSign,
     ChartSpline,
-    ChartPie
+    ChartPie,
+    ShoppingCart,
 } from "lucide-react";
 
 import ComponentManagement from "./ComponentManagement.jsx";
@@ -31,6 +32,7 @@ import Reports from "./Reports.jsx";
 import ExchangeRate from "./ExchangeRate.jsx";
 import ItemData from "./ItemData.jsx";
 import ItemAnalytics from "./ItemAnalytics.jsx";
+import Cart from "./Cart.jsx";
 
 const Dashboard = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -51,6 +53,7 @@ const Dashboard = () => {
         exchangeRate: false,
         itemData: false,
         itemAnalytics: false,
+        cart: false,
     });
 
     useEffect(() => {
@@ -68,6 +71,7 @@ const Dashboard = () => {
             exchangeRate: "exchangeRate",
             itemData: "itemData",
             itemAnalytics: "itemAnalytics",
+            cart: "cart",
         };
         const flag = flagMap[activePage];
         if (flag) {
@@ -82,6 +86,7 @@ const Dashboard = () => {
         {id: "build", label: "Build", icon: Settings},
         {id: "users", label: "Users", icon: Users},
         {id: "roles", label: "Roles", icon: UserCog},
+        {id: "cart", label: "Cart", icon: ShoppingCart},
         {id: "invoices", label: "Invoices", icon: FileText},
         {id: "payments", label: "Payments", icon: CreditCard},
         {id: "reports", label: "Reports", icon: TrendingUp},
@@ -89,6 +94,7 @@ const Dashboard = () => {
         {id: "itemData", label: "Item Data", icon: ChartSpline},
         {id: "itemAnalytics", label: "Item Analytics", icon: ChartPie},
         {id: "myAccount", label: "My Account", icon: UserCircle},
+
     ];
 
     const renderContent = () => {
@@ -148,6 +154,15 @@ const Dashboard = () => {
                         refetchFlag={refetchFlags.itemData}
                         resetFlag={() =>
                             setRefetchFlags(prev => ({...prev, itemData: false}))
+                        }
+                    />
+                );
+            case "cart":
+                return (
+                    <Cart
+                        refetchFlag={refetchFlags.cart}
+                        resetFlag={() =>
+                            setRefetchFlags(prev => ({...prev, cart: false}))
                         }
                     />
                 );

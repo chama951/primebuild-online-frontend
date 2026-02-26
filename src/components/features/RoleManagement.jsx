@@ -7,7 +7,7 @@ import {
     useCreateRoleMutation,
     useUpdateRoleMutation,
     useDeleteRoleMutation,
-} from "../../features/components/roleApi.js";
+} from "../../services/roleApi.js";
 
 // Privileges enum matching your backend
 const PRIVILEGES = [

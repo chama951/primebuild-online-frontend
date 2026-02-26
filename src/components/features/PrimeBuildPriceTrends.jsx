@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { useGetItemsQuery } from "../../features/components/itemApi.js";
-import { useGetItemDataByItemIdQuery } from "../../features/components/itemDataApi.js";
+import { useGetItemsQuery } from "../../services/itemApi.js";
+import { useGetItemDataByItemIdQuery } from "../../services/itemDataApi.js";
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
@@ -25,6 +25,12 @@ const PrimeBuildPriceTrends = () => {
             ourPrice: d.ourPrice
         }));
     }, [itemData]);
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-LK', {
+            minimumFractionDigits: 2
+        }).format(amount);
+    };
 
     return (
         <div className="container mx-auto p-4 space-y-6">
@@ -65,8 +71,8 @@ const PrimeBuildPriceTrends = () => {
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                                <YAxis domain={['dataMin', 'dataMax']} tick={{ fontSize: 10 }} />
+                                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                                <YAxis domain={['dataMin', 'dataMax']} tick={{ fontSize: 12 }} tickFormatter={formatCurrency}/>
                                 <Tooltip />
                                 <Legend verticalAlign="top" height={36} />
                                 <Line type="monotone" dataKey="ourPrice" stroke="#10b981" strokeWidth={2} dot={false} name="Our Price" />

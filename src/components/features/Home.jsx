@@ -2,21 +2,19 @@ import {useState, useRef, useEffect} from "react";
 import {ShoppingCart} from "lucide-react";
 
 import Categories from "./Categories.jsx";
-import PSUCalc from "./PSUCalc.jsx";
 import TrendingProducts from "./TrendingProducts.jsx";
 import BuildCart from "./BuildCart.jsx";
 import Cart from "./Cart.jsx";
 import Builds from "./Builds.jsx";
 import Footer from "./Footer.jsx";
 import PrimeBuildPriceTrends from "./PrimeBuildPriceTrends.jsx";
-import {useGetCartQuery} from "../../features/components/cartApi.js";
+import {useGetCartQuery} from "../../services/cartApi.js";
 
 const tabs = [
-    {id: "categories", label: "Categories"},
-    {id: "power", label: "PSU Calculator"},
-    {id: "trending", label: "Trending Products"},
     {id: "build", label: "Build Your PC"},
     {id: "prebuilds", label: "Builds"},
+    {id: "categories", label: "Categories"},
+    {id: "trending", label: "Trending Products"},
     {id: "priceCharts", label: "Price Charts"},
 ];
 
@@ -45,8 +43,6 @@ const Home = () => {
         switch (activeTab) {
             case "categories":
                 return <Categories/>;
-            case "power":
-                return <PSUCalc/>;
             case "trending":
                 return <TrendingProducts/>;
             case "build":

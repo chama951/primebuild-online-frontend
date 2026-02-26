@@ -11,15 +11,14 @@ import RoleManagement from "./components/features/RoleManagement.jsx";
 import UserManagement from "./components/features/UserManagement.jsx";
 import Cart from "./components/features/Cart.jsx";
 
-import Login from "./features/auth/Login.jsx";
-import OAuth2Success from "./features/auth/OAuth2Success.jsx";
-import ForgotPassword from "./features/auth/ForgotPassword.jsx";
-import PrivateRoute from "./features/auth/PrivateRoute.jsx";
+import Login from "./components/auth/Login.jsx";
+import OAuth2Success from "./components/auth/OAuth2Success.jsx";
+import ForgotPassword from "./components/auth/ForgotPassword.jsx";
+import PrivateRoute from "./components/auth/PrivateRoute.jsx";
 
 import Categories from "./components/features/Categories.jsx";
 import Home from "./components/features/Home.jsx";
 import TrendingProducts from "./components/features/TrendingProducts.jsx";
-import PSUCalc from "./components/features/PSUCalc.jsx";
 import Footer from "./components/features/Footer.jsx";
 
 const NotFound = () => (
@@ -53,7 +52,6 @@ const HomeLayout = () => (
         <Routes>
             <Route index element={<Home/>}/>
             <Route path="categories" element={<Categories/>}/>
-            <Route path="psucalc" element={<PSUCalc/>}/>
             <Route path="trending" element={<TrendingProducts/>}/>
             <Route path="/cart" element={<Cart />} />
         </Routes>
