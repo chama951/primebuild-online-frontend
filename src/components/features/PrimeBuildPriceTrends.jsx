@@ -12,7 +12,10 @@ const PrimeBuildPriceTrends = () => {
 
     const { data: itemData, isLoading: loadingData, error: dataError } = useGetItemDataByItemIdQuery(
         selectedItem,
-        { skip: !selectedItem }
+        {
+            skip: !selectedItem,
+            refetchOnMountOrArgChange: true,
+        }
     );
 
     const chartData = useMemo(() => {

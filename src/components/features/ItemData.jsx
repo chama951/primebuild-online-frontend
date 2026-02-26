@@ -23,7 +23,10 @@ const ItemData = () => {
 
     const { data: itemData, isLoading: loadingData, error: dataError } = useGetItemDataByItemIdAndVendorQuery(
         selectedItem ? { item_id: selectedItem, vendor: selectedVendor.toLowerCase() } : null,
-        { skip: !selectedItem }
+        {
+            skip: !selectedItem,
+            refetchOnMountOrArgChange: true,
+        }
     );
 
     const chartData = useMemo(() => {
