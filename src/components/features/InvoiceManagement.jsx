@@ -8,7 +8,7 @@ import {
     useGetInvoicesQuery,
     useUpdateInvoiceMutation,
     useDeleteInvoiceMutation
-} from "../../services/InvoiceApi.js";
+} from "../../services/invoiceApi.js";
 
 const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
     const [selectedInvoice, setSelectedInvoice] = useState(null);

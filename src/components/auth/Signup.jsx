@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useSignupCustomerMutation } from "../../services/AuthApi.js";
+import { useSignupCustomerMutation } from "../../services/authApi.js";
 
 export default function Signup({ onSuccess }) {
     const [username, setUsername] = useState("");

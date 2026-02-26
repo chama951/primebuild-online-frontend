@@ -4,7 +4,7 @@ import {
     useGetCartQuery,
     useCreateOrUpdateCartMutation,
 } from "../../services/cartApi.js";
-import { useCreateInvoiceMutation } from "../../services/InvoiceApi.js";
+import { useCreateInvoiceMutation } from "../../services/invoiceApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const Cart = ({ roles = [] }) => {

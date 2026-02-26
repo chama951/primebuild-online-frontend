@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
     useGetCurrentUserQuery,
     useUpdateUserMutation
-} from "../../services/UserApi.js";
+} from "../../services/userApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const MyAccount = () => {
