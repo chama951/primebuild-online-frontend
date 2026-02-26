@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useLoginMutation } from "../../services/authApi.js";
+import React, {useState, useEffect} from "react";
+import {useNavigate} from "react-router-dom";
+import {useLoginMutation} from "../../services/authApi.js";
+import PrimeBuildBanner from "../../assets/primebuild_banner-cropped.svg";
+
 import Signup from "./Signup.jsx";
 
 export default function Login() {
@@ -10,7 +12,7 @@ export default function Login() {
     const [showSignup, setShowSignup] = useState(false);
 
     const navigate = useNavigate();
-    const [login, { isLoading }] = useLoginMutation();
+    const [login, {isLoading}] = useLoginMutation();
 
     // Handle OAuth2 redirect via backend-provided query params
     useEffect(() => {
@@ -37,7 +39,7 @@ export default function Login() {
         setError("");
 
         try {
-            const data = await login({ username, password }).unwrap();
+            const data = await login({username, password}).unwrap();
 
             localStorage.setItem("jwtToken", data.jwtToken);
             localStorage.setItem("username", data.username);
@@ -59,14 +61,30 @@ export default function Login() {
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
             <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-                <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">
+                <div className="flex justify-center mb-4">
+                    <img src={PrimeBuildBanner} alt="PrimeBuild" className="h-10" />
+                </div>
+
+                <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
                     {showSignup ? "Signup" : "Login"}
-                </h1>
+                </h3>
 
                 {error && <p className="text-red-500 text-center">{error}</p>}
 
                 {showSignup ? (
-                    <Signup onSuccess={() => setShowSignup(false)} />
+                    <div className="space-y-4">
+                        <Signup onSuccess={() => setShowSignup(false)} />
+
+                        <div className="text-center">
+                            <button
+                                type="button"
+                                onClick={() => setShowSignup(false)}
+                                className="text-blue-600 hover:underline text-sm"
+                            >
+                                Already have an account? Login
+                            </button>
+                        </div>
+                    </div>
                 ) : (
                     <form onSubmit={handleLogin} className="space-y-4">
                         <input

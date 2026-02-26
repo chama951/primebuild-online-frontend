@@ -16,6 +16,8 @@ const UserManagement = ({refetchFlag, resetFlag}) => {
     const [filterType, setFilterType] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [notification, setNotification] = useState({ show: false, type: "", message: "", action: null });
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     const { data: users = [], error: usersError, refetch: refetchUsers, isLoading: usersLoading } = useGetUsersQuery(filterType ? {type: filterType} : {});
     const { data: roles = [], error: rolesError } = useGetRolesQuery();
@@ -23,6 +25,7 @@ const UserManagement = ({refetchFlag, resetFlag}) => {
     const [deleteUser] = useDeleteUserMutation();
 
     useEffect(() => { if (refetchFlag) { refetchUsers(); resetFlag(); } }, [refetchFlag, refetchUsers, resetFlag]);
+    useEffect(() => { setCurrentPage(1); }, [searchTerm, filterType]);
 
     const isUnauthorized = () => [usersError, rolesError].some(err => err?.isUnauthorized);
     if (isUnauthorized()) return <Unauthorized/>;
@@ -39,6 +42,9 @@ const UserManagement = ({refetchFlag, resetFlag}) => {
         roleId: user.role?.id,
         userType: user.role?.roleName?.toLowerCase().includes('admin') || user.role?.roleName?.toLowerCase().includes('staff') ? 'staff' : 'customer'
     }));
+
+    const totalPages = Math.ceil(transformedUsers.length / itemsPerPage);
+    const paginatedUsers = transformedUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const showNotification = (type, message, action = null) => setNotification({show: true, type, message, action});
 
@@ -140,8 +146,37 @@ const UserManagement = ({refetchFlag, resetFlag}) => {
                             </select>
                         </div>
                     </div>
-                    <DataTable items={transformedUsers} selectedItem={selectedUser} onSelectItem={handleSelectUser}
+                    <DataTable items={paginatedUsers} selectedItem={selectedUser} onSelectItem={handleSelectUser}
                                onDeleteItemClick={handleDeleteUser} isLoading={usersLoading} columns={columns} emptyMessage="No users found" />
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center gap-2 mt-4">
+                            <button
+                                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 border rounded disabled:opacity-50"
+                            >
+                                Prev
+                            </button>
+
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`px-3 py-1 border rounded ${currentPage === page ? "bg-blue-600 text-white" : ""}`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 border rounded disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="space-y-4">

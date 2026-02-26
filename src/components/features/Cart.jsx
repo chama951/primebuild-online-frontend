@@ -6,6 +6,7 @@ import {
 } from "../../services/cartApi.js";
 import { useCreateInvoiceMutation } from "../../services/invoiceApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
+import InvoiceDetails from "./invoice/InvoiceDetails.jsx";
 
 const Cart = ({ roles = [] }) => {
     const { data: cart, isLoading, isError } = useGetCartQuery();
@@ -14,12 +15,15 @@ const Cart = ({ roles = [] }) => {
 
     const [showSuccessDialog, setShowSuccessDialog] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
-
     const [showErrorDialog, setShowErrorDialog] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [errorAction, setErrorAction] = useState(false);
     const [onErrorAction, setOnErrorAction] = useState(null);
     const [isActionLoading, setIsActionLoading] = useState(false);
+
+    const [createdInvoice, setCreatedInvoice] = useState(null);
+    const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+    const [invoiceSubmitting, setInvoiceSubmitting] = useState(false);
 
     const isOnlyCustomer = roles.length === 1 && roles.includes("CUSTOMER");
 
@@ -124,11 +128,14 @@ const Cart = ({ roles = [] }) => {
                 })),
             };
 
-            await createInvoice(payload).unwrap();
+            const newInvoice = await createInvoice(payload).unwrap();
 
             await updateCart({ itemList: [] }).unwrap();
 
-            setSuccessMessage("Invoice created successfully and cart cleared!");
+            setCreatedInvoice(newInvoice);
+            setShowInvoiceModal(true);
+
+            setSuccessMessage("Invoice created successfully!");
             setShowSuccessDialog(true);
         } catch (err) {
             setErrorMessage(err?.data?.message || "Failed to create invoice.");
@@ -136,6 +143,11 @@ const Cart = ({ roles = [] }) => {
         } finally {
             setIsActionLoading(false);
         }
+    };
+
+    const handleCloseInvoice = () => {
+        setShowInvoiceModal(false);
+        setCreatedInvoice(null);
     };
 
     return (
@@ -160,8 +172,7 @@ const Cart = ({ roles = [] }) => {
                                     </p>
 
                                     <p className="text-green-600 text-sm">
-                                        Discount: Rs.{" "}
-                                        {cartItem.discountSubTotal?.toLocaleString()}
+                                        Discount: Rs. {cartItem.discountSubTotal?.toLocaleString()}
                                     </p>
 
                                     <p className="text-gray-500">
@@ -182,8 +193,8 @@ const Cart = ({ roles = [] }) => {
                                         </button>
 
                                         <span className="px-2 font-medium text-lg">
-                      {cartItem.cartQuantity}
-                    </span>
+                                            {cartItem.cartQuantity}
+                                        </span>
 
                                         <button
                                             onClick={() =>
@@ -213,15 +224,15 @@ const Cart = ({ roles = [] }) => {
                         <div className="flex justify-between font-medium text-lg">
                             <span>Total Discount</span>
                             <span className="text-green-600">
-                Rs. {cart?.discountAmount?.toLocaleString() || 0}
-              </span>
+                                Rs. {cart?.discountAmount?.toLocaleString() || 0}
+                            </span>
                         </div>
 
                         <div className="flex justify-between font-semibold text-xl">
                             <span>Total</span>
                             <span>
-                Rs. {cart?.totalAmount?.toLocaleString() || 0}
-              </span>
+                                Rs. {cart?.totalAmount?.toLocaleString() || 0}
+                            </span>
                         </div>
 
                         <button
@@ -244,6 +255,22 @@ const Cart = ({ roles = [] }) => {
                         </button>
                     </div>
                 </div>
+            )}
+
+            {showInvoiceModal && createdInvoice && (
+                <InvoiceDetails
+                    invoice={createdInvoice}
+                    onClose={handleCloseInvoice}
+                    onUpdate={async (newStatus) => {
+                        setInvoiceSubmitting(true);
+                        try {
+                            setCreatedInvoice(prev => ({ ...prev, invoiceStatus: newStatus }));
+                        } finally {
+                            setInvoiceSubmitting(false);
+                        }
+                    }}
+                    isSubmitting={invoiceSubmitting}
+                />
             )}
 
             <NotificationDialogs

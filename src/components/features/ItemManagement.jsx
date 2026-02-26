@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import ItemFeaturesSection from "./item/ItemFeaturesSection.jsx";
@@ -8,11 +8,11 @@ import {
     useUpdateItemMutation,
     useDeleteItemMutation,
 } from "../../services/itemApi.js";
-import {useGetComponentsQuery} from "../../services/componentApi.js";
-import {useGetManufacturersQuery} from "../../services/manufacturerApi.js";
+import { useGetComponentsQuery } from "../../services/componentApi.js";
+import { useGetManufacturersQuery } from "../../services/manufacturerApi.js";
 import Unauthorized from "../common/Unauthorized.jsx";
 
-const ItemManagement = ({refetchFlag, resetFlag}) => {
+const ItemManagement = ({ refetchFlag, resetFlag }) => {
     const [selectedItem, setSelectedItem] = useState(null);
     const [formData, setFormData] = useState({
         itemName: "",
@@ -34,13 +34,16 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
     });
     const [refreshKey, setRefreshKey] = useState(0);
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
     const [createItem] = useCreateItemMutation();
     const [updateItem] = useUpdateItemMutation();
     const [deleteItem] = useDeleteItemMutation();
 
-    const {data: items = [], error: itemsError, refetch: refetchItems} = useGetItemsQuery();
-    const {data: components = [], error: componentsError} = useGetComponentsQuery();
-    const {data: manufacturers = [], error: manufacturersError} = useGetManufacturersQuery();
+    const { data: items = [], error: itemsError, refetch: refetchItems } = useGetItemsQuery();
+    const { data: components = [], error: componentsError } = useGetComponentsQuery();
+    const { data: manufacturers = [], error: manufacturersError } = useGetManufacturersQuery();
 
     useEffect(() => {
         if (refetchFlag) {
@@ -48,6 +51,10 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
             resetFlag();
         }
     }, [refetchFlag, resetFlag, refetchItems]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterComponent]);
 
     useEffect(() => {
         if (selectedItem && items.length > 0) {
@@ -72,7 +79,7 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
             error => error?.status === 401 || error?.status === 403
         );
 
-    if (isUnauthorized()) return <Unauthorized/>;
+    if (isUnauthorized()) return <Unauthorized />;
 
     const filteredItems = items.filter(item =>
         (item.itemName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -80,14 +87,18 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
         (!filterComponent || item.component?.id === parseInt(filterComponent))
     );
 
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedItems = filteredItems.slice(startIndex, startIndex + itemsPerPage);
+
     const selectedComponent = components.find(c => c.id === parseInt(formData.componentId));
 
     const showNotification = (type, message, action = null) =>
-        setNotification({show: true, type, message, action});
+        setNotification({ show: true, type, message, action });
 
     const handleConfirmAction = async () => {
         if (!notification.action) return;
-        const {callback} = notification.action;
+        const { callback } = notification.action;
         setIsSubmitting(true);
         try {
             const result = await callback();
@@ -98,12 +109,12 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
             showNotification("error", error.data?.message || "Error performing action.");
         } finally {
             setIsSubmitting(false);
-            setNotification(prev => ({...prev, action: null}));
+            setNotification(prev => ({ ...prev, action: null }));
         }
     };
 
     const handleInputChange = (e) =>
-        setFormData(prev => ({...prev, [e.target.name]: e.target.value}));
+        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handleSelectItem = (item) => {
         setSelectedItem(item);
@@ -142,7 +153,7 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
 
         try {
             const response = selectedItem
-                ? await updateItem({id: selectedItem.id, ...itemData}).unwrap()
+                ? await updateItem({ id: selectedItem.id, ...itemData }).unwrap()
                 : await createItem(itemData).unwrap();
 
             showNotification("success", response.message || "Operation completed successfully!");
@@ -181,7 +192,7 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
     };
 
     const formatCurrency = (price) => {
-        return new Intl.NumberFormat('en-LK', {
+        return new Intl.NumberFormat("en-LK", {
             minimumFractionDigits: 2
         }).format(price);
     };
@@ -257,7 +268,7 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                     </div>
 
                     <DataTable
-                        items={filteredItems}
+                        items={paginatedItems}
                         selectedItem={selectedItem}
                         onSelectItem={handleSelectItem}
                         onDeleteItemClick={handleDeleteItem}
@@ -265,6 +276,36 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                         columns={columns}
                         emptyMessage="No items found"
                     />
+
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center gap-2 mt-4">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 border rounded disabled:opacity-50"
+                            >
+                                Prev
+                            </button>
+
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`px-3 py-1 border rounded ${currentPage === page ? "bg-blue-600 text-white" : ""}`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 border rounded disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="space-y-4">
@@ -383,12 +424,12 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
                 setShowSuccessDialog={() =>
-                    setNotification({show: false, type: "", message: "", action: null})
+                    setNotification({ show: false, type: "", message: "", action: null })
                 }
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
                 setShowErrorDialog={() =>
-                    setNotification({show: false, type: "", message: "", action: null})
+                    setNotification({ show: false, type: "", message: "", action: null })
                 }
                 errorMessage={notification.message}
                 errorAction={notification.action}

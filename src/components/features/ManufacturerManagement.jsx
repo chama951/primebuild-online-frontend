@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import {
     useGetManufacturersQuery,
     useSaveManufacturerMutation,
@@ -9,14 +9,15 @@ import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import Unauthorized from "../common/Unauthorized.jsx";
 
-const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
-    // state
+const ManufacturerManagement = ({ refetchFlag, resetFlag }) => {
     const [selectedManufacturer, setSelectedManufacturer] = useState(null);
     const [manufacturerName, setManufacturerName] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Single notification state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
     const [notification, setNotification] = useState({
         show: false,
         type: "",
@@ -24,7 +25,6 @@ const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
         action: null,
     });
 
-    // api hooks
     const {
         data: manufacturersData = [],
         error: manufacturersError,
@@ -42,16 +42,14 @@ const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
         }
     }, [refetchFlag]);
 
-    // Check unauthorized
     const isUnauthorized = () => {
         const errors = [manufacturersError];
         return errors.some(err => err?.isUnauthorized);
     };
 
     if (isUnauthorized()) {
-        return <Unauthorized/>;
+        return <Unauthorized />;
     }
-
 
     const manufacturers = Array.isArray(manufacturersData)
         ? manufacturersData
@@ -66,25 +64,42 @@ const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
         manufacturer.manufacturerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const totalPages = Math.ceil(filteredManufacturers.length / itemsPerPage);
+
+    const paginatedManufacturers = filteredManufacturers.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
     const showNotification = (type, message, action = null) => {
-        setNotification({show: true, type, message, action});
+        setNotification({ show: true, type, message, action });
     };
 
     const handleConfirmAction = async () => {
         if (notification.action) {
-            const {callback} = notification.action;
+            const { callback } = notification.action;
             setIsSubmitting(true);
             try {
                 const result = await callback();
-                const successMessage = result?.data?.message || notification.action.successMessage || "Action completed!";
+                const successMessage =
+                    result?.data?.message ||
+                    notification.action.successMessage ||
+                    "Action completed!";
                 showNotification("success", successMessage);
             } catch (error) {
                 console.error("Error:", error);
-                const errorMessage = error.data?.message || notification.action.errorMessage || "Error performing action.";
+                const errorMessage =
+                    error.data?.message ||
+                    notification.action.errorMessage ||
+                    "Error performing action.";
                 showNotification("error", errorMessage);
             } finally {
                 setIsSubmitting(false);
-                setNotification((prev) => ({...prev, action: null}));
+                setNotification((prev) => ({ ...prev, action: null }));
             }
         }
     };
@@ -111,7 +126,6 @@ const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
             }
 
             showNotification("success", response.message || "Operation completed successfully!");
-
             handleResetForm();
             refetchManufacturers();
         } catch (error) {
@@ -133,7 +147,6 @@ const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
     };
 
     const handleDeleteManufacturer = (manufacturer) => {
-
         showNotification("error", `Are you sure you want to delete "${manufacturer.manufacturerName}"?`, {
             callback: async () => {
                 try {
@@ -169,7 +182,7 @@ const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
     return (
         <div className="container mx-auto p-4 space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column: Manufacturer List */}
+
                 <div className="lg:col-span-2 space-y-4">
                     <div className="bg-white rounded-lg border p-4">
                         <div className="flex gap-4">
@@ -181,18 +194,12 @@ const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
-                                {searchTerm && (
-                                    <button onClick={() => setSearchTerm("")}
-                                            className="absolute right-3 top-2.5 text-gray-400">
-                                        ✕
-                                    </button>
-                                )}
                             </div>
                         </div>
                     </div>
 
                     <DataTable
-                        items={filteredManufacturers}
+                        items={paginatedManufacturers}
                         selectedItem={selectedManufacturer}
                         onSelectItem={handleSelectManufacturer}
                         onDeleteItemClick={handleDeleteManufacturer}
@@ -200,9 +207,38 @@ const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
                         columns={columns}
                         emptyMessage="No manufacturers found"
                     />
+
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center gap-2 mt-4">
+                            <button
+                                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 border rounded disabled:opacity-50"
+                            >
+                                Prev
+                            </button>
+
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`px-3 py-1 border rounded ${currentPage === page ? "bg-blue-600 text-white" : ""}`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 border rounded disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
 
-                {/* Right Column: Manufacturer Form */}
                 <div className="space-y-4">
                     <div className="bg-white rounded-lg border p-4">
                         <form onSubmit={handleSubmit} className="space-y-4">
@@ -223,37 +259,26 @@ const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
                                 >
                                     {isSubmitting ? "..." : selectedManufacturer ? "Update" : "Create"}
                                 </button>
-                                {!selectedManufacturer && (manufacturerName.trim()) && (
-                                    <button
-                                        type="button"
-                                        onClick={handleResetForm}
-                                        className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-50"
-                                    >
-                                        Clear
-                                    </button>
-                                )}
-                                {selectedManufacturer && (
-                                    <button
-                                        type="button"
-                                        onClick={handleResetForm}
-                                        className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-50"
-                                    >
-                                        Clear
-                                    </button>
-                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={handleResetForm}
+                                    className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                                >
+                                    Clear
+                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
 
-            {/* Unified Notification Dialog */}
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
-                setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
+                setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
-                setShowErrorDialog={() => setNotification({show: false, type: "", message: "", action: null})}
+                setShowErrorDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
                 errorMessage={notification.message}
                 errorAction={notification.action}
                 onErrorAction={handleConfirmAction}

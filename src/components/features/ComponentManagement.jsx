@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import ComponentFeatureSection from "./component/ComponentFeatureSection.jsx";
@@ -10,8 +10,7 @@ import {
 } from "../../services/componentApi.js";
 import Unauthorized from "../common/Unauthorized.jsx";
 
-const ComponentManagement = ({refetchFlag, resetFlag}) => {
-    // State
+const ComponentManagement = ({ refetchFlag, resetFlag }) => {
     const [selectedComponent, setSelectedComponent] = useState(null);
     const [componentName, setComponentName] = useState("");
     const [isBuildComponent, setIsBuildComponent] = useState(false);
@@ -24,70 +23,74 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
         action: null,
     });
     const [buildPriority, setBuildPriority] = useState("");
-    const [powerSource, setPowerSource] = useState(""); // powerSource
+    const [powerSource, setPowerSource] = useState("");
 
-    // API hooks (only component-related)
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
     const {
         data: components = [],
-        error: componentsError, refetch:
-            refetchComponents
-    }
-        = useGetComponentsQuery();
+        error: componentsError,
+        refetch: refetchComponents
+    } = useGetComponentsQuery();
 
-    // Mutations (only component-related)
     const [saveComponent] = useSaveComponentMutation();
     const [updateComponent] = useUpdateComponentMutation();
     const [deleteComponent] = useDeleteComponentMutation();
 
     useEffect(() => {
         if (refetchFlag) {
-            refetchComponents();    // actually trigger the API refetch
-            resetFlag();  // reset the flag after refetch
+            refetchComponents();
+            resetFlag();
         }
     }, [refetchFlag]);
 
-// Check unauthorized
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
     const isUnauthorized = () => {
         const errors = [componentsError];
         return errors.some(err => err?.isUnauthorized);
     };
 
     if (isUnauthorized()) {
-        return <Unauthorized/>;
+        return <Unauthorized />;
     }
 
-    // Computed values
     const filteredComponents = components.filter((component) =>
         component?.componentName?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Notification handler
+    const totalPages = Math.ceil(filteredComponents.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedComponents = filteredComponents.slice(
+        startIndex,
+        startIndex + itemsPerPage
+    );
+
     const showNotification = (type, message, action = null) => {
-        setNotification({show: true, type, message, action});
+        setNotification({ show: true, type, message, action });
     };
 
     const handleConfirmAction = async () => {
         if (notification.action) {
-            const {callback} = notification.action;
+            const { callback } = notification.action;
             setIsSubmitting(true);
             try {
                 const result = await callback();
-                // Use response message for success if available
                 const successMessage = result?.data?.message || notification.action.successMessage || "Action completed!";
                 showNotification("success", successMessage);
             } catch (error) {
-                console.error("Error:", error);
-                // Use error message from response
                 const errorMessage = error.data?.message || notification.action.errorMessage || "Error performing action.";
                 showNotification("error", errorMessage);
             } finally {
                 setIsSubmitting(false);
-                setNotification((prev) => ({...prev, action: null}));
+                setNotification((prev) => ({ ...prev, action: null }));
             }
         }
     };
 
-    // Component handlers
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!componentName.trim()) {
@@ -105,7 +108,7 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
                         componentName: componentName.trim(),
                         buildComponent: isBuildComponent,
                         buildPriority: buildPriority ? buildPriority.valueOf() : 1,
-                        powerSource: powerSource ? powerSource : false, //powerSource
+                        powerSource: powerSource ? powerSource : false,
                     }
                 }).unwrap();
             } else {
@@ -113,18 +116,14 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
                     componentName: componentName.trim(),
                     buildComponent: isBuildComponent,
                     buildPriority: buildPriority ? buildPriority.valueOf() : 1,
-                    powerSource: powerSource ? powerSource : false, // powerSource
+                    powerSource: powerSource ? powerSource : false,
                 }).unwrap();
             }
 
-            // Show success message from API response
             showNotification("success", response.message || "Operation completed successfully!");
-
             handleResetForm();
             refetchComponents();
         } catch (error) {
-            console.error("Error saving component:", error);
-            // Show error message from API response
             showNotification("error", error.data?.message || "An error occurred while saving.");
         } finally {
             setIsSubmitting(false);
@@ -136,7 +135,7 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
         setComponentName(component.componentName);
         setIsBuildComponent(component.buildComponent ?? false);
         setBuildPriority(component.buildPriority);
-        setPowerSource(component.powerSource ?? false); // powerSource
+        setPowerSource(component.powerSource ?? false);
     };
 
     const handleResetForm = () => {
@@ -156,19 +155,16 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
                     if (selectedComponent?.id === component.id) {
                         handleResetForm();
                     }
-                    // Return response to handleConfirmAction to extract message
                     return response;
                 } catch (error) {
-                    console.error("Error deleting component:", error);
-                    throw error; // Re-throw to be caught by handleConfirmAction
+                    throw error;
                 }
             },
-            successMessage: "Component deleted successfully!", // Fallback if API doesn't return message
-            errorMessage: "Error deleting component.", // Fallback if API doesn't return message
+            successMessage: "Component deleted successfully!",
+            errorMessage: "Error deleting component.",
         });
     };
 
-    // DataTable columns
     const columns = [
         {
             key: "id",
@@ -186,8 +182,8 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
             render: (item) => (
                 <span
                     className={`px-2 py-1 rounded text-xs ${item.buildComponent ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-          {item.buildComponent ? "Yes" : "No"}
-        </span>
+                    {item.buildComponent ? "Yes" : "No"}
+                </span>
             ),
         },
         {
@@ -200,7 +196,6 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
     return (
         <div className="container mx-auto p-4 space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column: Components List */}
                 <div className="lg:col-span-2 space-y-4">
                     <div className="bg-white rounded-lg border p-4">
                         <div className="flex gap-4">
@@ -213,8 +208,10 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                                 {searchTerm && (
-                                    <button onClick={() => setSearchTerm("")}
-                                            className="absolute right-3 top-2.5 text-gray-400">
+                                    <button
+                                        onClick={() => setSearchTerm("")}
+                                        className="absolute right-3 top-2.5 text-gray-400"
+                                    >
                                         ✕
                                     </button>
                                 )}
@@ -223,19 +220,47 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
                     </div>
 
                     <DataTable
-                        items={filteredComponents}
+                        items={paginatedComponents}
                         selectedItem={selectedComponent}
                         onSelectItem={handleSelectComponent}
                         onDeleteItemClick={handleDeleteComponent}
                         isLoading={false}
                         columns={columns}
-                        emptyMessage="No components found" // DataTable component handles this internally
+                        emptyMessage="No components found"
                     />
+
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center gap-2 mt-4">
+                            <button
+                                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 border rounded disabled:opacity-50"
+                            >
+                                Prev
+                            </button>
+
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`px-3 py-1 border rounded ${currentPage === page ? "bg-blue-600 text-white" : ""}`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 border rounded disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
 
-                {/* Right Column: Component Form & Feature Types */}
                 <div className="space-y-4">
-                    {/* Component Form */}
                     <div className="bg-white rounded-lg border p-4">
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <input
@@ -247,7 +272,6 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
                                 required
                             />
 
-                            {/* NEW: PSUCalc Source Toggle */}
                             <div className="flex items-center justify-between p-3 border rounded">
                                 <div className="flex items-center space-x-3">
                                     <div className="flex items-center h-5">
@@ -266,7 +290,6 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
                                 </div>
                             </div>
 
-                            {/* Build Component Toggle - Compact */}
                             <div className="flex items-center justify-between p-3 border rounded">
                                 <div className="flex items-center space-x-3">
                                     <div className="flex items-center h-5">
@@ -321,7 +344,6 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
                         </form>
                     </div>
 
-                    {/* Feature Types Section - Self-contained component */}
                     {selectedComponent && (
                         <ComponentFeatureSection
                             selectedComponent={selectedComponent}
@@ -333,13 +355,12 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
                 </div>
             </div>
 
-            {/* Global Notification Dialog */}
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
-                setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
+                setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
-                setShowErrorDialog={() => setNotification({show: false, type: "", message: "", action: null})}
+                setShowErrorDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
                 errorMessage={notification.message}
                 errorAction={notification.action}
                 onErrorAction={handleConfirmAction}

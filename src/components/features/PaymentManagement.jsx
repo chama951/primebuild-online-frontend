@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { X, Calendar, Filter } from "lucide-react";
 import {
     useGetPaymentsQuery,
@@ -16,6 +16,8 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("");
     const [filterDate, setFilterDate] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
     const [notification, setNotification] = useState({
         show: false,
         type: "",
@@ -71,6 +73,10 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
         }
     }, [refetchFlag]);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterStatus, filterDate]);
+
     const handleRefetch = async () => {
         try {
             if (filterDate) await refetchByDate();
@@ -84,13 +90,21 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
     const error = errorAll || errorByDate || errorByStatus;
     if (error?.status === 401 || error?.status === 403) return <Unauthorized />;
 
-    const filteredPayments = basePayments.filter((payment) => {
-        if (!searchTerm) return true;
-        const searchLower = searchTerm.toLowerCase();
-        const username = payment.user?.username?.toLowerCase() || "";
-        const email = payment.user?.email?.toLowerCase() || "";
-        return username.includes(searchLower) || email.includes(searchLower);
-    });
+    const filteredPayments = useMemo(() => {
+        const term = searchTerm.toLowerCase().trim();
+        return basePayments.filter((payment) => {
+            if (!term) return true;
+            const username = payment.user?.username?.toLowerCase() || "";
+            const email = payment.user?.email?.toLowerCase() || "";
+            return username.includes(term) || email.includes(term);
+        });
+    }, [basePayments, searchTerm]);
+
+    const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+    const paginatedPayments = filteredPayments.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     const handleClearFilters = () => {
         setFilterStatus("");
@@ -103,7 +117,6 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
     };
 
     const formatDate = (dateString) => (!dateString ? "N/A" : new Date(dateString).toLocaleString());
-
     const formatCurrency = (amount, currency = "LKR") =>
         new Intl.NumberFormat("en-LK", { style: "currency", currency, minimumFractionDigits: 2 }).format(amount);
 
@@ -194,41 +207,73 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                         <span className="ml-3 text-gray-600">Loading payments...</span>
                     </div>
-                ) : filteredPayments.length === 0 ? (
+                ) : paginatedPayments.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">No payments found</div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid Date</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredPayments.map((payment) => (
-                                <tr
-                                    key={payment.id}
-                                    className="hover:bg-gray-50 cursor-pointer"
-                                    onClick={() => setSelectedPaymentId(payment.id)}
-                                >
-                                    <td className="px-6 py-4 text-sm text-gray-500">#{payment.id}</td>
-                                    <td className="px-6 py-4 text-sm">{payment.user?.username || "N/A"}</td>
-                                    <td className="px-6 py-4 text-sm font-bold text-blue-600">{formatCurrency(payment.amount, payment.currency)}</td>
-                                    <td className="px-6 py-4 text-xs">{formatDate(payment.paidAt)}</td>
-                                    <td className="px-6 py-4 text-xs">
+                    <>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid Date</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                {paginatedPayments.map((payment) => (
+                                    <tr
+                                        key={payment.id}
+                                        className="hover:bg-gray-50 cursor-pointer"
+                                        onClick={() => setSelectedPaymentId(payment.id)}
+                                    >
+                                        <td className="px-6 py-4 text-sm text-gray-500">#{payment.id}</td>
+                                        <td className="px-6 py-4 text-sm">{payment.user?.username || "N/A"}</td>
+                                        <td className="px-6 py-4 text-sm font-bold text-blue-600">{formatCurrency(payment.amount, payment.currency)}</td>
+                                        <td className="px-6 py-4 text-xs">{formatDate(payment.paidAt)}</td>
+                                        <td className="px-6 py-4 text-xs">
                                             <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${getStatusBadge(payment.paymentStatus)}`}>
                                                 {payment.paymentStatus}
                                             </span>
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {totalPages > 1 && (
+                            <div className="flex justify-center items-center gap-2 mt-4">
+                                <button
+                                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1 border rounded disabled:opacity-50"
+                                >
+                                    Prev
+                                </button>
+
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`px-3 py-1 border rounded ${currentPage === page ? "bg-blue-600 text-white" : ""}`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+
+                                <button
+                                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1 border rounded disabled:opacity-50"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

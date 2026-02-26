@@ -1,0 +1,63 @@
+<svg viewBox="4.66668 36.13332 351.6 80" xmlns="http://www.w3.org/2000/svg" style="max-height: 500px" width="351.6" height="80">
+  <defs>
+    <linearGradient y2="100%" x2="100%" y1="0%" x1="0%" id="iconGrad">
+      <stop style="stop-color:#38bdf8;stop-opacity:1" offset="0%"/>
+      <stop style="stop-color:#0ea5e9;stop-opacity:1" offset="100%"/>
+    </linearGradient>
+    <linearGradient y2="100%" x2="100%" y1="0%" x1="0%" id="accentGrad">
+      <stop style="stop-color:#7dd3fc;stop-opacity:1" offset="0%"/>
+      <stop style="stop-color:#38bdf8;stop-opacity:1" offset="100%"/>
+    </linearGradient>
+    <filter height="120%" width="120%" y="-10%" x="-10%" id="shadow">
+      <feDropShadow flood-opacity="0.2" flood-color="#0ea5e9" stdDeviation="4" dy="2" dx="0"/>
+    </filter>
+  </defs>
+
+  
+  <rect fill="#ffffff" ry="20" rx="20" height="150" width="400" y="0" x="0"/>
+
+  
+  <rect filter="url(#shadow)" fill="url(#iconGrad)" ry="6" rx="6" height="60" width="60" y="45" x="22"/>
+  <rect opacity="0.4" fill="#bae6fd" ry="3" rx="3" height="44" width="44" y="53" x="30"/>
+  
+  <line opacity="0.6" stroke-width="1.5" stroke="#e0f4ff" y2="97" x2="41" y1="53" x1="41"/>
+  <line opacity="0.6" stroke-width="1.5" stroke="#e0f4ff" y2="97" x2="52" y1="53" x1="52"/>
+  <line opacity="0.6" stroke-width="1.5" stroke="#e0f4ff" y2="97" x2="63" y1="53" x1="63"/>
+  <line opacity="0.6" stroke-width="1.5" stroke="#e0f4ff" y2="64" x2="74" y1="64" x1="30"/>
+  <line opacity="0.6" stroke-width="1.5" stroke="#e0f4ff" y2="75" x2="74" y1="75" x1="30"/>
+  <line opacity="0.6" stroke-width="1.5" stroke="#e0f4ff" y2="86" x2="74" y1="86" x1="30"/>
+  
+  <rect fill="#0ea5e9" rx="1" height="8" width="5" y="38" x="32"/>
+  <rect fill="#0ea5e9" rx="1" height="8" width="5" y="38" x="42"/>
+  <rect fill="#0ea5e9" rx="1" height="8" width="5" y="38" x="52"/>
+  <rect fill="#0ea5e9" rx="1" height="8" width="5" y="38" x="62"/>
+  
+  <rect fill="#0ea5e9" rx="1" height="8" width="5" y="104" x="32"/>
+  <rect fill="#0ea5e9" rx="1" height="8" width="5" y="104" x="42"/>
+  <rect fill="#0ea5e9" rx="1" height="8" width="5" y="104" x="52"/>
+  <rect fill="#0ea5e9" rx="1" height="8" width="5" y="104" x="62"/>
+  
+  <rect fill="#0ea5e9" rx="1" height="5" width="8" y="56" x="8"/>
+  <rect fill="#0ea5e9" rx="1" height="5" width="8" y="68" x="8"/>
+  <rect fill="#0ea5e9" rx="1" height="5" width="8" y="80" x="8"/>
+  <rect fill="#0ea5e9" rx="1" height="5" width="8" y="92" x="8"/>
+  
+  <rect fill="#0ea5e9" rx="1" height="5" width="8" y="56" x="88"/>
+  <rect fill="#0ea5e9" rx="1" height="5" width="8" y="68" x="88"/>
+  <rect fill="#0ea5e9" rx="1" height="5" width="8" y="80" x="88"/>
+  <rect fill="#0ea5e9" rx="1" height="5" width="8" y="92" x="88"/>
+  
+  <polygon opacity="0.9" fill="white" points="52,58 46,70 58,70"/>
+  <rect opacity="0.9" fill="white" rx="1" height="5" width="6" y="70" x="49"/>
+
+  
+  <text fill="#0369a1" letter-spacing="-1" font-weight="800" font-size="42" font-family="'Segoe UI', Arial, sans-serif" y="90" x="112">Prime</text>
+  
+  <text fill="#38bdf8" letter-spacing="-1" font-weight="800" font-size="42" font-family="'Segoe UI', Arial, sans-serif" y="90" x="230">Build</text>
+
+  
+  <text font-weight="500" letter-spacing="2" fill="#38bdf8" font-size="13" font-family="'Segoe UI', Arial, sans-serif" y="114" x="112">BUILD SMARTER. BUILD BETTER.</text>
+
+  
+  <rect opacity="0.6" fill="url(#accentGrad)" rx="2" height="3" width="260" y="120" x="112"/>
+</svg>

@@ -9,7 +9,6 @@ import {
     useDeleteRoleMutation,
 } from "../../services/roleApi.js";
 
-// Privileges enum matching your backend
 const PRIVILEGES = [
     { value: "ADMIN", label: "Admin" },
     { value: "USER_MANAGEMENT", label: "User Management" },
@@ -20,7 +19,6 @@ const PRIVILEGES = [
 ];
 
 const RoleManagement = ({ refetchFlag, resetFlag }) => {
-    // State
     const [selectedRole, setSelectedRole] = useState(null);
     const [roleName, setRoleName] = useState("");
     const [selectedPrivileges, setSelectedPrivileges] = useState([]);
@@ -32,11 +30,11 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
         message: "",
         action: null,
     });
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
-    // API hooks
     const { data: roles = [], error: rolesError, refetch: refetchRoles } = useGetRolesQuery();
 
-    // Mutations
     const [createRole] = useCreateRoleMutation();
     const [updateRole] = useUpdateRoleMutation();
     const [deleteRole] = useDeleteRoleMutation();
@@ -48,7 +46,10 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
         }
     }, [refetchFlag, refetchRoles, resetFlag]);
 
-    // Check unauthorized
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
     const isUnauthorized = () => {
         return rolesError?.isUnauthorized;
     };
@@ -57,18 +58,21 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
         return <Unauthorized />;
     }
 
-    // Transform API data to extract privileges from rolePrivilegeList
     const transformedRoles = roles.map(role => ({
         ...role,
         privilegesList: role.rolePrivilegeList?.map(rp => rp.privilege) || []
     }));
 
-    // Filtered roles
     const filteredRoles = transformedRoles.filter((role) =>
         role?.roleName?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Notification handler
+    const totalPages = Math.ceil(filteredRoles.length / itemsPerPage);
+    const paginatedRoles = filteredRoles.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
     const showNotification = (type, message, action = null) => {
         setNotification({ show: true, type, message, action });
     };
@@ -92,7 +96,6 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
         }
     };
 
-    // Toggle privilege selection
     const togglePrivilege = (privilege) => {
         setSelectedPrivileges(prev => {
             if (prev.includes(privilege)) {
@@ -103,17 +106,14 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
         });
     };
 
-    // Select all privileges
     const selectAllPrivileges = () => {
         setSelectedPrivileges(PRIVILEGES.map(p => p.value));
     };
 
-    // Clear all privileges
     const clearAllPrivileges = () => {
         setSelectedPrivileges([]);
     };
 
-    // Form handlers
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -159,7 +159,6 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
     const handleSelectRole = (role) => {
         setSelectedRole(role);
         setRoleName(role.roleName);
-        // Extract privileges from rolePrivilegeList
         const privileges = role.rolePrivilegeList?.map(rp => rp.privilege) || [];
         setSelectedPrivileges(privileges);
     };
@@ -190,7 +189,6 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
         });
     };
 
-    // DataTable columns
     const columns = [
         {
             key: "id",
@@ -221,9 +219,7 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
     return (
         <div className="container mx-auto p-4 space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column: Roles List */}
                 <div className="lg:col-span-2 space-y-4">
-                    {/* Search */}
                     <div className="bg-white rounded-lg border p-4">
                         <div className="relative flex-1">
                             <input
@@ -244,9 +240,8 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
                         </div>
                     </div>
 
-                    {/* Roles DataTable */}
                     <DataTable
-                        items={filteredRoles}
+                        items={paginatedRoles}
                         selectedItem={selectedRole}
                         onSelectItem={handleSelectRole}
                         onDeleteItemClick={handleDeleteRole}
@@ -254,15 +249,41 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
                         columns={columns}
                         emptyMessage="No roles found"
                     />
+
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center gap-2 mt-4">
+                            <button
+                                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 border rounded disabled:opacity-50"
+                            >
+                                Prev
+                            </button>
+
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`px-3 py-1 border rounded ${currentPage === page ? "bg-blue-600 text-white" : ""}`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 border rounded disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
 
-                {/* Right Column: Role Form */}
                 <div className="space-y-4">
                     <div className="bg-white rounded-lg border p-4">
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <h4 className="font-medium mb-2">
-                                {selectedRole ? "Edit Role" : "Create New Role"}
-                            </h4>
 
                             <input
                                 type="text"
@@ -273,7 +294,6 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
                                 required
                             />
 
-                            {/* Privileges Selection - List View */}
                             <div className="border rounded p-3">
                                 <div className="flex justify-between items-center mb-2">
                                     <label className="font-medium text-gray-700">Privileges *</label>
@@ -295,7 +315,6 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
                                     </div>
                                 </div>
 
-                                {/* List View for Privileges - Removed checkmark symbol */}
                                 <div className="space-y-1 max-h-60 overflow-y-auto border rounded">
                                     {PRIVILEGES.map((privilege) => (
                                         <label
@@ -314,7 +333,6 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
                                                 disabled={isSubmitting}
                                             />
                                             <span className="text-sm flex-1">{privilege.label}</span>
-                                            {/* Removed the checkmark symbol that was here */}
                                         </label>
                                     ))}
                                 </div>
@@ -326,7 +344,6 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
                                 )}
                             </div>
 
-                            {/* Form Actions */}
                             <div className="flex gap-2 pt-2">
                                 <button
                                     type="submit"
@@ -354,7 +371,6 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
                 </div>
             </div>
 
-            {/* Global Notification Dialog */}
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
                 setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "", action: null })}

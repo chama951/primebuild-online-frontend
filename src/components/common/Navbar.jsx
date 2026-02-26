@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import PrimeBuildBanner from "../../assets/primebuild_banner-cropped.svg";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FiBell } from "react-icons/fi";
 import { formatDistanceToNow } from "date-fns";
@@ -103,10 +104,10 @@ const Navbar = () => {
     return (
         <nav className="bg-white shadow-md border border-gray-300 rounded-lg py-3 px-6 flex justify-between items-center">
             <div
-                className="text-xl font-bold text-blue-600 cursor-pointer"
+                className="cursor-pointer"
                 onClick={() => navigate("/home")}
             >
-                PrimeBuild
+                <img src={PrimeBuildBanner} alt="PrimeBuild" className="h-10" />
             </div>
 
             <div className="flex items-center space-x-4">

@@ -16,6 +16,8 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
     const [filterStatus, setFilterStatus] = useState("");
     const [filterDate, setFilterDate] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     const [notification, setNotification] = useState({
         show: false,
@@ -41,6 +43,10 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
         }
     }, [refetchFlag, resetFlag, refetch]);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterStatus, filterDate]);
+
     if (error?.status === 401 || error?.status === 403)
         return <Unauthorized />;
 
@@ -65,6 +71,12 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
             return statusMatch && dateMatch && (userMatch || statusSearchMatch);
         });
     }, [invoices, searchTerm, filterStatus, filterDate]);
+
+    const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+    const paginatedInvoices = filteredInvoices.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     const showNotification = (type, message, action = null) => {
         setNotification({ show: true, type, message, action });
@@ -114,7 +126,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
             );
 
             refetch();
-            setSelectedInvoice(null); // Close modal
+            setSelectedInvoice(null);
         } catch (err) {
             showNotification(
                 "error",
@@ -173,7 +185,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
             key: "status",
             header: "Status",
             render: inv => (
-                <div >
+                <div>
                     <span
                         className={`px-2 py-1 rounded text-xs font-medium ${
                             inv.invoiceStatus === "PAID"
@@ -237,13 +249,43 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
             </div>
 
             <DataTable
-                items={filteredInvoices}
+                items={paginatedInvoices}
                 selectedItem={selectedInvoice}
                 onSelectItem={setSelectedInvoice}
                 onDeleteItemClick={handleDelete}
                 columns={columns}
                 emptyMessage={isLoading ? "Loading..." : "No invoices found"}
             />
+
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-4">
+                    <button
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 border rounded disabled:opacity-50"
+                    >
+                        Prev
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-3 py-1 border rounded ${currentPage === page ? "bg-blue-600 text-white" : ""}`}
+                        >
+                            {page}
+                        </button>
+                    ))}
+
+                    <button
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1 border rounded disabled:opacity-50"
+                    >
+                        Next
+                    </button>
+                </div>
+            )}
 
             {selectedInvoice && (
                 <InvoiceDetails
