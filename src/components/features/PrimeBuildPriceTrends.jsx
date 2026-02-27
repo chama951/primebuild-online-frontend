@@ -71,8 +71,8 @@ const PrimeBuildPriceTrends = () => {
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                                <YAxis domain={['dataMin', 'dataMax']} tick={{ fontSize: 12 }} tickFormatter={formatCurrency}/>
+                                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                                <YAxis domain={['dataMin', 'dataMax']} tick={{ fontSize: 10 }} tickFormatter={formatCurrency}/>
                                 <Tooltip />
                                 <Legend verticalAlign="top" height={36} />
                                 <Line type="monotone" dataKey="ourPrice" stroke="#10b981" strokeWidth={2} dot={false} name="Our Price" />
