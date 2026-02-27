@@ -5,7 +5,7 @@ import Unauthorized from "../common/Unauthorized.jsx";
 import InvoiceDetails from "./invoice/InvoiceDetails.jsx";
 
 import {
-    useGetInvoicesQuery,
+    useGetInvoicesByUserTypeQuery,
     useUpdateInvoiceMutation,
     useDeleteInvoiceMutation
 } from "../../services/invoiceApi.js";
@@ -15,6 +15,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("");
     const [filterDate, setFilterDate] = useState("");
+    const [filterUserType, setFilterUserType] = useState("all"); // "all" or "customer"
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
@@ -26,12 +27,15 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
         action: null
     });
 
+    // Fetch invoices based on user type
     const {
         data: invoices = [],
         error,
         refetch,
         isLoading
-    } = useGetInvoicesQuery();
+    } = useGetInvoicesByUserTypeQuery(
+        filterUserType === "all" ? "" : filterUserType
+    );
 
     const [updateInvoice] = useUpdateInvoiceMutation();
     const [deleteInvoice] = useDeleteInvoiceMutation();
@@ -45,7 +49,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, filterStatus, filterDate]);
+    }, [searchTerm, filterStatus, filterDate, filterUserType]);
 
     if (error?.status === 401 || error?.status === 403)
         return <Unauthorized />;
@@ -246,6 +250,15 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
                     value={filterDate}
                     onChange={(e) => setFilterDate(e.target.value)}
                 />
+
+                <select
+                    className="h-10 w-48 p-2 border rounded"
+                    value={filterUserType}
+                    onChange={(e) => setFilterUserType(e.target.value)}
+                >
+                    <option value="all">All Users</option>
+                    <option value="customer">Customer</option>
+                </select>
             </div>
 
             <DataTable

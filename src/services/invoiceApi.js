@@ -67,6 +67,11 @@ export const invoiceApi = baseApi.injectEndpoints({
             }),
             invalidatesTags: ["Invoice"],
         }),
+
+        getInvoicesByUserType: builder.query({
+            query: (userType) => `/invoice?user_type=${userType}`,
+            providesTags: ["Invoice"],
+        }),
     }),
 });
 
@@ -80,4 +85,5 @@ export const {
     useCreateInvoiceMutation,
     useUpdateInvoiceMutation,
     useDeleteInvoiceMutation,
+    useGetInvoicesByUserTypeQuery,
 } = invoiceApi;
