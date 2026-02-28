@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
     baseUrl: "http://localhost:8080/api",
@@ -16,19 +16,26 @@ const baseQueryWithAuthRedirect = async (args, api, extraOptions) => {
     const result = await baseQuery(args, api, extraOptions);
 
     if (result.error) {
-        const { status } = result.error;
-        if (status === 401 || status === 403) {
-            // Clear token
-            localStorage.removeItem("jwtToken");
+        const {status} = result.error;
 
-            // Redirect to login page
-            window.location.href = "/login";
+        if (status === 401) {
+            localStorage.removeItem("jwtToken");
 
             return {
                 ...result,
                 error: {
                     ...result.error,
                     isUnauthorized: true,
+                },
+            };
+        }
+
+        if (status === 403) {
+            return {
+                ...result,
+                error: {
+                    ...result.error,
+                    isForbidden: true,
                 },
             };
         }

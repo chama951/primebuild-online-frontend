@@ -241,14 +241,6 @@ const Dashboard = () => {
                         </button>
                     ))}
                 </nav>
-
-                {sidebarMinimized && (
-                    <div className="p-3 border-t">
-                        <div className="w-8 h-8 mx-auto bg-gray-200 rounded-full flex items-center justify-center">
-                            <UserCircle className="w-4 h-4 text-gray-600"/>
-                        </div>
-                    </div>
-                )}
             </div>
 
             {!sidebarOpen && (

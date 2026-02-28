@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { X, Calendar, Filter } from "lucide-react";
 import {
     useGetPaymentsQuery,
     useGetPaymentsByDateQuery,
     useGetPaymentsByStatusQuery,
-    useUpdatePaymentMutation,
     useDeletePaymentMutation,
 } from "../../services/paymentApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
@@ -18,11 +17,12 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
     const [filterDate, setFilterDate] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
+
+    // Notification lifted to parent
     const [notification, setNotification] = useState({
         show: false,
         type: "",
         message: "",
-        action: null,
     });
 
     const {
@@ -46,7 +46,6 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
         refetch: refetchByStatus,
     } = useGetPaymentsByStatusQuery(filterStatus, { skip: !filterStatus });
 
-    const [updatePayment] = useUpdatePaymentMutation();
     const [deletePayment] = useDeletePaymentMutation();
 
     const getFilteredPayments = () => {
@@ -112,10 +111,6 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
         setSearchTerm("");
     };
 
-    const showNotification = (type, message, action = null) => {
-        setNotification({ show: true, type, message, action });
-    };
-
     const formatDate = (dateString) => (!dateString ? "N/A" : new Date(dateString).toLocaleString());
     const formatCurrency = (amount, currency = "LKR") =>
         new Intl.NumberFormat("en-LK", { style: "currency", currency, minimumFractionDigits: 2 }).format(amount);
@@ -132,23 +127,28 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
 
     return (
         <div className="container mx-auto p-4 space-y-6">
+
+            {/* Notification Dialog */}
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
-                setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
+                setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "" })}
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
-                setShowErrorDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
+                setShowErrorDialog={() => setNotification({ show: false, type: "", message: "" })}
                 errorMessage={notification.message}
             />
 
+            {/* Payment Details Modal */}
             {selectedPaymentId && (
                 <PaymentDetails
                     paymentId={selectedPaymentId}
                     onClose={() => setSelectedPaymentId(null)}
                     refetchPayments={handleRefetch}
+                    onNotify={(type, message) => setNotification({ show: true, type, message })}
                 />
             )}
 
+            {/* Filters */}
             <div className="bg-white rounded-lg border p-4 space-y-4">
                 <div className="relative">
                     <input
@@ -201,6 +201,7 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
                 </div>
             </div>
 
+            {/* Payment Table */}
             <div className="bg-white rounded-lg border overflow-hidden">
                 {loading ? (
                     <div className="flex justify-center items-center h-64">

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useGetItemsQuery } from "../../services/itemApi.js";
+import React, {useState, useEffect} from "react";
+import {useGetItemsQuery} from "../../services/itemApi.js";
 import {
     useCreateItemDataMutation,
     useDeleteItemDataByItemIdAndVendorMutation
@@ -27,9 +27,9 @@ const Vendors = [
 ];
 
 const ItemData = () => {
-    const { data: items, isLoading: loadingItems, error: itemsError } = useGetItemsQuery();
-    const [createItemData, { isLoading: loadingData }] = useCreateItemDataMutation();
-    const [deleteItemData, { isLoading: deleting }] = useDeleteItemDataByItemIdAndVendorMutation();
+    const {data: items, isLoading: loadingItems, error: itemsError} = useGetItemsQuery();
+    const [createItemData, {isLoading: loadingData}] = useCreateItemDataMutation();
+    const [deleteItemData, {isLoading: deleting}] = useDeleteItemDataByItemIdAndVendorMutation();
 
     const [selectedItem, setSelectedItem] = useState("");
     const [selectedVendor, setSelectedVendor] = useState(Vendors[0]);
@@ -44,7 +44,7 @@ const ItemData = () => {
     });
 
     const formatCurrency = (amount) =>
-        new Intl.NumberFormat("en-LK", { minimumFractionDigits: 2 }).format(amount);
+        new Intl.NumberFormat("en-LK", {minimumFractionDigits: 2}).format(amount);
 
     const latestDiscount =
         chartData.length > 0
@@ -131,12 +131,12 @@ const ItemData = () => {
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
                 setShowSuccessDialog={() =>
-                    setNotification({ show: false, type: "", message: "" })
+                    setNotification({show: false, type: "", message: ""})
                 }
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
                 setShowErrorDialog={() =>
-                    setNotification({ show: false, type: "", message: "" })
+                    setNotification({show: false, type: "", message: ""})
                 }
                 errorMessage={notification.message}
                 errorAction={notification.errorAction}
@@ -200,23 +200,20 @@ const ItemData = () => {
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData}>
                                 <CartesianGrid strokeDasharray="3 3"/>
-                                <XAxis dataKey="date" tick={{fontSize: 10}} />
+                                <XAxis dataKey="date" tick={{fontSize: 10}}/>
                                 <YAxis
                                     domain={[
                                         (dataMin) => dataMin - 200,
                                         (dataMax) => dataMax + 200
                                     ]}
-                                    tick={{ fontSize: 10 }}
+                                    tick={{fontSize: 10}}
                                     tickFormatter={formatCurrency}
                                 />
-                                <Tooltip
-                                    contentStyle={{fontSize: "10px"}}
-                                    itemStyle={{fontSize: "10px"}}
-                                    labelStyle={{fontSize: "10px"}}
-                                />
-                                <Legend wrapperStyle={{fontSize: "10px"}} />
-                                <Line type="monotone" dataKey="ourPrice" stroke="#10b981" strokeWidth={2} dot={false} />
-                                <Line type="monotone" dataKey="vendorPrice" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                                <Tooltip/>
+                                <Legend wrapperStyle={{fontSize: "10px"}}/>
+                                <Line type="monotone" dataKey="ourPrice" stroke="#10b981" strokeWidth={2} dot={false}/>
+                                <Line type="monotone" dataKey="vendorPrice" stroke="#3b82f6" strokeWidth={2}
+                                      dot={false}/>
                             </LineChart>
                         </ResponsiveContainer>
                     )}

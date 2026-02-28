@@ -7,24 +7,40 @@ import {
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
+import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const ExchangeRate = () => {
     const { data: rateData, isLoading: loadingRate, error: rateError } = useGetExchangeRateQuery();
-
     const [days, setDays] = useState(5);
-
     const { data: lastDaysRates, isLoading: loadingDays, error: daysError } = useGetExchangeRateByDaysQuery(days);
-
-    const [convertUsdToLkr, { data: conversionResult, isLoading: converting, error: conversionError }] = useConvertUsdToLkrMutation();
-
+    const [convertUsdToLkr, { isLoading: converting }] = useConvertUsdToLkrMutation();
     const [usdAmount, setUsdAmount] = useState("");
+
+    // Notification state
+    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+    const [showErrorDialog, setShowErrorDialog] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
+
+    const handleNotify = (type, message) => {
+        if (type === "success") {
+            setSuccessMessage(message);
+            setShowSuccessDialog(true);
+        } else {
+            setErrorMessage(message);
+            setShowErrorDialog(true);
+        }
+    };
 
     const handleConvert = async () => {
         if (!usdAmount) return;
         try {
-            await convertUsdToLkr({ usdAmount: parseFloat(usdAmount), lkrAmount: null }).unwrap();
+            const response = await convertUsdToLkr({ usdAmount: parseFloat(usdAmount), lkrAmount: null }).unwrap();
+            // Display backend message directly
+            handleNotify("success", response.message || "Conversion successful!");
         } catch (err) {
             console.error("Conversion failed:", err);
+            handleNotify("error", err.data?.message || "Conversion failed.");
         }
     };
 
@@ -35,6 +51,16 @@ const ExchangeRate = () => {
 
     return (
         <div className="container mx-auto p-4 space-y-6">
+
+            {/* Notification dialogs */}
+            <NotificationDialogs
+                showSuccessDialog={showSuccessDialog}
+                setShowSuccessDialog={setShowSuccessDialog} // this now allows closing
+                successMessage={successMessage}
+                showErrorDialog={showErrorDialog}
+                setShowErrorDialog={setShowErrorDialog} // this now allows closing
+                errorMessage={errorMessage}
+            />
 
             <div className="bg-white rounded-lg border p-4 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 h-28">
 
@@ -68,15 +94,6 @@ const ExchangeRate = () => {
                             {converting ? "Converting..." : "Convert"}
                         </button>
                     </div>
-
-                    {conversionResult && (
-                        <div className="text-green-800 bg-green-100 px-2 py-1 rounded text-sm mt-1">
-                            {conversionResult.usdAmount} USD = {conversionResult.lkrAmount?.toLocaleString("en-LK", { style: "currency", currency: "LKR" })}
-                        </div>
-                    )}
-                    {conversionError && (
-                        <div className="text-red-500 text-sm mt-1">Conversion failed. Try again.</div>
-                    )}
                 </div>
             </div>
 

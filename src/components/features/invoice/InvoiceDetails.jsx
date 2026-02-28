@@ -6,17 +6,16 @@ import {useUpdateInvoiceMutation} from "../../../services/invoiceApi.js";
 import {useIsCustomerLoggedInQuery} from "../../../services/authApi.js";
 import NotificationDialogs from "../../common/NotificationDialogs.jsx";
 
-const InvoiceDetails = ({invoice, onClose, isSubmitting}) => {
+const InvoiceDetails = ({invoice, onClose, onUpdate, isSubmitting: parentSubmitting}) => {
     const [invoiceStatus, setInvoiceStatus] = useState(invoice.invoiceStatus);
     const printRef = useRef();
     const [updateInvoice, {isLoading}] = useUpdateInvoiceMutation();
+    const {data: isCustomerLoggedIn = false} = useIsCustomerLoggedInQuery();
 
     const [showSuccessDialog, setShowSuccessDialog] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
     const [showErrorDialog, setShowErrorDialog] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
-
-    const {data: isCustomerLoggedIn = false} = useIsCustomerLoggedInQuery();
 
     if (!invoice) return null;
 
@@ -25,6 +24,9 @@ const InvoiceDetails = ({invoice, onClose, isSubmitting}) => {
             ?.reduce((acc, item) => acc + (item.subtotal || 0), 0)
             .toFixed(2);
     }, [invoice]);
+
+    const formatCurrency = (amount) =>
+        new Intl.NumberFormat("en-LK", {minimumFractionDigits: 2}).format(amount);
 
     const handlePrint = async () => {
         const element = printRef.current;
@@ -39,24 +41,27 @@ const InvoiceDetails = ({invoice, onClose, isSubmitting}) => {
 
     const handleUpdate = async () => {
         try {
-            const itemList = invoice.invoiceItems.map((invoiceItem) => ({
-                id: invoiceItem.item.id,
-                quantity: String(invoiceItem.invoiceQuantity),
+            const itemList = invoice.invoiceItems.map((invItem) => ({
+                id: invItem.item.id,
+                quantity: String(invItem.invoiceQuantity),
             }));
 
             await updateInvoice({id: invoice.id, invoiceStatus, itemList}).unwrap();
 
             setSuccessMessage("Invoice updated successfully!");
             setShowSuccessDialog(true);
+
+            if (onUpdate) {
+                await onUpdate(invoiceStatus);
+            }
+
+            onClose();
         } catch (err) {
             console.error("Update failed:", err);
             setErrorMessage(err.data?.message || "Failed to update invoice");
             setShowErrorDialog(true);
         }
     };
-
-    const formatCurrency = (amount) =>
-        new Intl.NumberFormat("en-LK", {minimumFractionDigits: 2}).format(amount);
 
     return (
         <>
@@ -70,15 +75,13 @@ const InvoiceDetails = ({invoice, onClose, isSubmitting}) => {
                         ×
                     </button>
 
-                    <h2 className="text-2xl font-semibold text-gray-800 mb-1">
-                        Invoice #{invoice.id}
-                    </h2>
+                    <h2 className="text-2xl font-semibold text-gray-800 mb-1">Invoice #{invoice.id}</h2>
 
                     <p className="text-sm text-gray-500 mb-4">
-                        User: <span className="font-medium text-gray-700">{invoice.user?.username || "N/A"}</span> |
-                        Created:{" "}
-                        <span
-                            className="font-medium text-gray-700">{new Date(invoice.createdAt).toLocaleDateString()}</span>
+                        User: <span
+                        className="font-medium text-gray-700">{invoice.user?.username || "N/A"}</span> |{" "}
+                        Created: <span
+                        className="font-medium text-gray-700">{new Date(invoice.createdAt).toLocaleDateString()}</span>
                     </p>
 
                     <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
@@ -86,9 +89,7 @@ const InvoiceDetails = ({invoice, onClose, isSubmitting}) => {
                             <div className="flex items-center gap-3 flex-wrap">
                 <span
                     className={`px-3 py-1 rounded text-sm font-semibold ${
-                        invoiceStatus === "PAID"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
+                        invoiceStatus === "PAID" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
                     }`}
                 >
                   {invoiceStatus}
@@ -105,10 +106,10 @@ const InvoiceDetails = ({invoice, onClose, isSubmitting}) => {
 
                                 <button
                                     onClick={handleUpdate}
-                                    disabled={isLoading || isSubmitting}
+                                    disabled={isLoading || parentSubmitting}
                                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
                                 >
-                                    {isLoading || isSubmitting ? "Updating..." : "Update"}
+                                    {isLoading || parentSubmitting ? "Updating..." : "Update"}
                                 </button>
                             </div>
                         )}
@@ -146,9 +147,8 @@ const InvoiceDetails = ({invoice, onClose, isSubmitting}) => {
 
                                     <p className="text-gray-500 text-sm mb-1">
                                         Manufacturer:{" "}
-                                        <span className="font-medium text-gray-700">
-                      {invoiceItem.item.manufacturer?.manufacturerName || "-"}
-                    </span>
+                                        <span
+                                            className="font-medium text-gray-700">{invoiceItem.item.manufacturer?.manufacturerName || "-"}</span>
                                     </p>
 
                                     <p className="text-gray-600 text-sm">

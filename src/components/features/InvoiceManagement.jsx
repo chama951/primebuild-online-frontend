@@ -27,7 +27,6 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
         action: null
     });
 
-    // Fetch invoices based on user type
     const {
         data: invoices = [],
         error,
@@ -39,6 +38,9 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
 
     const [updateInvoice] = useUpdateInvoiceMutation();
     const [deleteInvoice] = useDeleteInvoiceMutation();
+
+    const isUnauthorized = error?.status === 401 || error?.status === 403;
+    if (isUnauthorized) return <Unauthorized />;
 
     useEffect(() => {
         if (refetchFlag) {
