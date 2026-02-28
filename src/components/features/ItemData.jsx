@@ -51,12 +51,10 @@ const ItemData = () => {
             ? chartData[chartData.length - 1].discountPercentage
             : null;
 
-    // 🔹 Clear chart when item or vendor changes
     useEffect(() => {
         setChartData([]);
     }, [selectedItem, selectedVendor]);
 
-    // 🔥 FETCH (POST)
     const handleFetchData = async () => {
         if (!selectedItem || !selectedVendor) return;
 
@@ -90,7 +88,6 @@ const ItemData = () => {
         }
     };
 
-    // 🔥 DELETE
     const handleDelete = () => {
         if (!selectedItem || !selectedVendor) return;
 
@@ -144,7 +141,6 @@ const ItemData = () => {
                 isActionLoading={deleting}
             />
 
-            {/* Selection Panel */}
             <div className="bg-white border rounded-lg p-4 flex gap-6 items-end">
                 <div>
                     <label className="text-sm font-medium">Select Item</label>
@@ -189,7 +185,6 @@ const ItemData = () => {
                 )}
             </div>
 
-            {/* Chart Section */}
             <div className="bg-white border rounded-lg p-4 h-[28rem] flex flex-col">
                 <div className="flex-1">
                     {loadingData ? (
@@ -219,7 +214,6 @@ const ItemData = () => {
                     )}
                 </div>
 
-                {/* Buttons */}
                 <div className="flex gap-3 justify-end mt-4">
                     <button
                         onClick={handleFetchData}
