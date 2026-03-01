@@ -24,7 +24,6 @@ const ItemAnalytics = () => {
 
     const totalPages = analyticsData ? Math.ceil(analyticsData.length / itemsPerPage) : 1;
 
-    // Reset to page 1 when changing attribute
     React.useEffect(() => {
         setCurrentPage(1);
     }, [selectedAttribute]);
@@ -59,9 +58,15 @@ const ItemAnalytics = () => {
                                 <th className="px-4 py-3 text-left font-medium text-gray-600 uppercase tracking-wide">Item</th>
                                 <th className="px-4 py-3 text-left font-medium text-gray-600 uppercase tracking-wide">Views</th>
                                 <th className="px-4 py-3 text-left font-medium text-gray-600 uppercase tracking-wide">Sales</th>
-                                <th className="px-4 py-3 text-left font-medium text-gray-600 uppercase tracking-wide">Cart Adds</th>
-                                <th className="px-4 py-3 text-left font-medium text-gray-600 uppercase tracking-wide">Revenue (LKR)</th>
-                                <th className="px-4 py-3 text-left font-medium text-gray-600 uppercase tracking-wide">Trend Score</th>
+                                <th className="px-4 py-3 text-left font-medium text-gray-600 uppercase tracking-wide">Cart
+                                    Adds
+                                </th>
+                                <th className="px-4 py-3 text-left font-medium text-gray-600 uppercase tracking-wide">Revenue
+
+                                </th>
+                                <th className="px-4 py-3 text-left font-medium text-gray-600 uppercase tracking-wide">Trend
+                                    Score
+                                </th>
                             </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
@@ -72,7 +77,7 @@ const ItemAnalytics = () => {
                                     <td className="px-4 py-2">{a.totalSales}</td>
                                     <td className="px-4 py-2">{a.totalCartAdds}</td>
                                     <td className="px-4 py-2 font-semibold text-blue-600">
-                                        {a.totalRevenue.toLocaleString("en-LK", { style: "currency", currency: "LKR" })}
+                                        {a.totalRevenue.toLocaleString("en-LK", {style: "currency", currency: "LKR"})}
                                     </td>
                                     <td className="px-4 py-2 font-medium">{a.trendScore}</td>
                                 </tr>

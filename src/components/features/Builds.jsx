@@ -1,15 +1,15 @@
-import { useState, useMemo } from "react";
-import { useGetStaffMadeBuildsQuery, useGetCurrentUserBuildsQuery } from "../../services/buildApi.js";
+import React, {useState, useMemo, useEffect} from "react";
+import {useGetStaffMadeBuildsQuery, useGetCurrentUserBuildsQuery} from "../../services/buildApi.js";
+import {useCreateOrUpdateCartMutation, useGetCartQuery} from "../../services/cartApi.js";
 import BuildDetails from "./BuildDetails.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
-import { useCreateOrUpdateCartMutation, useGetCartQuery } from "../../services/cartApi.js";
 
 const Builds = () => {
     const [activeTab, setActiveTab] = useState("prime");
-    const { data: staffBuilds = [], isLoading: isStaffLoading, isError: isStaffError } = useGetStaffMadeBuildsQuery();
-    const { data: myBuilds = [], isLoading: isMyLoading, isError: isMyError } = useGetCurrentUserBuildsQuery();
+    const {data: staffBuilds = [], isLoading: isStaffLoading, isError: isStaffError} = useGetStaffMadeBuildsQuery();
+    const {data: myBuilds = [], isLoading: isMyLoading, isError: isMyError} = useGetCurrentUserBuildsQuery();
 
-    const { data: cartData } = useGetCartQuery();
+    const {data: cartData} = useGetCartQuery();
     const [updateCart] = useCreateOrUpdateCartMutation();
 
     const [selectedItemsByComponent, setSelectedItemsByComponent] = useState({});
@@ -20,6 +20,9 @@ const Builds = () => {
     const [successMessage, setSuccessMessage] = useState("");
     const [showErrorDialog, setShowErrorDialog] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
 
     const builds = useMemo(() => (activeTab === "prime" ? staffBuilds : myBuilds), [activeTab, staffBuilds, myBuilds]);
     const isLoading = activeTab === "prime" ? isStaffLoading : isMyLoading;
@@ -35,9 +38,7 @@ const Builds = () => {
             });
         });
         const result = {};
-        Object.keys(map).forEach((k) => {
-            result[k] = Array.from(map[k]);
-        });
+        Object.keys(map).forEach((k) => (result[k] = Array.from(map[k])));
         return result;
     }, [builds]);
 
@@ -55,18 +56,26 @@ const Builds = () => {
         });
     }, [builds, selectedItemsByComponent, priceRange]);
 
+    const totalPages = Math.ceil(filteredBuilds.length / itemsPerPage);
+    const paginatedBuilds = filteredBuilds.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    useEffect(() => setCurrentPage(1), [selectedItemsByComponent, priceRange, activeTab]);
+
     const handleAddBuildToCart = async (build) => {
         try {
             const existingItems = cartData?.cartItemList || [];
-            const updatedItemList = existingItems.map((ci) => ({ id: ci.item.id, quantity: ci.cartQuantity }));
+            const updatedItemList = existingItems.map((ci) => ({id: ci.item.id, quantity: ci.cartQuantity}));
 
             build.buildItemList.forEach((bItem) => {
                 const index = updatedItemList.findIndex((ci) => ci.id === bItem.item.id);
                 if (index !== -1) updatedItemList[index].quantity += bItem.buildQuantity;
-                else updatedItemList.push({ id: bItem.item.id, quantity: bItem.buildQuantity });
+                else updatedItemList.push({id: bItem.item.id, quantity: bItem.buildQuantity});
             });
 
-            await updateCart({ itemList: updatedItemList }).unwrap();
+            await updateCart({itemList: updatedItemList}).unwrap();
             setSuccessMessage(`Added "${build.buildName}" to cart`);
             setShowSuccessDialog(true);
         } catch (err) {
@@ -79,12 +88,9 @@ const Builds = () => {
     if (isError) return <div className="text-red-500 py-4">Failed to load builds.</div>;
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-4 flex gap-6">
-
-            {/* Sidebar */}
+        <div className="w-full px-4 py-4 flex gap-6">
             <div className="w-64 flex-shrink-0 border-r pr-4 sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto">
                 <h4 className="font-semibold mb-2">Components & Items</h4>
-
                 {Object.entries(componentsWithItems).map(([compName, items]) => (
                     <div key={compName} className="mb-4">
                         <h5 className="font-medium mb-1">{compName}</h5>
@@ -94,20 +100,19 @@ const Builds = () => {
                                     key={itemName}
                                     onClick={() =>
                                         setSelectedItemsByComponent(prev => {
-                                            // toggle: deselect if already selected
                                             if (prev[compName] === itemName) {
-                                                const copy = { ...prev };
-                                                delete copy[compName]; // nothing selected = "All"
+                                                const copy = {...prev};
+                                                delete copy[compName];
                                                 return copy;
                                             }
-                                            // select this item
-                                            return { ...prev, [compName]: itemName };
+                                            return {...prev, [compName]: itemName};
                                         })
                                     }
                                     className={`px-3 py-1 rounded-lg border text-left shadow-sm transition font-medium
-                                        ${selectedItemsByComponent[compName] === itemName
+                    ${selectedItemsByComponent[compName] === itemName
                                         ? "bg-blue-600 text-white border-blue-600"
-                                        : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"}`}
+                                        : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"
+                                    }`}
                                 >
                                     {itemName}
                                 </button>
@@ -115,7 +120,6 @@ const Builds = () => {
                         </div>
                     </div>
                 ))}
-
                 {Object.keys(selectedItemsByComponent).length > 0 && (
                     <button
                         onClick={clearFilters}
@@ -125,7 +129,6 @@ const Builds = () => {
                     </button>
                 )}
 
-                {/* Price range */}
                 <div className="mt-6">
                     <h4 className="font-semibold mb-2">Price Range (LKR)</h4>
                     <div className="flex gap-2">
@@ -145,39 +148,43 @@ const Builds = () => {
                         />
                     </div>
                 </div>
-            </div>
 
-            {/* Build cards */}
-            <div className="flex-1">
-                {/* Tabs */}
-                <div className="flex gap-4 mb-4">
-                    <button
-                        onClick={() => setActiveTab("my")}
-                        className={`px-4 py-2 rounded-lg border ${activeTab === "my" ? "bg-blue-600 text-white border-blue-600" : "bg-white border-gray-300 hover:bg-blue-50"}`}
-                    >
-                        My Builds
-                    </button>
+                <div className="flex gap-2 mt-6">
                     <button
                         onClick={() => setActiveTab("prime")}
                         className={`px-4 py-2 rounded-lg border ${activeTab === "prime" ? "bg-blue-600 text-white border-blue-600" : "bg-white border-gray-300 hover:bg-blue-50"}`}
                     >
                         Prime Builds
                     </button>
+                    <button
+                        onClick={() => setActiveTab("my")}
+                        className={`px-4 py-2 rounded-lg border ${activeTab === "my" ? "bg-blue-600 text-white border-blue-600" : "bg-white border-gray-300 hover:bg-blue-50"}`}
+                    >
+                        My Builds
+                    </button>
                 </div>
+            </div>
 
-                {/* Grid with twice-wide cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                    {filteredBuilds.length > 0 ? (
-                        filteredBuilds.map((build) => (
-                            <div key={build.id} className="border rounded-lg p-6 shadow hover:shadow-md transition flex flex-col justify-between bg-white">
+            <div className="flex-1 flex flex-col gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {paginatedBuilds.length > 0 ? (
+                        paginatedBuilds.map((build) => (
+                            <div
+                                key={build.id}
+                                className="border rounded-lg p-6 shadow hover:shadow-md transition flex flex-col justify-between bg-white"
+                            >
                                 <div onClick={() => setSelectedBuild(build)} className="cursor-pointer">
                                     <h3 className="font-semibold text-lg line-clamp-2">{build.buildName}</h3>
                                     <p className="text-gray-500 mt-1">Created by: {build.user.username}</p>
                                     <p className="text-gray-500 mt-2 text-xs">Created: {new Date(build.createdAt).toLocaleDateString()}</p>
-                                    <p className="text-gray-700 mt-2 font-medium">Total Price: LKR {build.totalPrice.toLocaleString()}</p>
+                                    <p className="text-gray-700 mt-2 font-medium">Total Price:
+                                        LKR {build.totalPrice.toLocaleString()}</p>
                                 </div>
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); handleAddBuildToCart(build); }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddBuildToCart(build);
+                                    }}
                                     className="mt-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                                 >
                                     Add to Cart
@@ -188,9 +195,37 @@ const Builds = () => {
                         <div className="text-gray-500 col-span-full py-4">No builds match the selected filters.</div>
                     )}
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="flex justify-center gap-2 mt-4">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+                        >
+                            Prev
+                        </button>
+                        {[...Array(totalPages)].map((_, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setCurrentPage(idx + 1)}
+                                className={`px-3 py-1 border rounded ${currentPage === idx + 1 ? "bg-blue-600 text-white" : "hover:bg-gray-100"}`}
+                            >
+                                {idx + 1}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </div>
 
-            {selectedBuild && <BuildDetails build={selectedBuild} onClose={() => setSelectedBuild(null)} />}
+            {selectedBuild && <BuildDetails build={selectedBuild} onClose={() => setSelectedBuild(null)}/>}
 
             <NotificationDialogs
                 showSuccessDialog={showSuccessDialog}

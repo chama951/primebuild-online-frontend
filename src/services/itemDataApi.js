@@ -1,4 +1,4 @@
-import { baseApi } from "./baseApi.js";
+import {baseApi} from "./baseApi.js";
 
 export const itemDataApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
@@ -12,7 +12,7 @@ export const itemDataApi = baseApi.injectEndpoints({
         }),
 
         getItemDataByItemIdAndVendor: builder.query({
-            query: ({ item_id, vendor }) =>
+            query: ({item_id, vendor}) =>
                 `/item_data/${item_id}?vendor=${vendor}`,
         }),
 
@@ -23,7 +23,7 @@ export const itemDataApi = baseApi.injectEndpoints({
         }),
 
         deleteItemDataByItemIdAndVendor: builder.mutation({
-            query: ({ item_id, vendor }) => ({
+            query: ({item_id, vendor}) => ({
                 url: `/item_data/${item_id}?vendor=${vendor}`,
                 method: "DELETE",
             }),

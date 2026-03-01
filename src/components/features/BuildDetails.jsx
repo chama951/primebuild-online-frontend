@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from "react";
-import { useCreateOrUpdateCartMutation, useGetCartQuery } from "../../services/cartApi.js";
+import React, {useState, useMemo} from "react";
+import {useCreateOrUpdateCartMutation, useGetCartQuery} from "../../services/cartApi.js";
 
-const BuildDetails = ({ build, onClose }) => {
-    const { data: cartData } = useGetCartQuery();
+const BuildDetails = ({build, onClose}) => {
+    const {data: cartData} = useGetCartQuery();
     const [updateCart] = useCreateOrUpdateCartMutation();
     const [showMessage, setShowMessage] = useState("");
 
@@ -29,13 +29,13 @@ const BuildDetails = ({ build, onClose }) => {
     const handleAddItemToCart = async (item, quantity) => {
         try {
             const existingItems = cartData?.cartItemList || [];
-            const updatedItemList = existingItems.map((ci) => ({ id: ci.item.id, quantity: ci.cartQuantity }));
+            const updatedItemList = existingItems.map((ci) => ({id: ci.item.id, quantity: ci.cartQuantity}));
 
             const index = updatedItemList.findIndex((ci) => ci.id === item.id);
             if (index !== -1) updatedItemList[index].quantity += quantity;
-            else updatedItemList.push({ id: item.id, quantity });
+            else updatedItemList.push({id: item.id, quantity});
 
-            await updateCart({ itemList: updatedItemList }).unwrap();
+            await updateCart({itemList: updatedItemList}).unwrap();
             setShowMessage(`Added "${item.itemName}" to cart`);
             setTimeout(() => setShowMessage(""), 3000);
         } catch (err) {
@@ -95,7 +95,8 @@ const BuildDetails = ({ build, onClose }) => {
                                 <h3 className="font-semibold text-base text-gray-800 mb-1 truncate">{item.itemName}</h3>
 
                                 <p className="text-gray-500 text-sm mb-1">
-                                    Manufacturer: <span className="font-medium text-gray-700">{item.manufacturer?.manufacturerName}</span>
+                                    Manufacturer: <span
+                                    className="font-medium text-gray-700">{item.manufacturer?.manufacturerName}</span>
                                 </p>
 
                                 {Object.keys(itemFeaturesByType).length > 0 && (
@@ -115,13 +116,14 @@ const BuildDetails = ({ build, onClose }) => {
                                     </div>
                                 )}
 
-                                {/* Price */}
                                 <p className="text-gray-800 font-medium text-sm mb-1">
                                     Price:{" "}
                                     {item.discountPercentage > 0 ? (
                                         <>
-                                            <span className="line-through text-gray-400 text-sm">LKR {item.price.toLocaleString()}</span>{" "}
-                                            <span className="text-green-600 font-semibold">LKR {discountedPrice.toLocaleString()}</span>
+                                            <span
+                                                className="line-through text-gray-400 text-sm">LKR {item.price.toLocaleString()}</span>{" "}
+                                            <span
+                                                className="text-green-600 font-semibold">LKR {discountedPrice.toLocaleString()}</span>
                                         </>
                                     ) : (
                                         <>LKR {item.price.toLocaleString()}</>
@@ -129,7 +131,8 @@ const BuildDetails = ({ build, onClose }) => {
                                 </p>
 
                                 <p className="text-gray-500 text-sm mt-1 mb-2">
-                                    Quantity in Build: <span className="font-medium text-gray-700">{bItem.buildQuantity}</span>
+                                    Quantity in Build: <span
+                                    className="font-medium text-gray-700">{bItem.buildQuantity}</span>
                                 </p>
 
                                 <button

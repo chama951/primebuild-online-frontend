@@ -190,18 +190,20 @@ const BuildCart = () => {
                 isActionLoading={isSubmitting}
             />
 
-            <div className="bg-white rounded-lg border p-4 flex gap-3 items-center">
+            <div
+                className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col md:flex-row gap-3 items-center">
                 <input
                     type="text"
                     placeholder="Build name"
                     value={buildName}
                     onChange={(e) => setBuildName(e.target.value)}
-                    className="flex-1 h-10 px-3 border rounded text-sm"
+                    className="flex-1 h-12 px-4 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                 />
+
                 <select
                     value={currentBuildId || ""}
                     onChange={(e) => setCurrentBuildId(Number(e.target.value) || null)}
-                    className="h-10 w-56 px-3 border rounded text-sm"
+                    className="h-12 w-full md:w-56 px-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                 >
                     <option value="">New Build</option>
                     {userBuilds.map((b) => (
@@ -211,14 +213,20 @@ const BuildCart = () => {
                     ))}
                 </select>
 
-                <button onClick={handleSaveBuild} disabled={isSubmitting}
-                        className="px-4 py-2 bg-green-600 text-white rounded">
+                <button
+                    onClick={handleSaveBuild}
+                    disabled={isSubmitting}
+                    className="w-full md:w-auto px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                     Save
                 </button>
 
                 {currentBuildId && (
-                    <button onClick={handleDeleteBuild} disabled={isSubmitting}
-                            className="px-4 py-2 bg-red-600 text-white rounded">
+                    <button
+                        onClick={handleDeleteBuild}
+                        disabled={isSubmitting}
+                        className="w-full md:w-auto px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                         Delete
                     </button>
                 )}
@@ -227,7 +235,8 @@ const BuildCart = () => {
             <div className="space-y-3">
                 {components.map((comp) => {
                     const selectedItem = selectedItems.find((item) => item.component?.id === comp.id);
-                    const isDisabled = comp.powerSource && !allNonPowerSelected; // disable power source until others selected
+                    const isDisabled = comp.powerSource && !allNonPowerSelected;
+
                     return (
                         <div
                             key={comp.id}
@@ -237,27 +246,37 @@ const BuildCart = () => {
                                     setIsModalOpen(true);
                                 }
                             }}
-                            className={`flex justify-between items-center bg-white shadow-sm rounded-lg p-4 cursor-pointer hover:bg-gray-50 text-sm ${
-                                isDisabled ? "opacity-50 cursor-not-allowed" : ""
-                            }`}
+                            className={`
+          flex justify-between items-center bg-white shadow-sm rounded-lg p-4 cursor-pointer transition
+          hover:shadow-md hover:bg-gray-50
+          ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}
+        `}
                         >
-                            <div>{comp.componentName}</div>
+                            {/* Component name + selected item on same line */}
+                            <div className="flex-1 flex justify-between items-center gap-4">
+                                <div className="font-semibold text-gray-800">{comp.componentName}</div>
+
+                                {selectedItem && (
+                                    <div className="text-sm text-gray-600 flex items-center gap-2">
+                                        <span className="font-medium">{selectedItem.itemName}</span>
+                                        <span className="text-green-600 font-semibold">
+                Rs {formatCurrency(selectedItem.price)} × {selectedItem.selectedQuantity}
+              </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Remove button */}
                             {selectedItem && (
-                                <div className="flex items-center gap-3">
-                                    <span>{selectedItem.itemName}</span>
-                                    <span className=" text-green-600">
-                    Rs {formatCurrency(selectedItem.price)} × {selectedItem.selectedQuantity}
-                  </span>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleRemoveItem(comp.id);
-                                        }}
-                                        className="text-red-500"
-                                    >
-                                        <Trash2 size={16}/>
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveItem(comp.id);
+                                    }}
+                                    className="text-red-500 hover:text-red-700 transition ml-4"
+                                >
+                                    <Trash2 size={20}/>
+                                </button>
                             )}
                         </div>
                     );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import ComponentFeatureSection from "./component/ComponentFeatureSection.jsx";
@@ -10,7 +10,7 @@ import {
 } from "../../services/componentApi.js";
 import Unauthorized from "../common/Unauthorized.jsx";
 
-const ComponentManagement = ({ refetchFlag, resetFlag }) => {
+const ComponentManagement = ({refetchFlag, resetFlag}) => {
     const [selectedComponent, setSelectedComponent] = useState(null);
     const [componentName, setComponentName] = useState("");
     const [isBuildComponent, setIsBuildComponent] = useState(false);
@@ -55,7 +55,7 @@ const ComponentManagement = ({ refetchFlag, resetFlag }) => {
     };
 
     if (isUnauthorized()) {
-        return <Unauthorized />;
+        return <Unauthorized/>;
     }
 
     const filteredComponents = components.filter((component) =>
@@ -70,12 +70,12 @@ const ComponentManagement = ({ refetchFlag, resetFlag }) => {
     );
 
     const showNotification = (type, message, action = null) => {
-        setNotification({ show: true, type, message, action });
+        setNotification({show: true, type, message, action});
     };
 
     const handleConfirmAction = async () => {
         if (notification.action) {
-            const { callback } = notification.action;
+            const {callback} = notification.action;
             setIsSubmitting(true);
             try {
                 const result = await callback();
@@ -86,7 +86,7 @@ const ComponentManagement = ({ refetchFlag, resetFlag }) => {
                 showNotification("error", errorMessage);
             } finally {
                 setIsSubmitting(false);
-                setNotification((prev) => ({ ...prev, action: null }));
+                setNotification((prev) => ({...prev, action: null}));
             }
         }
     };
@@ -239,7 +239,7 @@ const ComponentManagement = ({ refetchFlag, resetFlag }) => {
                                 Prev
                             </button>
 
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
                                 <button
                                     key={page}
                                     onClick={() => setCurrentPage(page)}
@@ -357,10 +357,10 @@ const ComponentManagement = ({ refetchFlag, resetFlag }) => {
 
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
-                setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
+                setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
-                setShowErrorDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
+                setShowErrorDialog={() => setNotification({show: false, type: "", message: "", action: null})}
                 errorMessage={notification.message}
                 errorAction={notification.action}
                 onErrorAction={handleConfirmAction}

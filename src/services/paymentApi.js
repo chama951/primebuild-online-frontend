@@ -1,4 +1,4 @@
-import { baseApi } from "./baseApi.js";
+import {baseApi} from "./baseApi.js";
 
 export const paymentApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
@@ -10,7 +10,7 @@ export const paymentApi = baseApi.injectEndpoints({
 
         getPaymentById: builder.query({
             query: (id) => `/payment/${id}`,
-            providesTags: (result, error, id) => [{ type: "Payment", id }],
+            providesTags: (result, error, id) => [{type: "Payment", id}],
         }),
 
         getPaymentsByLoggedIn: builder.query({
@@ -43,12 +43,12 @@ export const paymentApi = baseApi.injectEndpoints({
         }),
 
         updatePayment: builder.mutation({
-            query: ({ id, ...paymentData }) => ({
+            query: ({id, ...paymentData}) => ({
                 url: `/payment/${id}`,
                 method: "PUT",
                 body: paymentData,
             }),
-            invalidatesTags: (result, error, { id }) => [{ type: "Payment", id }],
+            invalidatesTags: (result, error, {id}) => [{type: "Payment", id}],
         }),
 
         deletePayment: builder.mutation({

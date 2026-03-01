@@ -1,4 +1,4 @@
-import { baseApi } from "./baseApi.js";
+import {baseApi} from "./baseApi.js";
 
 export const itemAnalyticsApi = baseApi.injectEndpoints({
     endpoints: (build) => ({
@@ -13,10 +13,10 @@ export const itemAnalyticsApi = baseApi.injectEndpoints({
             query: (attribute) => ({
                 url: `/analytics`,
                 method: "GET",
-                params: { attribute }, // Pass attribute only when filtering
+                params: {attribute},
             }),
             providesTags: (result, error, attribute) => [
-                { type: "ItemAnalytics", id: attribute },
+                {type: "ItemAnalytics", id: attribute},
             ],
         }),
 
@@ -25,7 +25,7 @@ export const itemAnalyticsApi = baseApi.injectEndpoints({
                 url: `/analytics`,
                 method: "GET",
             }),
-            providesTags: [{ type: "ItemAnalytics", id: "trending" }],
+            providesTags: [{type: "ItemAnalytics", id: "trending"}],
         }),
     }),
 });

@@ -2,12 +2,10 @@ import {baseApi} from "./baseApi.js";
 
 export const userApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
-        // Get current authenticated user
         getCurrentUser: builder.query({
             query: () => "/auth/self",
             providesTags: ["CurrentUser"],
         }),
-        // Get all users with optional filters
         getUsers: builder.query({
             query: ({username, email, type} = {}) => {
                 let url = "/user";
@@ -29,31 +27,26 @@ export const userApi = baseApi.injectEndpoints({
                 ] : [{type: "User", id: "LIST"}],
         }),
 
-        // Get user by ID
         getUserById: builder.query({
             query: (id) => `/user/${id}`,
             providesTags: (result, error, id) => [{type: "User", id}],
         }),
 
-        // Get user by username
         getUserByUsername: builder.query({
             query: (username) => `/user?username=${username}`,
             providesTags: (result, error, username) => [{type: "User", id: username}],
         }),
 
-        // Get user by email
         getUserByEmail: builder.query({
             query: (email) => `/user?email=${email}`,
             providesTags: (result, error, email) => [{type: "User", id: email}],
         }),
 
-        // Get users by type (staff or customer)
         getUsersByType: builder.query({
             query: (type) => `/user?type=${type}`,
             providesTags: (result, error, type) => [{type: "User", id: type}],
         }),
 
-        // Update user
         updateUser: builder.mutation({
             query: ({id, ...userData}) => ({
                 url: `/user/${id}`,
@@ -66,7 +59,6 @@ export const userApi = baseApi.injectEndpoints({
             ],
         }),
 
-        // Delete user
         deleteUser: builder.mutation({
             query: (id) => ({
                 url: `/user/${id}`,
@@ -77,7 +69,6 @@ export const userApi = baseApi.injectEndpoints({
                 {type: "User", id: "LIST"},
             ],
         }),
-        // Forgot Password (Send PIN)
         forgotPassword: builder.mutation({
             query: (email) => ({
                 url: `/auth/forgot-password`,
@@ -86,7 +77,6 @@ export const userApi = baseApi.injectEndpoints({
             }),
         }),
 
-        // Reset Password
         resetPassword: builder.mutation({
             query: (data) => ({
                 url: `/auth/reset-password`,

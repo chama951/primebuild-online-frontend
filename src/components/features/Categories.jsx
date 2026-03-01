@@ -1,16 +1,16 @@
-import React, { useState, useMemo } from "react";
-import { useGetComponentsQuery } from "../../services/componentApi.js";
-import { useGetItemsQuery } from "../../services/itemApi.js";
-import { useGetFeatureTypesQuery } from "../../services/featureTypeApi.js";
-import { useGetCartQuery, useCreateOrUpdateCartMutation } from "../../services/cartApi.js";
+import React, {useState, useMemo} from "react";
+import {useGetComponentsQuery} from "../../services/componentApi.js";
+import {useGetItemsQuery} from "../../services/itemApi.js";
+import {useGetFeatureTypesQuery} from "../../services/featureTypeApi.js";
+import {useGetCartQuery, useCreateOrUpdateCartMutation} from "../../services/cartApi.js";
 import ItemDetails from "./ItemDetails.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const Categories = () => {
-    const { data: components = [], isLoading: compLoading, isError: compError } = useGetComponentsQuery();
-    const { data: items = [], isLoading: itemsLoading, isError: itemsError } = useGetItemsQuery();
-    const { data: featureTypes = [] } = useGetFeatureTypesQuery();
-    const { data: cartData } = useGetCartQuery();
+    const {data: components = [], isLoading: compLoading, isError: compError} = useGetComponentsQuery();
+    const {data: items = [], isLoading: itemsLoading, isError: itemsError} = useGetItemsQuery();
+    const {data: featureTypes = []} = useGetFeatureTypesQuery();
+    const {data: cartData} = useGetCartQuery();
     const [updateCart] = useCreateOrUpdateCartMutation();
 
     const [selectedCategory, setSelectedCategory] = useState(null);
@@ -50,13 +50,15 @@ const Categories = () => {
         const set = new Set();
         items
             .filter(item => !selectedCategory || item.component?.id === selectedCategory)
-            .forEach(item => { if (item.manufacturer?.manufacturerName) set.add(item.manufacturer.manufacturerName); });
+            .forEach(item => {
+                if (item.manufacturer?.manufacturerName) set.add(item.manufacturer.manufacturerName);
+            });
         return Array.from(set);
     }, [items, selectedCategory]);
 
     const toggleFeature = (typeName, featureName) => {
         setSelectedFeatures(prev => {
-            const newSelected = { ...prev };
+            const newSelected = {...prev};
             if (newSelected[typeName] === featureName) delete newSelected[typeName];
             else newSelected[typeName] = featureName;
             return newSelected;
@@ -79,11 +81,11 @@ const Categories = () => {
     const handleAddToCart = async (item) => {
         try {
             const existingItems = cartData?.cartItemList || [];
-            const updatedItemList = existingItems.map(ci => ({ id: ci.item.id, quantity: ci.cartQuantity }));
+            const updatedItemList = existingItems.map(ci => ({id: ci.item.id, quantity: ci.cartQuantity}));
             const index = updatedItemList.findIndex(ci => ci.id === item.id);
             if (index !== -1) updatedItemList[index].quantity += 1;
-            else updatedItemList.push({ id: item.id, quantity: 1 });
-            await updateCart({ itemList: updatedItemList }).unwrap();
+            else updatedItemList.push({id: item.id, quantity: 1});
+            await updateCart({itemList: updatedItemList}).unwrap();
             setSuccessMessage(`Added ${item.itemName} to cart`);
             setShowSuccessDialog(true);
         } catch (err) {
@@ -94,9 +96,7 @@ const Categories = () => {
 
     const filteredItems = useMemo(() => {
         let filtered = items;
-
         if (selectedCategory) filtered = filtered.filter(item => item.component?.id === selectedCategory);
-
         const selectedTypes = Object.keys(selectedFeatures);
         if (selectedTypes.length > 0) {
             filtered = filtered.filter(item =>
@@ -108,12 +108,9 @@ const Categories = () => {
                 )
             );
         }
-
         if (selectedManufacturer) filtered = filtered.filter(item => item.manufacturer?.manufacturerName === selectedManufacturer);
-
         if (sortOrder === "asc") filtered.sort((a, b) => a.price - b.price);
         if (sortOrder === "desc") filtered.sort((a, b) => b.price - a.price);
-
         return filtered;
     }, [items, selectedCategory, selectedFeatures, selectedManufacturer, sortOrder, featureTypesById]);
 
@@ -124,15 +121,16 @@ const Categories = () => {
     if (compError || itemsError) return <div className="text-red-500 py-4">Failed to load data.</div>;
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-4 flex gap-6">
-
-            <div className="w-64 flex-shrink-0 border-r pr-4 sticky top-4 flex flex-col gap-6">
-
-                {/* Categories */}
+        <div className="w-full px-4 py-4 flex gap-6">
+            <div
+                className="w-64 flex-shrink-0 border-r pr-4 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto flex flex-col gap-6">
                 <div>
                     <h4 className="font-semibold mb-2">Components</h4>
                     <button
-                        onClick={() => { setSelectedCategory(null); clearFilters(); }}
+                        onClick={() => {
+                            setSelectedCategory(null);
+                            clearFilters();
+                        }}
                         className={`px-3 py-2 rounded-lg border text-left mb-2 w-full transition ${selectedCategory === null ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"}`}
                     >
                         All
@@ -140,7 +138,10 @@ const Categories = () => {
                     {components.map(component => (
                         <button
                             key={component.id}
-                            onClick={() => { setSelectedCategory(component.id); setCurrentPage(1); }}
+                            onClick={() => {
+                                setSelectedCategory(component.id);
+                                setCurrentPage(1);
+                            }}
                             className={`px-3 py-2 rounded-lg border text-left mb-2 w-full transition ${selectedCategory === component.id ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"}`}
                         >
                             {component.componentName}
@@ -187,6 +188,15 @@ const Categories = () => {
                     </div>
                 )}
 
+                {(Object.keys(selectedFeatures).length > 0 || selectedManufacturer || sortOrder) && (
+                    <button
+                        onClick={clearFilters}
+                        className="mt-2 px-3 py-1 rounded-lg border border-red-500 text-red-500 hover:bg-red-50 w-full"
+                    >
+                        Clear All Filters
+                    </button>
+                )}
+
                 <div className="mt-4">
                     <label className="font-medium mb-1 block">Sort by price:</label>
                     <select
@@ -199,15 +209,6 @@ const Categories = () => {
                         <option value="desc">High → Low</option>
                     </select>
                 </div>
-
-                {(Object.keys(selectedFeatures).length > 0 || selectedManufacturer || sortOrder) && (
-                    <button
-                        onClick={clearFilters}
-                        className="mt-2 px-3 py-1 rounded-lg border border-red-500 text-red-500 hover:bg-red-50 w-full"
-                    >
-                        Clear All Filters
-                    </button>
-                )}
             </div>
 
             <div className="flex-1">
@@ -221,7 +222,6 @@ const Categories = () => {
                                 onClick={() => setSelectedItem(item)}
                             >
                                 <h3 className="font-semibold text-md line-clamp-2">{item.itemName}</h3>
-                                <div>Image</div>
                                 <div className="flex flex-col justify-end mt-2">
                                     {item.discountPercentage > 0 ? (
                                         <div className="mb-1">
@@ -229,14 +229,18 @@ const Categories = () => {
                                             <p className="text-sm text-green-600 font-semibold">LKR {discountedPrice.toLocaleString()}</p>
                                         </div>
                                     ) : (
-                                        <p className="text-sm text-gray-600 mb-1">Price: LKR {item.price.toLocaleString()}</p>
+                                        <p className="text-sm text-gray-600 mb-1">Price:
+                                            LKR {item.price.toLocaleString()}</p>
                                     )}
-                                    {item.manufacturer && <p className="text-xs text-gray-500 mb-1">{item.manufacturer.manufacturerName}</p>}
-                                    {item.itemFeatureList.length > 0 && (
-                                        <p className="text-xs text-gray-500 mb-1">{item.itemFeatureList.map(f => f.feature.featureName).join(", ")}</p>
-                                    )}
+                                    {item.manufacturer &&
+                                        <p className="text-xs text-gray-500 mb-1">{item.manufacturer.manufacturerName}</p>}
+                                    {item.itemFeatureList.length > 0 &&
+                                        <p className="text-xs text-gray-500 mb-1">{item.itemFeatureList.map(f => f.feature.featureName).join(", ")}</p>}
                                     <button
-                                        onClick={e => { e.stopPropagation(); handleAddToCart(item); }}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            handleAddToCart(item);
+                                        }}
                                         className="mt-1 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                                     >
                                         Add to Cart
@@ -251,16 +255,22 @@ const Categories = () => {
 
                 {totalPages > 1 && (
                     <div className="flex justify-center gap-2 mt-4">
-                        <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50">Prev</button>
+                        <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}
+                                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50">Prev
+                        </button>
                         {[...Array(totalPages)].map((_, idx) => (
-                            <button key={idx} onClick={() => setCurrentPage(idx + 1)} className={`px-3 py-1 border rounded ${currentPage === idx + 1 ? "bg-blue-600 text-white" : "hover:bg-gray-100"}`}>{idx + 1}</button>
+                            <button key={idx} onClick={() => setCurrentPage(idx + 1)}
+                                    className={`px-3 py-1 border rounded ${currentPage === idx + 1 ? "bg-blue-600 text-white" : "hover:bg-gray-100"}`}>{idx + 1}</button>
                         ))}
-                        <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50">Next</button>
+                        <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50">Next
+                        </button>
                     </div>
                 )}
             </div>
 
-            {selectedItem && <ItemDetails item={selectedItem} onClose={() => setSelectedItem(null)} />}
+            {selectedItem && <ItemDetails item={selectedItem} onClose={() => setSelectedItem(null)}/>}
 
             <NotificationDialogs
                 showSuccessDialog={showSuccessDialog}

@@ -212,7 +212,7 @@ const ItemManagement = ({ refetchFlag, resetFlag }) => {
         },
         {
             key: "itemName",
-            header: "Item Name",
+            header: "item Name",
             render: (item) => (
                 <div className="text-sm font-medium">
                     {item.itemName}

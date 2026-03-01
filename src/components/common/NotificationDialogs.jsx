@@ -13,12 +13,12 @@ const NotificationDialogs = ({
                              }) => {
     return (
         <>
-            {/* Success Dialog */}
             {showSuccessDialog && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 max-w-sm w-full">
                         <div className="flex items-center mb-4">
-                            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3 text-green-700 font-bold">
+                            <div
+                                className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3 text-green-700 font-bold">
                                 ✓
                             </div>
                             <h3 className="text-lg font-medium">Success</h3>
@@ -34,12 +34,12 @@ const NotificationDialogs = ({
                 </div>
             )}
 
-            {/* Error / Confirmation Dialog */}
             {showErrorDialog && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 max-w-sm w-full">
                         <div className="flex items-center mb-4">
-                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3 text-red-700 font-bold">
+                            <div
+                                className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3 text-red-700 font-bold">
                                 ⚠
                             </div>
                             <h3 className="text-lg font-medium">

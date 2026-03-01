@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, {useState} from "react";
 import {
     useGetExchangeRateQuery,
     useGetExchangeRateByDaysQuery,
@@ -17,15 +17,15 @@ import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const ExchangeRate = () => {
 
-    const { data: rateData, isLoading: loadingRate, error: rateError } =
+    const {data: rateData, isLoading: loadingRate, error: rateError} =
         useGetExchangeRateQuery();
 
     const [days, setDays] = useState(5);
 
-    const { data: lastDaysRates, isLoading: loadingDays, error: daysError } =
+    const {data: lastDaysRates, isLoading: loadingDays, error: daysError} =
         useGetExchangeRateByDaysQuery(days);
 
-    const [convertUsdToLkr, { isLoading: converting }] =
+    const [convertUsdToLkr, {isLoading: converting}] =
         useConvertUsdToLkrMutation();
 
     const [usdAmount, setUsdAmount] = useState("");
@@ -159,10 +159,10 @@ const ExchangeRate = () => {
                     ) : (
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                                <YAxis domain={['dataMin', 'dataMax']} tick={{ fontSize: 12 }} />
-                                <Tooltip />
+                                <CartesianGrid strokeDasharray="3 3"/>
+                                <XAxis dataKey="date" tick={{fontSize: 12}}/>
+                                <YAxis domain={['dataMin', 'dataMax']} tick={{fontSize: 12}}/>
+                                <Tooltip/>
                                 <Line
                                     type="monotone"
                                     dataKey="rate"

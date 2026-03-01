@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import Unauthorized from "../common/Unauthorized.jsx";
@@ -10,15 +10,15 @@ import {
 } from "../../services/roleApi.js";
 
 const PRIVILEGES = [
-    { value: "ADMIN", label: "Admin" },
-    { value: "USER_MANAGEMENT", label: "User Management" },
-    { value: "INVENTORY_MANAGEMENT", label: "Inventory Management" },
-    { value: "BUILD_MANAGEMENT", label: "Build Management" },
-    { value: "INVOICE_MANAGEMENT", label: "Invoice Management" },
-    { value: "CUSTOMER", label: "Customer" },
+    {value: "ADMIN", label: "Admin"},
+    {value: "USER_MANAGEMENT", label: "User Management"},
+    {value: "INVENTORY_MANAGEMENT", label: "Inventory Management"},
+    {value: "BUILD_MANAGEMENT", label: "Build Management"},
+    {value: "INVOICE_MANAGEMENT", label: "Invoice Management"},
+    {value: "CUSTOMER", label: "Customer"},
 ];
 
-const RoleManagement = ({ refetchFlag, resetFlag }) => {
+const RoleManagement = ({refetchFlag, resetFlag}) => {
     const [selectedRole, setSelectedRole] = useState(null);
     const [roleName, setRoleName] = useState("");
     const [selectedPrivileges, setSelectedPrivileges] = useState([]);
@@ -33,7 +33,7 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
-    const { data: roles = [], error: rolesError, refetch: refetchRoles } = useGetRolesQuery();
+    const {data: roles = [], error: rolesError, refetch: refetchRoles} = useGetRolesQuery();
 
     const [createRole] = useCreateRoleMutation();
     const [updateRole] = useUpdateRoleMutation();
@@ -55,7 +55,7 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
     };
 
     if (isUnauthorized()) {
-        return <Unauthorized />;
+        return <Unauthorized/>;
     }
 
     const transformedRoles = roles.map(role => ({
@@ -74,12 +74,12 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
     );
 
     const showNotification = (type, message, action = null) => {
-        setNotification({ show: true, type, message, action });
+        setNotification({show: true, type, message, action});
     };
 
     const handleConfirmAction = async () => {
         if (notification.action) {
-            const { callback } = notification.action;
+            const {callback} = notification.action;
             setIsSubmitting(true);
             try {
                 const result = await callback();
@@ -91,7 +91,7 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
                 showNotification("error", errorMessage);
             } finally {
                 setIsSubmitting(false);
-                setNotification((prev) => ({ ...prev, action: null }));
+                setNotification((prev) => ({...prev, action: null}));
             }
         }
     };
@@ -260,7 +260,7 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
                                 Prev
                             </button>
 
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
                                 <button
                                     key={page}
                                     onClick={() => setCurrentPage(page)}
@@ -373,10 +373,10 @@ const RoleManagement = ({ refetchFlag, resetFlag }) => {
 
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
-                setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
+                setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
-                setShowErrorDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
+                setShowErrorDialog={() => setNotification({show: false, type: "", message: "", action: null})}
                 errorMessage={notification.message}
                 errorAction={notification.action}
                 onErrorAction={handleConfirmAction}

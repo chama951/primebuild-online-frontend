@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { X, Calendar, Filter } from "lucide-react";
+import React, {useEffect, useState, useMemo} from "react";
+import {X, Calendar, Filter} from "lucide-react";
 import {
     useGetPaymentsQuery,
     useGetPaymentsByDateQuery,
@@ -10,7 +10,7 @@ import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import Unauthorized from "../common/Unauthorized.jsx";
 import PaymentDetails from "./payment/PaymentDetails.jsx";
 
-const PaymentManagement = ({ refetchFlag, resetFlag }) => {
+const PaymentManagement = ({refetchFlag, resetFlag}) => {
     const [selectedPaymentId, setSelectedPaymentId] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("");
@@ -18,7 +18,6 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
-    // Notification lifted to parent
     const [notification, setNotification] = useState({
         show: false,
         type: "",
@@ -30,21 +29,21 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
         isLoading: loadingAll,
         error: errorAll,
         refetch: refetchAll,
-    } = useGetPaymentsQuery(undefined, { skip: filterStatus !== "" || filterDate !== "" });
+    } = useGetPaymentsQuery(undefined, {skip: filterStatus !== "" || filterDate !== ""});
 
     const {
         data: paymentsByDate = [],
         isLoading: loadingByDate,
         error: errorByDate,
         refetch: refetchByDate,
-    } = useGetPaymentsByDateQuery(filterDate, { skip: !filterDate });
+    } = useGetPaymentsByDateQuery(filterDate, {skip: !filterDate});
 
     const {
         data: paymentsByStatus = [],
         isLoading: loadingByStatus,
         error: errorByStatus,
         refetch: refetchByStatus,
-    } = useGetPaymentsByStatusQuery(filterStatus, { skip: !filterStatus });
+    } = useGetPaymentsByStatusQuery(filterStatus, {skip: !filterStatus});
 
     const [deletePayment] = useDeletePaymentMutation();
 
@@ -87,7 +86,7 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
     };
 
     const error = errorAll || errorByDate || errorByStatus;
-    if (error?.status === 401 || error?.status === 403) return <Unauthorized />;
+    if (error?.status === 401 || error?.status === 403) return <Unauthorized/>;
 
     const filteredPayments = useMemo(() => {
         const term = searchTerm.toLowerCase().trim();
@@ -113,42 +112,44 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
 
     const formatDate = (dateString) => (!dateString ? "N/A" : new Date(dateString).toLocaleString());
     const formatCurrency = (amount, currency = "LKR") =>
-        new Intl.NumberFormat("en-LK", { style: "currency", currency, minimumFractionDigits: 2 }).format(amount);
+        new Intl.NumberFormat("en-LK", {style: "currency", currency, minimumFractionDigits: 2}).format(amount);
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case "PAID": return "bg-green-100 text-green-800 border-green-200";
-            case "PENDING": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-            case "CANCELLED": return "bg-red-100 text-red-800 border-red-200";
-            case "REFUNDED": return "bg-purple-100 text-purple-800 border-purple-200";
-            default: return "bg-gray-100 text-gray-800 border-gray-200";
+            case "PAID":
+                return "bg-green-100 text-green-800 border-green-200";
+            case "PENDING":
+                return "bg-yellow-100 text-yellow-800 border-yellow-200";
+            case "CANCELLED":
+                return "bg-red-100 text-red-800 border-red-200";
+            case "REFUNDED":
+                return "bg-purple-100 text-purple-800 border-purple-200";
+            default:
+                return "bg-gray-100 text-gray-800 border-gray-200";
         }
     };
 
     return (
         <div className="container mx-auto p-4 space-y-6">
 
-            {/* Notification Dialog */}
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
-                setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "" })}
+                setShowSuccessDialog={() => setNotification({show: false, type: "", message: ""})}
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
-                setShowErrorDialog={() => setNotification({ show: false, type: "", message: "" })}
+                setShowErrorDialog={() => setNotification({show: false, type: "", message: ""})}
                 errorMessage={notification.message}
             />
 
-            {/* Payment Details Modal */}
             {selectedPaymentId && (
                 <PaymentDetails
                     paymentId={selectedPaymentId}
                     onClose={() => setSelectedPaymentId(null)}
                     refetchPayments={handleRefetch}
-                    onNotify={(type, message) => setNotification({ show: true, type, message })}
+                    onNotify={(type, message) => setNotification({show: true, type, message})}
                 />
             )}
 
-            {/* Filters */}
             <div className="bg-white rounded-lg border p-4 space-y-4">
                 <div className="relative">
                     <input
@@ -163,7 +164,7 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
                             onClick={() => setSearchTerm("")}
                             className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-5 h-5"/>
                         </button>
                     )}
                 </div>
@@ -176,7 +177,7 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
                             value={filterDate}
                             onChange={(e) => setFilterDate(e.target.value)}
                         />
-                        <Calendar className="absolute left-2 top-2.5 w-4 h-4 text-gray-400" />
+                        <Calendar className="absolute left-2 top-2.5 w-4 h-4 text-gray-400"/>
                     </div>
 
                     <select
@@ -196,7 +197,7 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
                         className="px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2"
                         disabled={!filterDate && !filterStatus && !searchTerm}
                     >
-                        <Filter className="w-4 h-4" /> Clear Filters
+                        <Filter className="w-4 h-4"/> Clear Filters
                     </button>
                 </div>
             </div>
@@ -219,7 +220,9 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid Date</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid
+                                        Date
+                                    </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                 </tr>
                                 </thead>
@@ -235,7 +238,8 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
                                         <td className="px-6 py-4 text-sm font-bold text-blue-600">{formatCurrency(payment.amount, payment.currency)}</td>
                                         <td className="px-6 py-4 text-xs">{formatDate(payment.paidAt)}</td>
                                         <td className="px-6 py-4 text-xs">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${getStatusBadge(payment.paymentStatus)}`}>
+                                            <span
+                                                className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${getStatusBadge(payment.paymentStatus)}`}>
                                                 {payment.paymentStatus}
                                             </span>
                                         </td>
@@ -255,7 +259,7 @@ const PaymentManagement = ({ refetchFlag, resetFlag }) => {
                                     Prev
                                 </button>
 
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
                                     <button
                                         key={page}
                                         onClick={() => setCurrentPage(page)}

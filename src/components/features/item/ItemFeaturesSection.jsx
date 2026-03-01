@@ -73,14 +73,12 @@ const ItemFeaturesSection = ({
         }
     });
 
-    // Refresh when component changes
     useEffect(() => {
         if (selectedComponent) {
             refetchComponentFeatureTypes();
         }
     }, [selectedComponent?.id, refetchComponentFeatureTypes]);
 
-    // Load features when item is selected
     useEffect(() => {
         if (selectedItem) {
             const featuresByType = {};
@@ -103,7 +101,6 @@ const ItemFeaturesSection = ({
         }
     }, [selectedItem]);
 
-    // Set first feature type when component changes
     useEffect(() => {
         if (featureTypes.length > 0 && !selectedFeatureTypeId) {
             const firstTypeId = featureTypes[0]?.id;
@@ -113,7 +110,6 @@ const ItemFeaturesSection = ({
         }
     }, [featureTypes, selectedFeatureTypeId]);
 
-    // Feature handlers
     const handleToggleFeature = async (feature) => {
         const typeId = feature.featureType?.id;
         const featureId = feature.id;
@@ -122,7 +118,6 @@ const ItemFeaturesSection = ({
         setIsSubmitting(true);
         try {
             if (isSelected) {
-                // Remove feature
                 if (selectedItem) {
                     const itemFeatureId = selectedFeatures[typeId][featureId].itemFeatureId;
                     const response = await deleteItemFeature(itemFeatureId).unwrap();
@@ -141,7 +136,6 @@ const ItemFeaturesSection = ({
                     return updated;
                 });
             } else {
-                // Add feature
                 if (selectedItem) {
                     const result = await createItemFeature({
                         itemId: selectedItem.id,
@@ -225,7 +219,6 @@ const ItemFeaturesSection = ({
                 setIsSubmitting(false);
             }
         } else {
-            // For new items not saved yet
             setSelectedFeatures(prev => ({
                 ...prev,
                 [typeId]: {
@@ -348,7 +341,6 @@ const ItemFeaturesSection = ({
         }));
     };
 
-    // Early return if no component selected
     if (!selectedComponent) return null;
 
     return (
@@ -359,7 +351,6 @@ const ItemFeaturesSection = ({
                 </div>
             </div>
 
-            {/* Feature Type Selector */}
             <div className="mb-4">
                 <div className="flex gap-2 mb-2">
                     <select
@@ -381,7 +372,6 @@ const ItemFeaturesSection = ({
                     </select>
                 </div>
 
-                {/* Create/Edit Feature Input */}
                 {selectedFeatureTypeId && (
                     <div className="flex gap-2 mb-3">
                         <input
@@ -429,7 +419,6 @@ const ItemFeaturesSection = ({
                 )}
             </div>
 
-            {/* Features List */}
             {Object.entries(groupedFeatures).map(([typeId, {featureTypeName, features}]) => {
                 const isExpanded = expandedFeatureTypes[typeId] !== false;
 

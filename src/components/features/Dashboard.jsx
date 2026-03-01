@@ -28,7 +28,7 @@ import UserManagement from "./UserManagement.jsx";
 import MyAccount from "./MyAccount.jsx";
 import InvoiceManagement from "./InvoiceManagement.jsx";
 import PaymentManagement from "./PaymentManagement.jsx";
-import Reports from "./Reports.jsx";
+// import Reports from "./Reports.jsx";
 import ExchangeRate from "./ExchangeRate.jsx";
 import ItemData from "./ItemData.jsx";
 import ItemAnalytics from "./ItemAnalytics.jsx";
@@ -80,19 +80,19 @@ const Dashboard = () => {
     }, [activePage]);
 
     const navigation = [
+        {id: "roles", label: "Roles", icon: UserCog},
+        {id: "users", label: "Users", icon: Users},
         {id: "manufacturers", label: "Manufacturers", icon: Factory},
         {id: "components", label: "Components", icon: Cpu},
         {id: "items", label: "Items", icon: Package},
         {id: "build", label: "Build", icon: Settings},
-        {id: "users", label: "Users", icon: Users},
-        {id: "roles", label: "Roles", icon: UserCog},
         {id: "cart", label: "Cart", icon: ShoppingCart},
         {id: "invoices", label: "Invoices", icon: FileText},
         {id: "payments", label: "Payments", icon: CreditCard},
         // {id: "reports", label: "Reports", icon: TrendingUp},
+        {id: "itemAnalytics", label: "item Analytics", icon: ChartPie},
         {id: "exchangeRate", label: "Exchange Rate", icon: DollarSign},
-        {id: "itemData", label: "Item Data", icon: ChartSpline},
-        {id: "itemAnalytics", label: "Item Analytics", icon: ChartPie},
+        {id: "itemData", label: "item Data", icon: ChartSpline},
         {id: "myAccount", label: "My Account", icon: UserCircle},
 
     ];
@@ -194,7 +194,7 @@ const Dashboard = () => {
                 sidebarOpen
                     ? sidebarMinimized
                         ? "w-20"
-                        : "w-55"
+                        : "w-60"
                     : "-translate-x-full"
             } bg-white border-r border-gray-200`}>
 
@@ -215,9 +215,10 @@ const Dashboard = () => {
                         title={sidebarMinimized ? "Expand sidebar" : "Minimize sidebar"}
                     >
                         {sidebarMinimized ? (
-                            <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors" />
+                            <ChevronRight
+                                className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors"/>
                         ) : (
-                            <ChevronLeft className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors" />
+                            <ChevronLeft className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors"/>
                         )}
                     </button>
                 </div>

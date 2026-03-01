@@ -129,7 +129,6 @@ const Navbar = () => {
     return (
         <nav
             className="bg-white shadow-md border border-gray-300 rounded-lg py-3 px-6 flex justify-between items-center">
-            {/* Logo */}
             <div
                 className="cursor-pointer"
                 onClick={() => navigate("/home")}

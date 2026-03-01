@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import {useEffect, useState, useMemo} from "react";
 import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import Unauthorized from "../common/Unauthorized.jsx";
@@ -10,7 +10,7 @@ import {
     useDeleteInvoiceMutation
 } from "../../services/invoiceApi.js";
 
-const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
+const InvoiceManagement = ({refetchFlag, resetFlag}) => {
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("");
@@ -40,7 +40,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
     const [deleteInvoice] = useDeleteInvoiceMutation();
 
     const isUnauthorized = error?.status === 401 || error?.status === 403;
-    if (isUnauthorized) return <Unauthorized />;
+    if (isUnauthorized) return <Unauthorized/>;
 
     useEffect(() => {
         if (refetchFlag) {
@@ -54,7 +54,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
     }, [searchTerm, filterStatus, filterDate, filterUserType]);
 
     if (error?.status === 401 || error?.status === 403)
-        return <Unauthorized />;
+        return <Unauthorized/>;
 
     const filteredInvoices = useMemo(() => {
         const term = searchTerm.toLowerCase().trim();
@@ -85,13 +85,13 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
     );
 
     const showNotification = (type, message, action = null) => {
-        setNotification({ show: true, type, message, action });
+        setNotification({show: true, type, message, action});
     };
 
     const handleConfirmAction = async () => {
         if (!notification.action) return;
 
-        const { callback } = notification.action;
+        const {callback} = notification.action;
         setIsSubmitting(true);
 
         try {
@@ -107,7 +107,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
             );
         } finally {
             setIsSubmitting(false);
-            setNotification(prev => ({ ...prev, action: null }));
+            setNotification(prev => ({...prev, action: null}));
         }
     };
 
@@ -206,7 +206,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
         },
         {
             key: "total",
-            header: "Total (Rs)",
+            header: "Total",
             render: inv => (
                 <div className="text-sm font-semibold">
                     Rs {formatCurrency(inv.totalAmount)}
@@ -282,7 +282,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
                         Prev
                     </button>
 
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
                         <button
                             key={page}
                             onClick={() => setCurrentPage(page)}

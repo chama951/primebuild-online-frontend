@@ -1,14 +1,14 @@
-import React, { useState } from "react";
-import { useSignupCustomerMutation } from "../../services/authApi.js";
+import React, {useState} from "react";
+import {useSignupCustomerMutation} from "../../services/authApi.js";
 
-export default function Signup({ onSuccess }) {
+export default function Signup({onSuccess}) {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
 
-    const [signup, { isLoading }] = useSignupCustomerMutation();
+    const [signup, {isLoading}] = useSignupCustomerMutation();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -20,7 +20,7 @@ export default function Signup({ onSuccess }) {
         }
 
         try {
-            await signup({ username, password, email }).unwrap();
+            await signup({username, password, email}).unwrap();
             onSuccess("Signup successful! Please login.");
             setUsername("");
             setEmail("");

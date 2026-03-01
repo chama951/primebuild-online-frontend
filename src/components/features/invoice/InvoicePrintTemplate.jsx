@@ -1,7 +1,7 @@
-import React, { forwardRef } from "react";
+import React, {forwardRef} from "react";
 import PrimeBuildBanner from "../../../assets/primebuild_banner-cropped.svg";
 
-const InvoicePrintTemplate = forwardRef(({ invoice }, ref) => {
+const InvoicePrintTemplate = forwardRef(({invoice}, ref) => {
     if (!invoice) return null;
 
     const formatCurrency = (amount) =>
@@ -19,9 +19,8 @@ const InvoicePrintTemplate = forwardRef(({ invoice }, ref) => {
         <div
             ref={ref}
             className="p-6 bg-white text-black shadow-lg rounded-md"
-            style={{ width: "800px", fontFamily: "Arial, sans-serif" }}
+            style={{width: "800px", fontFamily: "Arial, sans-serif"}}
         >
-            {/* Logo + Title Row */}
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-3xl font-bold">INVOICE</h1>
                 <img

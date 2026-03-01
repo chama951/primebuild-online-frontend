@@ -1,15 +1,15 @@
-import { useState } from "react";
-import { Trash2, Plus, Minus } from "lucide-react";
+import {useState} from "react";
+import {Trash2, Plus, Minus} from "lucide-react";
 import {
     useGetCartQuery,
     useCreateOrUpdateCartMutation,
 } from "../../services/cartApi.js";
-import { useCreateInvoiceMutation } from "../../services/invoiceApi.js";
+import {useCreateInvoiceMutation} from "../../services/invoiceApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import InvoiceDetails from "./invoice/InvoiceDetails.jsx";
 
-const Cart = ({ roles = [] }) => {
-    const { data: cart, isLoading, isError } = useGetCartQuery();
+const Cart = ({roles = []}) => {
+    const {data: cart, isLoading, isError} = useGetCartQuery();
     const [updateCart] = useCreateOrUpdateCartMutation();
     const [createInvoice] = useCreateInvoiceMutation();
 
@@ -55,7 +55,7 @@ const Cart = ({ roles = [] }) => {
 
         const updatedItems = cartItems.map((item) =>
             item.item.id === cartItem.item.id
-                ? { ...item, cartQuantity: newQty }
+                ? {...item, cartQuantity: newQty}
                 : item
         );
 
@@ -84,7 +84,7 @@ const Cart = ({ roles = [] }) => {
                 await updateCart(buildRequestBody(updatedItems)).unwrap();
 
                 setShowErrorDialog(false);
-                setSuccessMessage("Item removed successfully.");
+                setSuccessMessage("item removed successfully.");
                 setShowSuccessDialog(true);
             } catch (err) {
                 setErrorMessage(extractErrorMessage(err));
@@ -104,7 +104,7 @@ const Cart = ({ roles = [] }) => {
         setOnErrorAction(() => async () => {
             setIsActionLoading(true);
             try {
-                await updateCart({ itemList: [] }).unwrap();
+                await updateCart({itemList: []}).unwrap();
 
                 setShowErrorDialog(false);
                 setSuccessMessage("Cart cleared successfully.");
@@ -138,7 +138,7 @@ const Cart = ({ roles = [] }) => {
 
             const newInvoice = await createInvoice(payload).unwrap();
 
-            await updateCart({ itemList: [] }).unwrap();
+            await updateCart({itemList: []}).unwrap();
 
             setCreatedInvoice(newInvoice);
             setShowInvoiceModal(true);
@@ -190,7 +190,7 @@ const Cart = ({ roles = [] }) => {
                                                 }
                                                 className="p-1 border rounded hover:bg-gray-100 transition"
                                             >
-                                                <Minus size={16} />
+                                                <Minus size={16}/>
                                             </button>
                                             <span className="px-2 font-medium text-lg">{cartItem.cartQuantity}</span>
                                             <button
@@ -199,7 +199,7 @@ const Cart = ({ roles = [] }) => {
                                                 }
                                                 className="p-1 border rounded hover:bg-gray-100 transition"
                                             >
-                                                <Plus size={16} />
+                                                <Plus size={16}/>
                                             </button>
                                         </div>
                                     </div>
@@ -208,7 +208,7 @@ const Cart = ({ roles = [] }) => {
                                         onClick={() => removeItem(cartItem.id)}
                                         className="text-red-500 hover:text-red-700 ml-4"
                                     >
-                                        <Trash2 size={18} />
+                                        <Trash2 size={18}/>
                                     </button>
                                 </div>
                             ))}
@@ -248,7 +248,6 @@ const Cart = ({ roles = [] }) => {
                         </div>
                     </div>
 
-                    {/* Pagination */}
                     {totalPages > 1 && (
                         <div className="flex justify-center items-center gap-2 mt-4">
                             <button
@@ -259,7 +258,7 @@ const Cart = ({ roles = [] }) => {
                                 Prev
                             </button>
 
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                            {Array.from({length: totalPages}, (_, i) => i + 1).map(page => (
                                 <button
                                     key={page}
                                     onClick={() => setCurrentPage(page)}
@@ -288,7 +287,7 @@ const Cart = ({ roles = [] }) => {
                     onUpdate={async (newStatus) => {
                         setInvoiceSubmitting(true);
                         try {
-                            setCreatedInvoice(prev => ({ ...prev, invoiceStatus: newStatus }));
+                            setCreatedInvoice(prev => ({...prev, invoiceStatus: newStatus}));
                         } finally {
                             setInvoiceSubmitting(false);
                         }

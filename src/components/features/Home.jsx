@@ -11,8 +11,8 @@ import PrimeBuildPriceTrends from "./PrimeBuildPriceTrends.jsx";
 import {useGetCartQuery} from "../../services/cartApi.js";
 
 const tabs = [
-    {id: "build", label: "Build Your PC"},
     {id: "prebuilds", label: "Builds"},
+    {id: "build", label: "Build PC"},
     {id: "categories", label: "Categories"},
     {id: "trending", label: "Trending Products"},
     {id: "priceCharts", label: "Price Charts"},
@@ -60,10 +60,8 @@ const Home = () => {
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
-            {/* Header */}
-            <header className="bg-white shadow sticky top-0 z-40">
-                <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-                    {/* Tabs */}
+            <header className="bg-white shadow sticky top-0 z-40 w-full">
+                <div className="flex items-center justify-between px-4 py-3">
                     <div className="flex gap-2 flex-wrap">
                         {tabs.map(tab => (
                             <button
@@ -80,7 +78,6 @@ const Home = () => {
                         ))}
                     </div>
 
-                    {/* Mini Cart */}
                     <div className="relative" ref={cartRef}>
                         <button
                             onClick={() => setShowMiniCart(!showMiniCart)}
@@ -90,25 +87,26 @@ const Home = () => {
                             {cartCount > 0 && (
                                 <span
                                     className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                  {cartCount}
-                </span>
+                            {cartCount}
+                        </span>
                             )}
                         </button>
 
                         {showMiniCart && cartItems.length > 0 && (
-                            <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-lg border z-50">
+                            <div
+                                className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white shadow-lg rounded-lg border z-50">
                                 <div className="p-2 border-b font-semibold text-gray-700">Cart Items</div>
                                 <div className="max-h-64 overflow-y-auto">
                                     {cartItems.map(item => (
-                                        <div key={item.id} className="flex flex-col p-2 border-b text-sm">
+                                        <div key={item.item.id} className="flex flex-col p-2 border-b text-sm">
                                             <div className="flex justify-between">
                                                 <p className="font-medium">{item.item.itemName}</p>
                                                 <div className="font-medium">
-                                                    Rs. {(item.cartQuantity * item.unitPrice - (item.discountSubTotal || 0))?.toLocaleString()}
+                                                    Rs. {(item.cartQuantity * item.item.price - (item.discountSubTotal || 0))?.toLocaleString()}
                                                 </div>
                                             </div>
                                             <div className="flex justify-between text-gray-500 text-xs mt-1">
-                                                <span>Qty: {item.cartQuantity} × Rs. {item.unitPrice?.toLocaleString()}</span>
+                                                <span>Qty: {item.cartQuantity} × Rs. {item.item.price?.toLocaleString()}</span>
                                                 <span>Discount: Rs. {(item.discountSubTotal || 0)?.toLocaleString()}</span>
                                             </div>
                                         </div>
@@ -126,7 +124,10 @@ const Home = () => {
                                 </div>
                                 <div className="p-2 flex gap-2">
                                     <button
-                                        onClick={() => setActiveTab("cart")}
+                                        onClick={() => {
+                                            setActiveTab("cart");
+                                            setShowMiniCart(false);
+                                        }}
                                         className="flex-1 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                                     >
                                         Go to Cart
@@ -138,9 +139,10 @@ const Home = () => {
                 </div>
             </header>
 
-            {/* Main Content */}
-            <main className="flex-grow max-w-7xl mx-auto w-full px-4 py-0">
-                {renderSection()}
+            <main className="flex-grow w-full px-2 py-0">
+                <div className="w-full">
+                    {renderSection()}
+                </div>
             </main>
 
             <Footer/>

@@ -62,7 +62,7 @@ export default function Login() {
         <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
             <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
                 <div className="flex justify-center mb-4">
-                    <img src={PrimeBuildBanner} alt="PrimeBuild" className="h-10" />
+                    <img src={PrimeBuildBanner} alt="PrimeBuild" className="h-10"/>
                 </div>
 
                 <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
@@ -73,7 +73,7 @@ export default function Login() {
 
                 {showSignup ? (
                     <div className="space-y-4">
-                        <Signup onSuccess={() => setShowSignup(false)} />
+                        <Signup onSuccess={() => setShowSignup(false)}/>
 
                         <div className="text-center">
                             <button

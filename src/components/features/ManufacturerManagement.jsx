@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 import {
     useGetManufacturersQuery,
     useSaveManufacturerMutation,
@@ -9,7 +9,7 @@ import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import Unauthorized from "../common/Unauthorized.jsx";
 
-const ManufacturerManagement = ({ refetchFlag, resetFlag }) => {
+const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
     const [selectedManufacturer, setSelectedManufacturer] = useState(null);
     const [manufacturerName, setManufacturerName] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
@@ -48,7 +48,7 @@ const ManufacturerManagement = ({ refetchFlag, resetFlag }) => {
     };
 
     if (isUnauthorized()) {
-        return <Unauthorized />;
+        return <Unauthorized/>;
     }
 
     const manufacturers = Array.isArray(manufacturersData)
@@ -76,12 +76,12 @@ const ManufacturerManagement = ({ refetchFlag, resetFlag }) => {
     }, [searchTerm]);
 
     const showNotification = (type, message, action = null) => {
-        setNotification({ show: true, type, message, action });
+        setNotification({show: true, type, message, action});
     };
 
     const handleConfirmAction = async () => {
         if (notification.action) {
-            const { callback } = notification.action;
+            const {callback} = notification.action;
             setIsSubmitting(true);
             try {
                 const result = await callback();
@@ -99,7 +99,7 @@ const ManufacturerManagement = ({ refetchFlag, resetFlag }) => {
                 showNotification("error", errorMessage);
             } finally {
                 setIsSubmitting(false);
-                setNotification((prev) => ({ ...prev, action: null }));
+                setNotification((prev) => ({...prev, action: null}));
             }
         }
     };
@@ -218,7 +218,7 @@ const ManufacturerManagement = ({ refetchFlag, resetFlag }) => {
                                 Prev
                             </button>
 
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
                                 <button
                                     key={page}
                                     onClick={() => setCurrentPage(page)}
@@ -275,10 +275,10 @@ const ManufacturerManagement = ({ refetchFlag, resetFlag }) => {
 
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
-                setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
+                setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
-                setShowErrorDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
+                setShowErrorDialog={() => setNotification({show: false, type: "", message: "", action: null})}
                 errorMessage={notification.message}
                 errorAction={notification.action}
                 onErrorAction={handleConfirmAction}

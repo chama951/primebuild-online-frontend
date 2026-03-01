@@ -1,4 +1,4 @@
-import { useState } from "react";
+import {useState} from "react";
 import {
     useGetFeatureTypesQuery,
     useSaveFeatureTypeMutation,
@@ -10,35 +10,31 @@ import {
     useCreateComponentFeatureTypeMutation,
     useDeleteComponentFeatureTypeMutation,
 } from "../../../services/componentFeatureTypeApi.js";
+
 const ComponentFeatureSection = ({
                                      selectedComponent,
                                      showNotification,
                                      isSubmitting,
                                      setIsSubmitting,
                                  }) => {
-    // Local state
     const [expandedFeatureTypes, setExpandedFeatureTypes] = useState({});
     const [newFeatureTypeName, setNewFeatureTypeName] = useState("");
     const [editingFeatureType, setEditingFeatureType] = useState(null);
 
-    // API hooks
-    const { data: allFeatureTypes = [], refetch: refetchAllFeatureTypes } = useGetFeatureTypesQuery();
-    const { data: componentFeatureTypes = [], refetch: refetchComponentFeatureTypes } =
+    const {data: allFeatureTypes = [], refetch: refetchAllFeatureTypes} = useGetFeatureTypesQuery();
+    const {data: componentFeatureTypes = [], refetch: refetchComponentFeatureTypes} =
         useGetComponentFeatureTypesByComponentIdQuery(selectedComponent?.id, {
             skip: !selectedComponent,
         });
 
-    // Mutations
     const [saveFeatureType] = useSaveFeatureTypeMutation();
     const [updateFeatureType] = useUpdateFeatureTypeMutation();
     const [deleteFeatureType] = useDeleteFeatureTypeMutation();
     const [createComponentFeatureType] = useCreateComponentFeatureTypeMutation();
     const [deleteComponentFeatureType] = useDeleteComponentFeatureTypeMutation();
 
-    // Early return if no component selected
     if (!selectedComponent) return null;
 
-    // Feature type handlers
     const handleCreateFeatureType = async () => {
         if (!newFeatureTypeName.trim()) {
             showNotification("error", "Please enter a feature type name");
@@ -146,7 +142,7 @@ const ComponentFeatureSection = ({
     };
 
     const handleStartEditFeatureType = (featureType) => {
-        setEditingFeatureType({ ...featureType });
+        setEditingFeatureType({...featureType});
         setNewFeatureTypeName(featureType.featureTypeName);
     };
 
@@ -170,7 +166,6 @@ const ComponentFeatureSection = ({
                 </div>
             </div>
 
-            {/* Create Feature Type */}
             <div className="mb-4">
                 <div className="flex gap-2">
                     <input
@@ -180,7 +175,7 @@ const ComponentFeatureSection = ({
                         value={editingFeatureType?.featureTypeName || newFeatureTypeName}
                         onChange={(e) =>
                             editingFeatureType
-                                ? setEditingFeatureType({ ...editingFeatureType, featureTypeName: e.target.value })
+                                ? setEditingFeatureType({...editingFeatureType, featureTypeName: e.target.value})
                                 : setNewFeatureTypeName(e.target.value)
                         }
                         disabled={isSubmitting}
@@ -214,7 +209,6 @@ const ComponentFeatureSection = ({
                 </div>
             </div>
 
-            {/* All Feature Types List */}
             {allFeatureTypes.length > 0 && (
                 <div className="space-y-4">
                     <button

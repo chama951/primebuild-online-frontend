@@ -1,31 +1,31 @@
-import React, { useState, useMemo } from "react";
-import { X, Plus, Minus } from "lucide-react";
+import React, {useState, useMemo} from "react";
+import {X, Plus, Minus} from "lucide-react";
 import {
     useGetCompatibleItemsByComponentQuery,
     useGetCompatiblePowerSourcesQuery,
 } from "../../services/compatibilityApi.js";
-import { useGetItemsByComponentIdQuery } from "../../services/itemApi.js";
+import {useGetItemsByComponentIdQuery} from "../../services/itemApi.js";
 
-const SelectItems = ({ open, onClose, component, selectedItems, onAddItem }) => {
+const SelectItems = ({open, onClose, component, selectedItems, onAddItem}) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [itemQuantities, setItemQuantities] = useState({});
 
     const isPowerSource = component?.powerSource === true;
 
-    const { data: allItems = [] } = useGetItemsByComponentIdQuery(component?.id, {
+    const {data: allItems = []} = useGetItemsByComponentIdQuery(component?.id, {
         skip: !component || isPowerSource,
     });
 
     const compatibilityParams =
         component && selectedItems.length > 0
-            ? { componentId: component.id, selectedItems }
+            ? {componentId: component.id, selectedItems}
             : null;
 
-    const { data: compatibleItems = [] } = useGetCompatibleItemsByComponentQuery(compatibilityParams, {
+    const {data: compatibleItems = []} = useGetCompatibleItemsByComponentQuery(compatibilityParams, {
         skip: !component || selectedItems.length === 0 || isPowerSource,
     });
 
-    const { data: compatiblePowerSources = [] } = useGetCompatiblePowerSourcesQuery(compatibilityParams, {
+    const {data: compatiblePowerSources = []} = useGetCompatiblePowerSourcesQuery(compatibilityParams, {
         skip: !component || !isPowerSource,
     });
 
@@ -50,7 +50,7 @@ const SelectItems = ({ open, onClose, component, selectedItems, onAddItem }) => 
     if (!open || !component) return null;
 
     const formatCurrency = (price) =>
-        new Intl.NumberFormat("en-LK", { minimumFractionDigits: 2 }).format(price);
+        new Intl.NumberFormat("en-LK", {minimumFractionDigits: 2}).format(price);
 
     return (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -59,7 +59,7 @@ const SelectItems = ({ open, onClose, component, selectedItems, onAddItem }) => 
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-semibold">Select {component.componentName}</h2>
                     <button onClick={onClose}>
-                        <X size={20} />
+                        <X size={20}/>
                     </button>
                 </div>
 
@@ -85,10 +85,12 @@ const SelectItems = ({ open, onClose, component, selectedItems, onAddItem }) => 
                                 <div className="flex justify-between items-start">
                                     <div className="space-y-1">
                                         <div className="font-semibold text-gray-800">{item.itemName}</div>
-                                        <div className="text-xs text-gray-500">{item.manufacturer?.manufacturerName}</div>
+                                        <div
+                                            className="text-xs text-gray-500">{item.manufacturer?.manufacturerName}</div>
                                         <div className="flex flex-wrap gap-1 mt-1">
                                             {features.map((f) => (
-                                                <span key={f.id} className="px-2 py-0.5 bg-gray-100 rounded text-[11px]">
+                                                <span key={f.id}
+                                                      className="px-2 py-0.5 bg-gray-100 rounded text-[11px]">
                                                     {f.feature?.featureName}
                                                     {f.slotCount > 1 && ` x${f.slotCount}`}
                                                 </span>
@@ -98,7 +100,8 @@ const SelectItems = ({ open, onClose, component, selectedItems, onAddItem }) => 
 
                                     {/* Price */}
                                     <div className="text-right">
-                                        <div className="text-green-700 font-semibold">Rs {formatCurrency(item.price)}</div>
+                                        <div
+                                            className="text-green-700 font-semibold">Rs {formatCurrency(item.price)}</div>
                                     </div>
                                 </div>
 
@@ -115,7 +118,7 @@ const SelectItems = ({ open, onClose, component, selectedItems, onAddItem }) => 
                                                 }
                                                 className="px-2"
                                             >
-                                                <Minus size={14} />
+                                                <Minus size={14}/>
                                             </button>
                                             <span className="px-3">{selectedQty}</span>
                                             <button
@@ -127,7 +130,7 @@ const SelectItems = ({ open, onClose, component, selectedItems, onAddItem }) => 
                                                 }
                                                 className="px-2"
                                             >
-                                                <Plus size={14} />
+                                                <Plus size={14}/>
                                             </button>
                                         </div>
                                     )}

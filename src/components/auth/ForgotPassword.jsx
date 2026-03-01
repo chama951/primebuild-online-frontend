@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { useForgotPasswordMutation, useResetPasswordMutation } from "../../services/userApi.js";
-import { useNavigate } from "react-router-dom";
+import React, {useState} from "react";
+import {useForgotPasswordMutation, useResetPasswordMutation} from "../../services/userApi.js";
+import {useNavigate} from "react-router-dom";
 
 export default function ForgotPassword() {
     const [step, setStep] = useState(1);
@@ -12,8 +12,8 @@ export default function ForgotPassword() {
 
     const navigate = useNavigate();
 
-    const [forgotPassword, { isLoading: sending }] = useForgotPasswordMutation();
-    const [resetPassword, { isLoading: resetting }] = useResetPasswordMutation();
+    const [forgotPassword, {isLoading: sending}] = useForgotPasswordMutation();
+    const [resetPassword, {isLoading: resetting}] = useResetPasswordMutation();
 
     const handleSendPin = async (e) => {
         e.preventDefault();
