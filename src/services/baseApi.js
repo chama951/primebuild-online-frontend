@@ -2,6 +2,10 @@ import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
     baseUrl: "http://localhost:8080/api",
+
+    // aws ec2 public ip
+    // baseUrl: "http://13.51.162.216:8080/api",
+    //
     prepareHeaders: (headers) => {
         const token = localStorage.getItem("jwtToken");
         if (token) {
