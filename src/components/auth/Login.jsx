@@ -36,7 +36,8 @@ export default function Login() {
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        setError("");
+        console.log("Username:", username, "Password:", password);
+        setError(error);
 
         try {
             const data = await login({username, password}).unwrap();
@@ -55,7 +56,7 @@ export default function Login() {
     };
 
     const handleGoogleLogin = () => {
-        window.location.href = "http://localhost:8080/oauth2/authorization/google";
+        window.location.href = "http://api.primebuild.space:8080/oauth2/authorization/google";
     };
 
     return (
@@ -94,6 +95,7 @@ export default function Login() {
                             onChange={(e) => setUsername(e.target.value)}
                             required
                             className="w-full px-4 py-2 border rounded-lg"
+                            autoComplete="username"
                         />
                         <input
                             type="password"
@@ -102,6 +104,7 @@ export default function Login() {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                             className="w-full px-4 py-2 border rounded-lg"
+                            autoComplete="password"
                         />
                         <div className="text-right">
                             <button
