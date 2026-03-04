@@ -8,6 +8,16 @@ export const itemApi = baseApi.injectEndpoints({
             providesTags: ["Item"],
         }),
 
+        getPaginatedItems: builder.query({
+            query: ({ componentId = "", page = 0, size = 8, search = "" }) => {
+                let url = `/item/paginated?page=${page}&size=${size}`;
+                if (componentId) url += `&component=${componentId}`;
+                if (search) url += `&search=${search}`;
+                return url;
+            },
+            providesTags: (result, error, { componentId }) => [{ type: "ItemByComponent", id: componentId || "all" }],
+        }),
+
         getItemById: builder.query({
             query: (id) => `/item/${id}`,
             providesTags: (result, error, id) => [{type: "Item", id}],
@@ -39,18 +49,27 @@ export const itemApi = baseApi.injectEndpoints({
             invalidatesTags: ["Item"],
         }),
 
-        getItemsByComponentId: builder.query({
-            query: (componentId) => `/item?component=${componentId}`,
-            providesTags: (result, error, componentId) => [
-                {type: "ItemByComponent", id: componentId},
+        getPaginatedItemsByComponentId: builder.query({
+            query: ({ componentId = "", page = 0, size = 8, search = null }) => {
+                const params = new URLSearchParams();
+                params.append("component", componentId);  // always include component
+                params.append("page", page);
+                params.append("size", size);
+                if (search) params.append("search", search); // only append if search term exists
+
+                return `/item/paginated?${params.toString()}`;
+            },
+            providesTags: (result, error, { componentId }) => [
+                { type: "ItemByComponent", id: componentId },
             ],
         }),
     }),
 });
 
 export const {
+    useGetPaginatedItemsQuery,
+    useGetPaginatedItemsByComponentIdQuery,
     useGetItemsQuery,
-    useGetItemsByComponentIdQuery,
     useCreateItemMutation,
     useUpdateItemMutation,
     useDeleteItemMutation,

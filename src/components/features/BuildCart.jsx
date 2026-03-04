@@ -1,53 +1,63 @@
-import React, {useState, useMemo, useEffect} from "react";
-import {Trash2} from "lucide-react";
-import {useGetBuildComponentsQuery} from "../../services/componentApi.js";
+import React, { useState, useMemo, useEffect } from "react";
+import { Trash2, Plus, Minus } from "lucide-react";
+import { useGetBuildComponentsQuery } from "../../services/componentApi.js";
 import {
     useCreateBuildMutation,
     useUpdateBuildMutation,
     useDeleteBuildMutation,
     useGetCurrentUserBuildsQuery,
 } from "../../services/buildApi.js";
-import {useCreateOrUpdateCartMutation, useGetCartQuery} from "../../services/cartApi.js";
+import { useCreateOrUpdateCartMutation, useGetCartQuery } from "../../services/cartApi.js";
+import { useGetPaginatedItemsByComponentIdQuery } from "../../services/itemApi.js";
+import { useGetCompatibleItemsByComponentQuery } from "../../services/compatibilityApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
-import SelectItems from "./SelectItems.jsx";
+
+const ITEMS_PER_PAGE = 5;
 
 const BuildCart = () => {
     const [selectedComponent, setSelectedComponent] = useState(null);
     const [selectedItems, setSelectedItems] = useState([]);
     const [currentBuildId, setCurrentBuildId] = useState(null);
     const [buildName, setBuildName] = useState("");
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [notification, setNotification] = useState({show: false, type: "", message: ""});
+    const [notification, setNotification] = useState({ show: false, type: "", message: "" });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [itemQuantities, setItemQuantities] = useState({});
+    const [currentPage, setCurrentPage] = useState(1);
 
-    const {data: components = [], isLoading: loadingComponents} =
-        useGetBuildComponentsQuery(true, {refetchOnMountOrArgChange: true});
+    const [compatibleComponentId, setCompatibleComponentId] = useState(null);
 
-    const firstComponent = useMemo(() => components[0], [components]);
+    // Fetch components
+    const { data: components = [], isLoading: loadingComponents } = useGetBuildComponentsQuery(true, {
+        refetchOnMountOrArgChange: true,
+    });
 
+    // Set initial component
     useEffect(() => {
-        if (!loadingComponents && firstComponent && !selectedComponent) {
-            setSelectedComponent(firstComponent);
+        if (!loadingComponents && components.length > 0 && !selectedComponent) {
+            setSelectedComponent(components[0]);
+            setCurrentPage(1);
         }
-    }, [loadingComponents, firstComponent]);
+    }, [loadingComponents, components, selectedComponent]);
 
-    const {data: userBuilds = [], refetch: refetchUserBuilds} =
-        useGetCurrentUserBuildsQuery(undefined, {refetchOnMountOrArgChange: true});
-
+    // User builds
+    const { data: userBuilds = [], refetch: refetchUserBuilds } = useGetCurrentUserBuildsQuery(undefined, {
+        refetchOnMountOrArgChange: true,
+    });
     const [createBuild] = useCreateBuildMutation();
     const [updateBuild] = useUpdateBuildMutation();
     const [deleteBuild] = useDeleteBuildMutation();
 
-    const {data: cartData} = useGetCartQuery();
+    // Cart
+    const { data: cartData } = useGetCartQuery();
     const [updateCart] = useCreateOrUpdateCartMutation();
 
+    // Load selected build
     useEffect(() => {
         if (!currentBuildId) {
             setBuildName("");
             setSelectedItems([]);
             return;
         }
-
         const build = userBuilds.find((b) => b.id === currentBuildId);
         if (build) {
             setBuildName(build.buildName);
@@ -63,10 +73,11 @@ const BuildCart = () => {
         }
     }, [currentBuildId, userBuilds]);
 
+    // Handlers
     const handleAddItem = (item, quantity) => {
         const newItem = {
             ...item,
-            selectedQuantity: item.powerSource ? 1 : quantity,
+            selectedQuantity: item.component?.powerSource ? 1 : quantity,
             component: item.component || selectedComponent,
         };
         setSelectedItems((prev) => [
@@ -75,32 +86,31 @@ const BuildCart = () => {
         ]);
     };
 
-    const handleRemoveItem = (componentId) => {
+    const handleRemoveItem = (componentId) =>
         setSelectedItems((prev) => prev.filter((item) => item.component?.id !== componentId));
-    };
 
     const handleClearItems = () => setSelectedItems([]);
 
     const handleSaveBuild = async () => {
         if (!buildName.trim())
-            return setNotification({show: true, type: "error", message: "Enter build name"});
+            return setNotification({ show: true, type: "error", message: "Enter build name" });
         if (selectedItems.length === 0)
-            return setNotification({show: true, type: "error", message: "Select at least one item"});
+            return setNotification({ show: true, type: "error", message: "Select at least one item" });
 
         setIsSubmitting(true);
         const payload = {
             buildName: buildName.trim(),
             buildStatus: "DRAFT",
-            itemList: selectedItems.map((i) => ({id: i.id, quantity: i.selectedQuantity.toString()})),
+            itemList: selectedItems.map((i) => ({ id: i.id, quantity: i.selectedQuantity.toString() })),
         };
 
         try {
-            if (currentBuildId) await updateBuild({id: currentBuildId, ...payload}).unwrap();
+            if (currentBuildId) await updateBuild({ id: currentBuildId, ...payload }).unwrap();
             else {
                 const res = await createBuild(payload).unwrap();
                 setCurrentBuildId(res.id);
             }
-            setNotification({show: true, type: "success", message: "Build saved successfully!"});
+            setNotification({ show: true, type: "success", message: "Build saved successfully!" });
             refetchUserBuilds();
         } catch (err) {
             setNotification({
@@ -115,11 +125,10 @@ const BuildCart = () => {
 
     const handleDeleteBuild = async () => {
         if (!currentBuildId) return;
-
         setIsSubmitting(true);
         try {
             await deleteBuild(currentBuildId).unwrap();
-            setNotification({show: true, type: "success", message: "Build deleted successfully!"});
+            setNotification({ show: true, type: "success", message: "Build deleted successfully!" });
             setCurrentBuildId(null);
             setBuildName("");
             setSelectedItems([]);
@@ -137,21 +146,19 @@ const BuildCart = () => {
 
     const handleAddToCart = async () => {
         if (selectedItems.length === 0)
-            return setNotification({show: true, type: "error", message: "Select at least one item"});
+            return setNotification({ show: true, type: "error", message: "Select at least one item" });
 
         setIsSubmitting(true);
         try {
             const existingItems = cartData?.cartItemList || [];
-            const updatedItemList = existingItems.map((ci) => ({id: ci.item.id, quantity: ci.cartQuantity}));
-
+            const updatedItemList = existingItems.map((ci) => ({ id: ci.item.id, quantity: ci.cartQuantity }));
             selectedItems.forEach((item) => {
                 const index = updatedItemList.findIndex((ci) => ci.id === item.id);
                 if (index !== -1) updatedItemList[index].quantity += item.selectedQuantity;
-                else updatedItemList.push({id: item.id, quantity: item.selectedQuantity});
+                else updatedItemList.push({ id: item.id, quantity: item.selectedQuantity });
             });
-
-            await updateCart({itemList: updatedItemList}).unwrap();
-            setNotification({show: true, type: "success", message: "Added selected items to cart!"});
+            await updateCart({ itemList: updatedItemList }).unwrap();
+            setNotification({ show: true, type: "success", message: "Added selected items to cart!" });
         } catch (err) {
             setNotification({
                 show: true,
@@ -163,35 +170,80 @@ const BuildCart = () => {
         }
     };
 
+    // Pricing
     const totalPrice = useMemo(
         () => selectedItems.reduce((sum, item) => sum + (item.price || 0) * (item.selectedQuantity || 1), 0),
         [selectedItems]
     );
 
     const formatCurrency = (price) =>
-        new Intl.NumberFormat("en-LK", {minimumFractionDigits: 2}).format(price);
+        new Intl.NumberFormat("en-LK", { minimumFractionDigits: 2 }).format(price);
+
+    const allNonPowerSelected = components
+        .filter((c) => !c.powerSource)
+        .every((c) => selectedItems.some((i) => i.component?.id === c.id));
+    const isPowerSource = selectedComponent?.powerSource === true;
+
+    // Fetch items
+    const { data: allItems = {}, isFetching: loadingItems } = useGetPaginatedItemsByComponentIdQuery(
+        { componentId: selectedComponent?.id, page: currentPage - 1, size: ITEMS_PER_PAGE },
+        { skip: !selectedComponent || isPowerSource || selectedItems.length > 0 }
+    );
+
+    const { data: compatibleItems = {}, isFetching: loadingCompatible } =
+        useGetCompatibleItemsByComponentQuery(
+            compatibleComponentId
+                ? {
+                    componentId: compatibleComponentId,
+                    selectedItems,
+                    page: currentPage - 1,
+                    size: ITEMS_PER_PAGE,
+                }
+                : null,
+            { skip: !compatibleComponentId }
+        );
+
+    const itemsToShow = useMemo(() => {
+        if (!selectedComponent) return [];
+        if (compatibleComponentId === selectedComponent.id) {
+            return Array.isArray(compatibleItems?.content) ? compatibleItems.content : [];
+        }
+        return Array.isArray(allItems?.content) ? allItems.content : [];
+    }, [selectedComponent, allItems, compatibleItems, compatibleComponentId]);
+
+    const totalPages =
+        compatibleComponentId === selectedComponent?.id
+            ? compatibleItems?.totalPages || 1
+            : allItems?.totalPages || 1;
+
+    const handleComponentClick = (comp) => {
+        const isDisabled = comp.powerSource && !allNonPowerSelected;
+        if (isDisabled) return;
+
+        setSelectedComponent(comp);
+        setCurrentPage(1);
+
+        if (selectedItems.length > 0) setCompatibleComponentId(comp.id);
+        else setCompatibleComponentId(null); // first component
+    };
 
     if (loadingComponents) return <div className="p-6">Loading...</div>;
 
-    const allNonPowerSelected =
-        components.filter((c) => !c.powerSource).every((c) =>
-            selectedItems.some((i) => i.component?.id === c.id)
-        );
-
     return (
         <div className="container mx-auto p-4 space-y-6">
+            {/* Notification */}
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
-                setShowSuccessDialog={() => setNotification({show: false, type: "", message: ""})}
+                setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "" })}
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
-                setShowErrorDialog={() => setNotification({show: false, type: "", message: ""})}
+                setShowErrorDialog={() => setNotification({ show: false, type: "", message: "" })}
                 errorMessage={notification.message}
                 isActionLoading={isSubmitting}
             />
 
-            <div
-                className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col md:flex-row gap-3 items-center">
+            {/* Build name & selection */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col md:flex-row gap-3 items-center">
                 <input
                     type="text"
                     placeholder="Build name"
@@ -199,7 +251,6 @@ const BuildCart = () => {
                     onChange={(e) => setBuildName(e.target.value)}
                     className="flex-1 h-12 px-4 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                 />
-
                 <select
                     value={currentBuildId || ""}
                     onChange={(e) => setCurrentBuildId(Number(e.target.value) || null)}
@@ -212,7 +263,6 @@ const BuildCart = () => {
                         </option>
                     ))}
                 </select>
-
                 <button
                     onClick={handleSaveBuild}
                     disabled={isSubmitting}
@@ -220,7 +270,6 @@ const BuildCart = () => {
                 >
                     Save
                 </button>
-
                 {currentBuildId && (
                     <button
                         onClick={handleDeleteBuild}
@@ -232,58 +281,197 @@ const BuildCart = () => {
                 )}
             </div>
 
-            <div className="space-y-3">
-                {components.map((comp) => {
-                    const selectedItem = selectedItems.find((item) => item.component?.id === comp.id);
-                    const isDisabled = comp.powerSource && !allNonPowerSelected;
-
-                    return (
-                        <div
-                            key={comp.id}
-                            onClick={() => {
-                                if (!isDisabled) {
-                                    setSelectedComponent(comp);
-                                    setIsModalOpen(true);
-                                }
-                            }}
-                            className={`
-          flex justify-between items-center bg-white shadow-sm rounded-lg p-4 cursor-pointer transition
-          hover:shadow-md hover:bg-gray-50
-          ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}
-        `}
-                        >
-                            {/* Component name + selected item on same line */}
-                            <div className="flex-1 flex justify-between items-center gap-4">
-                                <div className="font-semibold text-gray-800">{comp.componentName}</div>
-
+            {/* Components list */}
+            <div className="flex flex-col md:flex-row gap-6 md:h-[600px]">
+                    <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                        {components.map((comp) => {
+                        const selectedItem = selectedItems.find((item) => item.component?.id === comp.id);
+                        const isDisabled = comp.powerSource && !allNonPowerSelected;
+                        return (
+                            <div
+                                key={comp.id}
+                                className={`flex justify-between items-center bg-white shadow-sm rounded-lg p-4 cursor-pointer transition hover:shadow-md hover:bg-gray-50 ${
+                                    isDisabled ? "opacity-50 cursor-not-allowed" : ""
+                                }`}
+                                onClick={() => handleComponentClick(comp)}
+                            >
+                                <div className="flex-1 flex justify-between items-center gap-4">
+                                    <div className="font-semibold text-gray-800">{comp.componentName}</div>
+                                    {selectedItem && (
+                                        <div className="text-sm text-gray-600 flex items-center gap-2">
+                                            <span className="font-medium">{selectedItem.itemName}</span>
+                                            <span className="text-green-600 font-semibold">
+                                                Rs {formatCurrency(selectedItem.price)} × {selectedItem.selectedQuantity}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                                 {selectedItem && (
-                                    <div className="text-sm text-gray-600 flex items-center gap-2">
-                                        <span className="font-medium">{selectedItem.itemName}</span>
-                                        <span className="text-green-600 font-semibold">
-                Rs {formatCurrency(selectedItem.price)} × {selectedItem.selectedQuantity}
-              </span>
-                                    </div>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveItem(comp.id);
+                                        }}
+                                        className="text-red-500 hover:text-red-700 transition ml-4"
+                                    >
+                                        <Trash2 size={20} />
+                                    </button>
                                 )}
                             </div>
+                        );
+                    })}
+                </div>
 
-                            {/* Remove button */}
-                            {selectedItem && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRemoveItem(comp.id);
-                                    }}
-                                    className="text-red-500 hover:text-red-700 transition ml-4"
-                                >
-                                    <Trash2 size={20}/>
-                                </button>
+                {/* Item list */}
+                {selectedComponent && (
+                    <div className="flex-1 bg-white rounded-xl border border-gray-200 p-4 flex flex-col">
+
+                        <h2 className="text-lg font-semibold mb-3">
+                            Select {selectedComponent.componentName}
+                        </h2>
+
+                        {/* Scrollable Items Area */}
+                        <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                            {itemsToShow.map((item) => {
+                                const maxSlots = item.quantity ?? 1;
+                                const selectedQty = Math.min(
+                                    itemQuantities[item.id] || 1,
+                                    maxSlots
+                                );
+                                const features = item.itemFeatureList || [];
+
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className="border rounded-lg p-3 hover:shadow-sm transition text-sm"
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <div className="font-semibold text-gray-800">
+                                                    {item.itemName}
+                                                </div>
+
+                                                <div className="text-xs text-gray-500">
+                                                    {item.manufacturer?.manufacturerName}
+                                                </div>
+
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                    {features.map((f) => (
+                                                        <span
+                                                            key={f.id}
+                                                            className="px-2 py-0.5 bg-gray-100 rounded text-[11px]"
+                                                        >
+                                            {f.feature?.featureName}
+                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="text-right text-green-700 font-semibold">
+                                                Rs {formatCurrency(item.price)}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 mt-3">
+                                            {!isPowerSource && (
+                                                <div className="flex items-center border rounded">
+                                                    <button
+                                                        onClick={() =>
+                                                            setItemQuantities((prev) => ({
+                                                                ...prev,
+                                                                [item.id]: Math.max(1, selectedQty - 1),
+                                                            }))
+                                                        }
+                                                        className="px-2"
+                                                    >
+                                                        <Minus size={14} />
+                                                    </button>
+
+                                                    <span className="px-3 text-sm">
+                                        {selectedQty}
+                                    </span>
+
+                                                    <button
+                                                        onClick={() =>
+                                                            setItemQuantities((prev) => ({
+                                                                ...prev,
+                                                                [item.id]: Math.min(maxSlots, selectedQty + 1),
+                                                            }))
+                                                        }
+                                                        className="px-2"
+                                                    >
+                                                        <Plus size={14} />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            <button
+                                                disabled={maxSlots === 0}
+                                                onClick={() => handleAddItem(item, selectedQty)}
+                                                className="w-24 px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                                            >
+                                                Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {itemsToShow.length === 0 && (
+                                <div className="text-gray-500 text-sm text-center py-6">
+                                    No compatible items found
+                                </div>
                             )}
                         </div>
-                    );
-                })}
+
+                        {/* Pagination Fixed At Bottom */}
+                        {totalPages > 1 && (
+                            <div className="mt-4 pt-3 border-t flex justify-center items-center gap-2">
+                                <button
+                                    onClick={() =>
+                                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                                    }
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1 border rounded disabled:opacity-50"
+                                >
+                                    Prev
+                                </button>
+
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                                    (page) => (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`px-3 py-1 border rounded ${
+                                                currentPage === page
+                                                    ? "bg-blue-600 text-white"
+                                                    : ""
+                                            }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    )
+                                )}
+
+                                <button
+                                    onClick={() =>
+                                        setCurrentPage((prev) =>
+                                            Math.min(prev + 1, totalPages)
+                                        )
+                                    }
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1 border rounded disabled:opacity-50"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
-            <div className="bg-white rounded-lg border p-4 flex justify-between items-center">
+            {/* Total & actions */}
+            <div className="bg-white rounded-lg border p-4 flex justify-between items-center mt-4">
                 <div className="text-xl font-bold text-green-600">Rs {formatCurrency(totalPrice)}</div>
                 <div className="flex gap-2">
                     <button onClick={handleClearItems} className="border border-red-500 text-red-500 px-4 py-2 rounded">
@@ -294,14 +482,6 @@ const BuildCart = () => {
                     </button>
                 </div>
             </div>
-
-            <SelectItems
-                open={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                component={selectedComponent}
-                selectedItems={selectedItems}
-                onAddItem={handleAddItem}
-            />
         </div>
     );
 };

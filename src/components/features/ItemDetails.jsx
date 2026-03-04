@@ -4,6 +4,7 @@ import {useIncrementViewCountMutation} from "../../services/itemAnalyticsApi.js"
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const ItemDetails = ({item, onClose}) => {
+
     const {data: cartData} = useGetCartQuery();
     const [updateCart] = useCreateOrUpdateCartMutation();
     const [incrementViewCount] = useIncrementViewCountMutation();
@@ -25,14 +26,10 @@ const ItemDetails = ({item, onClose}) => {
 
     if (!item) return null;
 
-    const featuresByType = useMemo(() => {
-        const map = {};
-        item.itemFeatureList.forEach((f) => {
-            const typeName = f.feature.featureType?.featureTypeName || "Other";
-            if (!map[typeName]) map[typeName] = [];
-            map[typeName].push({name: f.feature.featureName, slotCount: f.slotCount});
-        });
-        return map;
+    const features = useMemo(() => {
+        return item.itemFeatureList?.map((f) => ({
+            name: f.feature.featureName
+        })) || [];
     }, [item]);
 
     const showNotification = (type, message) => {
@@ -42,27 +39,35 @@ const ItemDetails = ({item, onClose}) => {
     const handleAddToCart = async () => {
         try {
             const existingItems = cartData?.cartItemList || [];
-            const updatedItemList = existingItems.map((ci) => ({id: ci.item.id, quantity: ci.cartQuantity}));
+            const updatedItemList = existingItems.map((ci) => ({
+                id: ci.item.id,
+                quantity: ci.cartQuantity
+            }));
 
             const index = updatedItemList.findIndex((ci) => ci.id === item.id);
-            if (index !== -1) updatedItemList[index].quantity += 1;
-            else updatedItemList.push({id: item.id, quantity: 1});
+
+            if (index !== -1) {
+                updatedItemList[index].quantity += 1;
+            } else {
+                updatedItemList.push({id: item.id, quantity: 1});
+            }
 
             await updateCart({itemList: updatedItemList}).unwrap();
 
             showNotification("success", `Added "${item.itemName}" to cart`);
             onClose();
+
         } catch (err) {
             console.error(err);
             showNotification("error", `Failed to add "${item.itemName}" to cart`);
         }
     };
 
-    const discountedPrice = item.price * (1 - (item.discountPercentage || 0) / 100);
+    const discountedPrice =
+        item.price * (1 - (item.discountPercentage || 0) / 100);
 
     return (
         <>
-
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
                 setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
@@ -72,43 +77,51 @@ const ItemDetails = ({item, onClose}) => {
                 errorMessage={notification.message}
             />
 
-            {/* Modal */}
-            <div
-                className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-start pt-12 overflow-auto">
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-start pt-12 overflow-auto">
                 <div className="bg-white rounded-lg shadow-md max-w-md w-full p-6 relative">
-                    <button onClick={onClose}
-                            className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-2xl">×
+
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-2xl"
+                    >
+                        ×
                     </button>
 
-                    <h2 className="text-2xl font-semibold mb-2 text-gray-800">{item.itemName}</h2>
+                    <h2 className="text-2xl font-semibold mb-2 text-gray-800">
+                        {item.itemName}
+                    </h2>
 
                     {item.manufacturer && (
                         <p className="text-gray-500 mb-2 text-sm">
-                            Manufacturer: <span
-                            className="font-medium text-gray-700">{item.manufacturer.manufacturerName}</span>
+                            Manufacturer:{" "}
+                            <span className="font-medium text-gray-700">
+                                {item.manufacturer.manufacturerName}
+                            </span>
                         </p>
                     )}
 
                     {item.component && (
                         <p className="text-gray-500 mb-2 text-sm">
-                            Component: <span className="font-medium text-gray-700">{item.component.componentName}</span>
+                            Component:{" "}
+                            <span className="font-medium text-gray-700">
+                                {item.component.componentName}
+                            </span>
                         </p>
                     )}
 
-                    {Object.keys(featuresByType).length > 0 && (
+                    {features.length > 0 && (
                         <div className="mb-4">
-                            {Object.entries(featuresByType).map(([typeName, featureList]) => (
-                                <div key={typeName} className="mb-2">
-                                    <p className="font-medium text-gray-600">{typeName}:</p>
-                                    <ul className="list-disc ml-5 text-gray-500 text-sm">
-                                        {featureList.map((f) => (
-                                            <li key={`${f.name}-${f.slotCount}`}>
-                                                {f.name} {f.slotCount ? `(Slots: ${f.slotCount})` : ""}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ))}
+                            <p className="font-medium text-gray-600 mb-2">Features:</p>
+                            <div className="flex flex-wrap gap-2">
+                                {features.map((f, index) => (
+                                    <span
+                                        key={`${f.name}-${index}`}
+                                        className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full border"
+                                    >
+                                        {f.name}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -116,10 +129,12 @@ const ItemDetails = ({item, onClose}) => {
                         Price:{" "}
                         {item.discountPercentage > 0 ? (
                             <>
-                                <span
-                                    className="line-through text-gray-400 text-sm">LKR {item.price.toLocaleString()}</span>{" "}
-                                <span
-                                    className="text-green-600 font-semibold">LKR {discountedPrice.toLocaleString()}</span>
+                                <span className="line-through text-gray-400 text-sm">
+                                    LKR {item.price.toLocaleString()}
+                                </span>{" "}
+                                <span className="text-green-600 font-semibold">
+                                    LKR {discountedPrice.toLocaleString()}
+                                </span>
                             </>
                         ) : (
                             <>LKR {item.price.toLocaleString()}</>
@@ -132,6 +147,7 @@ const ItemDetails = ({item, onClose}) => {
                     >
                         Add to Cart
                     </button>
+
                 </div>
             </div>
         </>
