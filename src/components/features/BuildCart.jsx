@@ -23,7 +23,6 @@ const BuildCart = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [itemQuantities, setItemQuantities] = useState({});
     const [currentPage, setCurrentPage] = useState(1);
-
     const [compatibleComponentId, setCompatibleComponentId] = useState(null);
 
     // Fetch components
@@ -77,7 +76,7 @@ const BuildCart = () => {
     const handleAddItem = (item, quantity) => {
         const newItem = {
             ...item,
-            selectedQuantity: item.component?.powerSource ? 1 : quantity,
+            selectedQuantity: quantity,
             component: item.component || selectedComponent,
         };
         setSelectedItems((prev) => [
@@ -179,26 +178,16 @@ const BuildCart = () => {
     const formatCurrency = (price) =>
         new Intl.NumberFormat("en-LK", { minimumFractionDigits: 2 }).format(price);
 
-    const allNonPowerSelected = components
-        .filter((c) => !c.powerSource)
-        .every((c) => selectedItems.some((i) => i.component?.id === c.id));
-    const isPowerSource = selectedComponent?.powerSource === true;
-
     // Fetch items
-    const { data: allItems = {}, isFetching: loadingItems } = useGetPaginatedItemsByComponentIdQuery(
+    const { data: allItems = {} } = useGetPaginatedItemsByComponentIdQuery(
         { componentId: selectedComponent?.id, page: currentPage - 1, size: ITEMS_PER_PAGE },
-        { skip: !selectedComponent || isPowerSource || selectedItems.length > 0 }
+        { skip: !selectedComponent }
     );
 
-    const { data: compatibleItems = {}, isFetching: loadingCompatible } =
+    const { data: compatibleItems = {} } =
         useGetCompatibleItemsByComponentQuery(
             compatibleComponentId
-                ? {
-                    componentId: compatibleComponentId,
-                    selectedItems,
-                    page: currentPage - 1,
-                    size: ITEMS_PER_PAGE,
-                }
+                ? { componentId: compatibleComponentId, selectedItems, page: currentPage - 1, size: ITEMS_PER_PAGE }
                 : null,
             { skip: !compatibleComponentId }
         );
@@ -217,14 +206,9 @@ const BuildCart = () => {
             : allItems?.totalPages || 1;
 
     const handleComponentClick = (comp) => {
-        const isDisabled = comp.powerSource && !allNonPowerSelected;
-        if (isDisabled) return;
-
         setSelectedComponent(comp);
         setCurrentPage(1);
-
-        if (selectedItems.length > 0) setCompatibleComponentId(comp.id);
-        else setCompatibleComponentId(null); // first component
+        setCompatibleComponentId(selectedItems.length > 0 ? comp.id : null);
     };
 
     if (loadingComponents) return <div className="p-6">Loading...</div>;
@@ -281,18 +265,16 @@ const BuildCart = () => {
                 )}
             </div>
 
-            {/* Components list */}
+            {/* Components & Items */}
             <div className="flex flex-col md:flex-row gap-6 md:h-[600px]">
-                    <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-                        {components.map((comp) => {
+                {/* Component list */}
+                <div className="flex-1 bg-white rounded-xl border border-gray-200 p-4 flex flex-col h-full overflow-y-auto space-y-3 pr-2">
+                    {components.map((comp) => {
                         const selectedItem = selectedItems.find((item) => item.component?.id === comp.id);
-                        const isDisabled = comp.powerSource && !allNonPowerSelected;
                         return (
                             <div
                                 key={comp.id}
-                                className={`flex justify-between items-center bg-white shadow-sm rounded-lg p-4 cursor-pointer transition hover:shadow-md hover:bg-gray-50 ${
-                                    isDisabled ? "opacity-50 cursor-not-allowed" : ""
-                                }`}
+                                className="flex justify-between items-center bg-white shadow-sm rounded-lg p-4 cursor-pointer transition hover:shadow-md hover:bg-gray-50 border border-gray-300"
                                 onClick={() => handleComponentClick(comp)}
                             >
                                 <div className="flex-1 flex justify-between items-center gap-4">
@@ -301,8 +283,8 @@ const BuildCart = () => {
                                         <div className="text-sm text-gray-600 flex items-center gap-2">
                                             <span className="font-medium">{selectedItem.itemName}</span>
                                             <span className="text-green-600 font-semibold">
-                                                Rs {formatCurrency(selectedItem.price)} × {selectedItem.selectedQuantity}
-                                            </span>
+                                Rs {formatCurrency(selectedItem.price)} × {selectedItem.selectedQuantity}
+                            </span>
                                         </div>
                                     )}
                                 </div>
@@ -324,86 +306,64 @@ const BuildCart = () => {
 
                 {/* Item list */}
                 {selectedComponent && (
-                    <div className="flex-1 bg-white rounded-xl border border-gray-200 p-4 flex flex-col">
-
+                    <div className="flex-1 bg-white rounded-xl border border-gray-200 p-4 flex flex-col h-full">
                         <h2 className="text-lg font-semibold mb-3">
                             Select {selectedComponent.componentName}
                         </h2>
 
-                        {/* Scrollable Items Area */}
                         <div className="flex-1 overflow-y-auto space-y-3 pr-2">
                             {itemsToShow.map((item) => {
                                 const maxSlots = item.quantity ?? 1;
-                                const selectedQty = Math.min(
-                                    itemQuantities[item.id] || 1,
-                                    maxSlots
-                                );
+                                const selectedQty = Math.min(itemQuantities[item.id] || 1, maxSlots);
                                 const features = item.itemFeatureList || [];
 
                                 return (
-                                    <div
-                                        key={item.id}
-                                        className="border rounded-lg p-3 hover:shadow-sm transition text-sm"
-                                    >
+                                    <div key={item.id} className="border rounded-lg p-3 hover:shadow-sm transition text-sm">
                                         <div className="flex justify-between items-start">
                                             <div className="space-y-1">
-                                                <div className="font-semibold text-gray-800">
-                                                    {item.itemName}
-                                                </div>
-
-                                                <div className="text-xs text-gray-500">
-                                                    {item.manufacturer?.manufacturerName}
-                                                </div>
-
+                                                <div className="font-semibold text-gray-800">{item.itemName}</div>
+                                                <div className="text-xs text-gray-500">{item.manufacturer?.manufacturerName}</div>
                                                 <div className="flex flex-wrap gap-1 mt-1">
                                                     {features.map((f) => (
-                                                        <span
-                                                            key={f.id}
-                                                            className="px-2 py-0.5 bg-gray-100 rounded text-[11px]"
-                                                        >
-                                            {f.feature?.featureName}
-                                        </span>
+                                                        <span key={f.id} className="px-2 py-0.5 bg-gray-100 rounded text-[11px]">
+                                                            {f.feature?.featureName}
+                                                        </span>
                                                     ))}
                                                 </div>
                                             </div>
-
                                             <div className="text-right text-green-700 font-semibold">
                                                 Rs {formatCurrency(item.price)}
                                             </div>
                                         </div>
 
                                         <div className="flex items-center gap-3 mt-3">
-                                            {!isPowerSource && (
-                                                <div className="flex items-center border rounded">
-                                                    <button
-                                                        onClick={() =>
-                                                            setItemQuantities((prev) => ({
-                                                                ...prev,
-                                                                [item.id]: Math.max(1, selectedQty - 1),
-                                                            }))
-                                                        }
-                                                        className="px-2"
-                                                    >
-                                                        <Minus size={14} />
-                                                    </button>
+                                            <div className="flex items-center border rounded">
+                                                <button
+                                                    onClick={() =>
+                                                        setItemQuantities((prev) => ({
+                                                            ...prev,
+                                                            [item.id]: Math.max(1, selectedQty - 1),
+                                                        }))
+                                                    }
+                                                    className="px-2"
+                                                >
+                                                    <Minus size={14} />
+                                                </button>
 
-                                                    <span className="px-3 text-sm">
-                                        {selectedQty}
-                                    </span>
+                                                <span className="px-3 text-sm">{selectedQty}</span>
 
-                                                    <button
-                                                        onClick={() =>
-                                                            setItemQuantities((prev) => ({
-                                                                ...prev,
-                                                                [item.id]: Math.min(maxSlots, selectedQty + 1),
-                                                            }))
-                                                        }
-                                                        className="px-2"
-                                                    >
-                                                        <Plus size={14} />
-                                                    </button>
-                                                </div>
-                                            )}
+                                                <button
+                                                    onClick={() =>
+                                                        setItemQuantities((prev) => ({
+                                                            ...prev,
+                                                            [item.id]: Math.min(maxSlots, selectedQty + 1),
+                                                        }))
+                                                    }
+                                                    className="px-2"
+                                                >
+                                                    <Plus size={14} />
+                                                </button>
+                                            </div>
 
                                             <button
                                                 disabled={maxSlots === 0}
@@ -424,41 +384,29 @@ const BuildCart = () => {
                             )}
                         </div>
 
-                        {/* Pagination Fixed At Bottom */}
+                        {/* Pagination */}
                         {totalPages > 1 && (
                             <div className="mt-4 pt-3 border-t flex justify-center items-center gap-2">
                                 <button
-                                    onClick={() =>
-                                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                                    }
+                                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                                     disabled={currentPage === 1}
                                     className="px-3 py-1 border rounded disabled:opacity-50"
                                 >
                                     Prev
                                 </button>
 
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                                    (page) => (
-                                        <button
-                                            key={page}
-                                            onClick={() => setCurrentPage(page)}
-                                            className={`px-3 py-1 border rounded ${
-                                                currentPage === page
-                                                    ? "bg-blue-600 text-white"
-                                                    : ""
-                                            }`}
-                                        >
-                                            {page}
-                                        </button>
-                                    )
-                                )}
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`px-3 py-1 border rounded ${currentPage === page ? "bg-blue-600 text-white" : ""}`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
 
                                 <button
-                                    onClick={() =>
-                                        setCurrentPage((prev) =>
-                                            Math.min(prev + 1, totalPages)
-                                        )
-                                    }
+                                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                                     disabled={currentPage === totalPages}
                                     className="px-3 py-1 border rounded disabled:opacity-50"
                                 >
