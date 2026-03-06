@@ -1,30 +1,66 @@
-import React, { useState } from "react";
+import React, {useState} from "react";
 import {
     useGetExchangeRateQuery,
     useGetExchangeRateByDaysQuery,
     useConvertUsdToLkrMutation
-} from "../../features/components/exchangeRateApi.js";
+} from "../../services/exchangeRateApi.js";
 import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer
 } from "recharts";
+import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const ExchangeRate = () => {
-    const { data: rateData, isLoading: loadingRate, error: rateError } = useGetExchangeRateQuery();
+
+    const {data: rateData, isLoading: loadingRate, error: rateError} =
+        useGetExchangeRateQuery();
 
     const [days, setDays] = useState(5);
 
-    const { data: lastDaysRates, isLoading: loadingDays, error: daysError } = useGetExchangeRateByDaysQuery(days);
+    const {data: lastDaysRates, isLoading: loadingDays, error: daysError} =
+        useGetExchangeRateByDaysQuery(days);
 
-    const [convertUsdToLkr, { data: conversionResult, isLoading: converting, error: conversionError }] = useConvertUsdToLkrMutation();
+    const [convertUsdToLkr, {isLoading: converting}] =
+        useConvertUsdToLkrMutation();
 
     const [usdAmount, setUsdAmount] = useState("");
+    const [convertedAmount, setConvertedAmount] = useState(null);
+
+    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+    const [showErrorDialog, setShowErrorDialog] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
+
+    const handleNotify = (type, message) => {
+        if (type === "success") {
+            setSuccessMessage(message);
+            setShowSuccessDialog(true);
+        } else {
+            setErrorMessage(message);
+            setShowErrorDialog(true);
+        }
+    };
 
     const handleConvert = async () => {
         if (!usdAmount) return;
+
         try {
-            await convertUsdToLkr({ usdAmount: parseFloat(usdAmount), lkrAmount: null }).unwrap();
+            const response = await convertUsdToLkr({
+                usdAmount: parseFloat(usdAmount),
+                lkrAmount: null
+            }).unwrap();
+
+            setConvertedAmount(response.lkrAmount);
+
+            handleNotify("success", response.message || "Conversion successful!");
         } catch (err) {
             console.error("Conversion failed:", err);
+            handleNotify("error", err.data?.message || "Conversion failed.");
         }
     };
 
@@ -33,32 +69,54 @@ const ExchangeRate = () => {
         rate: rate.rate,
     })) || [];
 
+    const formatCurrency = (price) => {
+        return new Intl.NumberFormat("en-LK", {
+            minimumFractionDigits: 2
+        }).format(price);
+    };
+
     return (
         <div className="container mx-auto p-4 space-y-6">
 
-            <div className="bg-white rounded-lg border p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 h-28">
+            <NotificationDialogs
+                showSuccessDialog={showSuccessDialog}
+                setShowSuccessDialog={setShowSuccessDialog}
+                successMessage={successMessage}
+                showErrorDialog={showErrorDialog}
+                setShowErrorDialog={setShowErrorDialog}
+                errorMessage={errorMessage}
+            />
 
-                <div className="flex-1 flex flex-col justify-center gap-1 text-sm">
+            <div className="bg-white rounded-lg border p-4 flex flex-col lg:flex-row gap-4">
+
+                <div className="flex-1 flex flex-col justify-center text-sm">
                     {loadingRate ? (
                         <span className="text-gray-500">Loading latest rate...</span>
                     ) : rateError ? (
                         <span className="text-red-500">Error loading rate.</span>
                     ) : (
                         <>
-                            <div className="font-medium">{rateData?.rate?.toFixed(3)} LKR / USD</div>
-                            <div className="text-gray-500 text-xs">Last Updated: {new Date(rateData?.lastUpdated).toLocaleString()}</div>
+                            <div className="font-medium">
+                                {rateData?.rate?.toFixed(3)} LKR / USD
+                            </div>
+                            <div className="text-gray-500 text-xs">
+                                Last Updated: {new Date(rateData?.lastUpdated).toLocaleString()}
+                            </div>
                         </>
                     )}
                 </div>
 
-                <div className="flex-1 flex flex-col gap-1 text-sm">
+                <div className="flex-1 flex flex-col gap-2 text-sm">
                     <div className="flex gap-2">
                         <input
                             type="number"
                             value={usdAmount}
-                            onChange={(e) => setUsdAmount(e.target.value)}
+                            onChange={(e) => {
+                                setUsdAmount(e.target.value);
+                                setConvertedAmount(null); // clear previous result
+                            }}
                             className="flex-1 border px-2 py-1 rounded text-sm"
-                            placeholder="USD"
+                            placeholder="Enter USD amount"
                         />
                         <button
                             onClick={handleConvert}
@@ -69,18 +127,16 @@ const ExchangeRate = () => {
                         </button>
                     </div>
 
-                    {conversionResult && (
-                        <div className="text-green-800 bg-green-100 px-2 py-1 rounded text-sm mt-1">
-                            {conversionResult.usdAmount} USD = {conversionResult.lkrAmount?.toLocaleString("en-LK", { style: "currency", currency: "LKR" })}
+                    {convertedAmount !== null && (
+                        <div className="text-green-600 font-medium">
+                            LKR: {formatCurrency(convertedAmount)}
                         </div>
-                    )}
-                    {conversionError && (
-                        <div className="text-red-500 text-sm mt-1">Conversion failed. Try again.</div>
                     )}
                 </div>
             </div>
 
             <div className="bg-white rounded-lg border p-4 h-[28.8rem] flex flex-col">
+
                 <div className="flex items-center gap-2 text-sm mb-2">
                     <label className="font-medium text-gray-700">Days:</label>
                     <input
@@ -102,12 +158,18 @@ const ExchangeRate = () => {
                         <span className="text-gray-500 text-sm">No data available.</span>
                     ) : (
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                                <YAxis domain={['dataMin', 'dataMax']} tick={{ fontSize: 10 }} />
-                                <Tooltip />
-                                <Line type="monotone" dataKey="rate" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                            <LineChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3"/>
+                                <XAxis dataKey="date" tick={{fontSize: 12}}/>
+                                <YAxis domain={['dataMin', 'dataMax']} tick={{fontSize: 12}}/>
+                                <Tooltip/>
+                                <Line
+                                    type="monotone"
+                                    dataKey="rate"
+                                    stroke="#3b82f6"
+                                    strokeWidth={2}
+                                    dot={false}
+                                />
                             </LineChart>
                         </ResponsiveContainer>
                     )}

@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import {useState, useEffect} from "react";
+import {useNavigate} from "react-router-dom";
 import {
     useGetCurrentUserQuery,
     useUpdateUserMutation
-} from "../../features/components/userApi.js";
+} from "../../services/userApi.js";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const MyAccount = () => {
     const navigate = useNavigate();
 
-    // Form state
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [notification, setNotification] = useState({
@@ -21,11 +20,11 @@ const MyAccount = () => {
 
     const token = localStorage.getItem("jwtToken");
 
-    const { data: userData, isLoading, error } = useGetCurrentUserQuery(undefined, {
+    const {data: userData, isLoading, error} = useGetCurrentUserQuery(undefined, {
         skip: !token,
     });
 
-    const [updateUser, { isLoading: isSubmitting }] = useUpdateUserMutation();
+    const [updateUser, {isLoading: isSubmitting}] = useUpdateUserMutation();
 
     useEffect(() => {
         if (userData) {
@@ -39,12 +38,12 @@ const MyAccount = () => {
     }, [token, navigate]);
 
     const showNotification = (type, message, action = null) => {
-        setNotification({ show: true, type, message, action });
+        setNotification({show: true, type, message, action});
     };
 
     const handleConfirmAction = async () => {
         if (notification.action) {
-            const { callback } = notification.action;
+            const {callback} = notification.action;
             try {
                 const result = await callback();
                 const successMessage = result?.message || notification.action.successMessage || "Action completed!";
@@ -53,7 +52,7 @@ const MyAccount = () => {
                 const errorMessage = error.message || notification.action.errorMessage || "Error performing action.";
                 showNotification("error", errorMessage);
             } finally {
-                setNotification(prev => ({ ...prev, action: null }));
+                setNotification(prev => ({...prev, action: null}));
             }
         }
     };
@@ -125,7 +124,6 @@ const MyAccount = () => {
     return (
         <div className="container mx-auto p-6 max-w-3xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Account Info Card */}
                 <div className="bg-white rounded-lg shadow p-6 border">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">Account Summary</h2>
                     <ul className="space-y-3 text-sm text-gray-700">
@@ -141,7 +139,8 @@ const MyAccount = () => {
                         </li>
                         <li className="flex justify-between">
                             <span className="font-medium">Status:</span>
-                            <span className={userData?.enabled ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                            <span
+                                className={userData?.enabled ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
                                 {userData?.enabled ? "Enabled" : "Disabled"}
                             </span>
                         </li>
@@ -158,7 +157,6 @@ const MyAccount = () => {
                     </ul>
                 </div>
 
-                {/* Edit Account Form */}
                 <div className="bg-white rounded-lg shadow p-6 border">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">Edit Account</h2>
                     <form className="space-y-4" onSubmit={handleSubmit}>
@@ -196,7 +194,8 @@ const MyAccount = () => {
                             >
                                 {isSubmitting ? (
                                     <span className="flex items-center justify-center">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                        <div
+                                            className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                                         Updating...
                                     </span>
                                 ) : (
@@ -216,13 +215,12 @@ const MyAccount = () => {
                 </div>
             </div>
 
-            {/* Global Notification Dialog */}
             <NotificationDialogs
                 showSuccessDialog={notification.show && notification.type === "success"}
-                setShowSuccessDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
+                setShowSuccessDialog={() => setNotification({show: false, type: "", message: "", action: null})}
                 successMessage={notification.message}
                 showErrorDialog={notification.show && notification.type === "error"}
-                setShowErrorDialog={() => setNotification({ show: false, type: "", message: "", action: null })}
+                setShowErrorDialog={() => setNotification({show: false, type: "", message: "", action: null})}
                 errorMessage={notification.message}
                 errorAction={notification.action}
                 onErrorAction={handleConfirmAction}

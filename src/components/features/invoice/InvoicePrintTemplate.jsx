@@ -1,6 +1,7 @@
-import React, { forwardRef } from "react";
+import React, {forwardRef} from "react";
+import PrimeBuildBanner from "../../../assets/primebuild_banner-cropped.svg";
 
-const InvoicePrintTemplate = forwardRef(({ invoice }, ref) => {
+const InvoicePrintTemplate = forwardRef(({invoice}, ref) => {
     if (!invoice) return null;
 
     const formatCurrency = (amount) =>
@@ -18,9 +19,16 @@ const InvoicePrintTemplate = forwardRef(({ invoice }, ref) => {
         <div
             ref={ref}
             className="p-6 bg-white text-black shadow-lg rounded-md"
-            style={{ width: "800px", fontFamily: "Arial, sans-serif" }}
+            style={{width: "800px", fontFamily: "Arial, sans-serif"}}
         >
-            <h1 className="text-3xl font-bold text-center mb-6">PRIME BUILD INVOICE</h1>
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-3xl font-bold">INVOICE</h1>
+                <img
+                    src={PrimeBuildBanner}
+                    alt="Prime Build Banner"
+                    className="h-12 w-auto object-contain"
+                />
+            </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
                 <div className="space-y-1">
@@ -49,7 +57,7 @@ const InvoicePrintTemplate = forwardRef(({ invoice }, ref) => {
                     <tbody>
                     {invoice.invoiceItems.map((item) => (
                         <tr key={item.id} className="hover:bg-gray-50">
-                            <td className="p-2 border-b">{item.item.itemName}</td>
+                            <td className="p-2 border-b">{item.item.manufacturer?.manufacturerName} {item.item.itemName}</td>
                             <td className="p-2 border-b text-center">{item.invoiceQuantity}</td>
                             <td className="p-2 border-b text-right">Rs {formatCurrency(item.unitPrice)}</td>
                             <td className="p-2 border-b text-right">Rs {formatCurrency(item.discountSubTotal)}</td>

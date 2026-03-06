@@ -1,21 +1,24 @@
-import { useEffect, useState, useMemo } from "react";
+import {useEffect, useState, useMemo} from "react";
 import DataTable from "../common/DataTable.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 import Unauthorized from "../common/Unauthorized.jsx";
 import InvoiceDetails from "./invoice/InvoiceDetails.jsx";
 
 import {
-    useGetInvoicesQuery,
+    useGetInvoicesByUserTypeQuery,
     useUpdateInvoiceMutation,
     useDeleteInvoiceMutation
-} from "../../features/components/InvoiceApi.js";
+} from "../../services/invoiceApi.js";
 
-const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
+const InvoiceManagement = ({refetchFlag, resetFlag}) => {
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("");
     const [filterDate, setFilterDate] = useState("");
+    const [filterUserType, setFilterUserType] = useState("all"); // "all" or "customer"
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     const [notification, setNotification] = useState({
         show: false,
@@ -29,10 +32,15 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
         error,
         refetch,
         isLoading
-    } = useGetInvoicesQuery();
+    } = useGetInvoicesByUserTypeQuery(
+        filterUserType === "all" ? "" : filterUserType
+    );
 
     const [updateInvoice] = useUpdateInvoiceMutation();
     const [deleteInvoice] = useDeleteInvoiceMutation();
+
+    const isUnauthorized = error?.status === 401 || error?.status === 403;
+    if (isUnauthorized) return <Unauthorized/>;
 
     useEffect(() => {
         if (refetchFlag) {
@@ -41,8 +49,12 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
         }
     }, [refetchFlag, resetFlag, refetch]);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterStatus, filterDate, filterUserType]);
+
     if (error?.status === 401 || error?.status === 403)
-        return <Unauthorized />;
+        return <Unauthorized/>;
 
     const filteredInvoices = useMemo(() => {
         const term = searchTerm.toLowerCase().trim();
@@ -66,14 +78,20 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
         });
     }, [invoices, searchTerm, filterStatus, filterDate]);
 
+    const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+    const paginatedInvoices = filteredInvoices.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
     const showNotification = (type, message, action = null) => {
-        setNotification({ show: true, type, message, action });
+        setNotification({show: true, type, message, action});
     };
 
     const handleConfirmAction = async () => {
         if (!notification.action) return;
 
-        const { callback } = notification.action;
+        const {callback} = notification.action;
         setIsSubmitting(true);
 
         try {
@@ -89,7 +107,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
             );
         } finally {
             setIsSubmitting(false);
-            setNotification(prev => ({ ...prev, action: null }));
+            setNotification(prev => ({...prev, action: null}));
         }
     };
 
@@ -114,7 +132,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
             );
 
             refetch();
-            setSelectedInvoice(null); // Close modal
+            setSelectedInvoice(null);
         } catch (err) {
             showNotification(
                 "error",
@@ -173,7 +191,7 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
             key: "status",
             header: "Status",
             render: inv => (
-                <div >
+                <div>
                     <span
                         className={`px-2 py-1 rounded text-xs font-medium ${
                             inv.invoiceStatus === "PAID"
@@ -188,9 +206,9 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
         },
         {
             key: "total",
-            header: "Total (Rs)",
+            header: "Total",
             render: inv => (
-                <div className="text-sm font-bold">
+                <div className="text-sm font-semibold">
                     Rs {formatCurrency(inv.totalAmount)}
                 </div>
             )
@@ -234,16 +252,55 @@ const InvoiceManagement = ({ refetchFlag, resetFlag }) => {
                     value={filterDate}
                     onChange={(e) => setFilterDate(e.target.value)}
                 />
+
+                <select
+                    className="h-10 w-48 p-2 border rounded"
+                    value={filterUserType}
+                    onChange={(e) => setFilterUserType(e.target.value)}
+                >
+                    <option value="all">All Users</option>
+                    <option value="customer">Customer</option>
+                </select>
             </div>
 
             <DataTable
-                items={filteredInvoices}
+                items={paginatedInvoices}
                 selectedItem={selectedInvoice}
                 onSelectItem={setSelectedInvoice}
                 onDeleteItemClick={handleDelete}
                 columns={columns}
                 emptyMessage={isLoading ? "Loading..." : "No invoices found"}
             />
+
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-4">
+                    <button
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 border rounded disabled:opacity-50"
+                    >
+                        Prev
+                    </button>
+
+                    {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
+                        <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-3 py-1 border rounded ${currentPage === page ? "bg-blue-600 text-white" : ""}`}
+                        >
+                            {page}
+                        </button>
+                    ))}
+
+                    <button
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1 border rounded disabled:opacity-50"
+                    >
+                        Next
+                    </button>
+                </div>
+            )}
 
             {selectedInvoice && (
                 <InvoiceDetails
