@@ -184,13 +184,18 @@ const BuildCart = () => {
         { skip: !selectedComponent }
     );
 
-    const { data: compatibleItems = {} } =
-        useGetCompatibleItemsByComponentQuery(
-            compatibleComponentId
-                ? { componentId: compatibleComponentId, selectedItems, page: currentPage - 1, size: ITEMS_PER_PAGE }
-                : null,
-            { skip: !compatibleComponentId }
-        );
+    const { data: compatibleItems = {} } = useGetCompatibleItemsByComponentQuery(
+        compatibleComponentId
+            ? {
+                componentId: compatibleComponentId,
+                // only send already selected items excluding current component
+                selectedItems: selectedItems.filter((i) => i.component?.id !== compatibleComponentId),
+                page: currentPage - 1,
+                size: ITEMS_PER_PAGE,
+            }
+            : null,
+        { skip: !compatibleComponentId } // skip query if no component selected
+    );
 
     const itemsToShow = useMemo(() => {
         if (!selectedComponent) return [];

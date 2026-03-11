@@ -1,13 +1,14 @@
 import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
-    baseUrl: "http://localhost:8080/api",
+
+    // baseUrl: "http://localhost:8080/api",
 
     // aws ec2 public ip
     // baseUrl: "http://13.53.131.17:8080/api",
 
     // ec2 connect via dns
-    // baseUrl: "http://api.primebuild.space:8080/api",
+    baseUrl: "http://api.primebuild.space:8080/api",
 
     prepareHeaders: (headers) => {
         const token = localStorage.getItem("jwtToken");
@@ -65,6 +66,10 @@ export const baseApi = createApi({
         "UserRole",
         "Build",
         "ItemComponentCount",
+        "ItemByComponent",
+        "ItemFeature",
+        "ItemFeatureByItem",
+        "ItemFeatureByFeature",
     ],
     endpoints: () => ({}),
 });

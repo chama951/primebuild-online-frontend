@@ -310,8 +310,8 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
                             showNotification={showNotification}
                             isSubmitting={isSubmitting}
                             setIsSubmitting={setIsSubmitting}
-                            onFeaturesChange={updatedFeatures => {
-                                setSelectedItem(prev => ({...prev, featureList: updatedFeatures}));
+                            onItemUpdated={async () => {
+                                await refetchItems();
                             }}
                         />
                     )}
