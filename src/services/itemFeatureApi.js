@@ -19,7 +19,7 @@ export const itemFeatureApi = baseApi.injectEndpoints({
                 method: "POST",
                 body: {itemId, featureId, slotCount},
             }),
-            invalidatesTags: ["ItemFeature"],
+            invalidatesTags: ["ItemFeature", "Item", "ItemByComponent"],
         }),
 
         updateItemFeature: builder.mutation({
@@ -28,7 +28,10 @@ export const itemFeatureApi = baseApi.injectEndpoints({
                 method: "PUT",
                 body: {itemId, featureId, slotCount},
             }),
-            invalidatesTags: (result, error, {id}) => [{type: "ItemFeature", id}],
+            invalidatesTags: (result, error, {id}) => [
+                {type: "ItemFeature", id},
+                "Items", "ItemByComponent"
+            ],
         }),
 
         deleteItemFeature: builder.mutation({
@@ -36,9 +39,8 @@ export const itemFeatureApi = baseApi.injectEndpoints({
                 url: `/item_feature/${id}`,
                 method: "DELETE",
             }),
-            invalidatesTags: ["ItemFeature"],
+            invalidatesTags: ["ItemFeature", "Items", "ItemByComponent"],
         }),
-
         getItemFeaturesByItemId: builder.query({
             query: (itemId) => `/item_feature?item=${itemId}`,
             providesTags: (result, error, itemId) => [
