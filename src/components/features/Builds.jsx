@@ -13,7 +13,7 @@ const Builds = () => {
     const [updateCart] = useCreateOrUpdateCartMutation();
 
     const [selectedItemsByComponent, setSelectedItemsByComponent] = useState({});
-    const [priceRange, setPriceRange] = useState([0, 1000000]);
+    const [priceRange, setPriceRange] = useState([0, 10000000]);
     const [selectedBuild, setSelectedBuild] = useState(null);
 
     const [showSuccessDialog, setShowSuccessDialog] = useState(false);
