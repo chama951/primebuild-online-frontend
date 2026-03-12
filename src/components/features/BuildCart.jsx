@@ -315,7 +315,7 @@ const BuildCart = () => {
                 {selectedComponent && (
                     <div className="flex-1 bg-white rounded-xl border border-gray-200 p-4 flex flex-col h-full">
                         <h2 className="text-lg font-semibold mb-3">
-                            Select {selectedComponent.componentName} ({totalCompatibleItems})
+                            Select {selectedComponent.componentName} {totalCompatibleItems > 0 && ` (${totalCompatibleItems})`}
                         </h2>
 
                         <div className="flex-1 overflow-y-auto space-y-3 pr-2">
