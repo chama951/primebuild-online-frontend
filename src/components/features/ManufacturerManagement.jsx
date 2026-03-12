@@ -42,14 +42,6 @@ const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
         }
     }, [refetchFlag]);
 
-    const isUnauthorized = () => {
-        const errors = [manufacturersError];
-        return errors.some(err => err?.isUnauthorized);
-    };
-
-    if (isUnauthorized()) {
-        return <Unauthorized/>;
-    }
 
     const manufacturers = Array.isArray(manufacturersData)
         ? manufacturersData
@@ -74,6 +66,11 @@ const ManufacturerManagement = ({refetchFlag, resetFlag}) => {
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm]);
+
+    if (manufacturersError?.status === 401 || manufacturersError?.status === 403) {
+        return <Unauthorized />;
+    }
+
 
     const showNotification = (type, message, action = null) => {
         setNotification({show: true, type, message, action});

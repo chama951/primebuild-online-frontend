@@ -10,6 +10,7 @@ import {
     useCreateComponentFeatureTypeMutation,
     useDeleteComponentFeatureTypeMutation,
 } from "../../../services/componentFeatureTypeApi.js";
+import Unauthorized from "../../common/Unauthorized.jsx";
 
 const ComponentFeatureSection = ({
                                      selectedComponent,
@@ -21,11 +22,10 @@ const ComponentFeatureSection = ({
     const [newFeatureTypeName, setNewFeatureTypeName] = useState("");
     const [editingFeatureType, setEditingFeatureType] = useState(null);
 
-    const {data: allFeatureTypes = [], refetch: refetchAllFeatureTypes} = useGetFeatureTypesQuery();
-    const {data: componentFeatureTypes = [], refetch: refetchComponentFeatureTypes} =
-        useGetComponentFeatureTypesByComponentIdQuery(selectedComponent?.id, {
-            skip: !selectedComponent,
-        });
+    const {data: allFeatureTypes = [], error: allFeatureTypesError, refetch: refetchAllFeatureTypes} = useGetFeatureTypesQuery();
+    const {data: componentFeatureTypes = [], error: componentFeatureTypesError, refetch: refetchComponentFeatureTypes} =
+        useGetComponentFeatureTypesByComponentIdQuery(selectedComponent?.id, { skip: !selectedComponent });
+
 
     const [saveFeatureType] = useSaveFeatureTypeMutation();
     const [updateFeatureType] = useUpdateFeatureTypeMutation();
@@ -34,6 +34,11 @@ const ComponentFeatureSection = ({
     const [deleteComponentFeatureType] = useDeleteComponentFeatureTypeMutation();
 
     if (!selectedComponent) return null;
+
+    const errors = [allFeatureTypesError, componentFeatureTypesError];
+    const isUnauthorized = errors.some(err => err?.status === 401 || err?.status === 403);
+
+    if (isUnauthorized) return <Unauthorized />;
 
     const handleCreateFeatureType = async () => {
         if (!newFeatureTypeName.trim()) {

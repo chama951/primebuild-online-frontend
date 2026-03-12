@@ -39,8 +39,9 @@ const UserManagement = ({refetchFlag, resetFlag}) => {
         setCurrentPage(1);
     }, [searchTerm, filterType]);
 
-    const isUnauthorized = () => [usersError, rolesError].some(err => err?.isUnauthorized);
-    if (isUnauthorized()) return <Unauthorized/>;
+    if (usersError?.status === 401 || usersError?.status === 403) {
+        return <Unauthorized />;
+    }
 
     const filteredUsers = users.filter(user =>
         user?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||

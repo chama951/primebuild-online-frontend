@@ -3,6 +3,7 @@ import {
     useGetAnalyticsByAttributeQuery,
     useGetTrendingItemsQuery
 } from "../../services/itemAnalyticsApi.js";
+import Unauthorized from "../common/Unauthorized.jsx";
 
 const AnalyticsAttributes = ["views", "sales", "carts", "trend"];
 
@@ -27,6 +28,10 @@ const ItemAnalytics = () => {
     React.useEffect(() => {
         setCurrentPage(1);
     }, [selectedAttribute]);
+
+    if (error?.status === 401 || error?.status === 403) {
+        return <Unauthorized />;
+    }
 
     return (
         <div className="container mx-auto p-4 space-y-6">

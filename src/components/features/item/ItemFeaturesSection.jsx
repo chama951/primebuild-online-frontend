@@ -13,6 +13,7 @@ import {
 import {
     useGetComponentFeatureTypesByComponentIdQuery
 } from "../../../services/componentFeatureTypeApi.js";
+import Unauthorized from "../../common/Unauthorized.jsx";
 
 const ItemFeaturesSection = ({
                                  selectedComponent,
@@ -31,10 +32,8 @@ const ItemFeaturesSection = ({
     const [updatingSlotCount, setUpdatingSlotCount] = useState(null); // { featureId, typeId, currentCount }
 
     // API hooks - get component feature types directly from API
-    const {data: componentFeatureTypes = [], refetch: refetchComponentFeatureTypes} =
-        useGetComponentFeatureTypesByComponentIdQuery(selectedComponent?.id, {
-            skip: !selectedComponent,
-        });
+    const {data: componentFeatureTypes = [], error: componentFeatureTypesError, refetch: refetchComponentFeatureTypes} =
+        useGetComponentFeatureTypesByComponentIdQuery(selectedComponent?.id, { skip: !selectedComponent });
 
     // Extract feature types from the response
     const featureTypes = componentFeatureTypes
@@ -42,7 +41,7 @@ const ItemFeaturesSection = ({
         .filter(Boolean);
 
     // Get all features
-    const {data: allFeatures = [], refetch: refetchAllFeatures} = useGetFeaturesQuery();
+    const {data: allFeatures = [], error: allFeaturesError, refetch: refetchAllFeatures} = useGetFeaturesQuery();
 
     // Filter features that belong to this component's feature types
     const componentFeatures = allFeatures.filter((feature) =>
@@ -109,6 +108,11 @@ const ItemFeaturesSection = ({
             }
         }
     }, [featureTypes, selectedFeatureTypeId]);
+
+    const errors = [componentFeatureTypesError, allFeaturesError];
+    const isUnauthorized = errors.some(err => err?.status === 401 || err?.status === 403);
+
+    if (isUnauthorized) return <Unauthorized />;
 
     const handleToggleFeature = async (feature) => {
         const typeId = feature.featureType?.id;

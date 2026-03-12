@@ -49,14 +49,8 @@ const ComponentManagement = ({refetchFlag, resetFlag}) => {
         setCurrentPage(1);
     }, [searchTerm]);
 
-    const isUnauthorized = () => {
-        const errors = [componentsError];
-        return errors.some(err => err?.isUnauthorized);
-    };
-
-    if (isUnauthorized()) {
-        return <Unauthorized/>;
-    }
+    const isUnauthorized = componentsError?.status === 401 || componentsError?.status === 403;
+    if (isUnauthorized) return <Unauthorized/>;
 
     const filteredComponents = components.filter((component) =>
         component?.componentName?.toLowerCase().includes(searchTerm.toLowerCase())

@@ -15,6 +15,7 @@ import {
     ResponsiveContainer,
     Legend
 } from "recharts";
+import Unauthorized from "../common/Unauthorized.jsx";
 
 const Vendors = [
     "NANOTEK",
@@ -54,6 +55,10 @@ const ItemData = () => {
     useEffect(() => {
         setChartData([]);
     }, [selectedItem, selectedVendor]);
+
+    if (itemsError?.status === 401 || itemsError?.status === 403) {
+        return <Unauthorized/>;
+    }
 
     const handleFetchData = async () => {
         if (!selectedItem || !selectedVendor) return;

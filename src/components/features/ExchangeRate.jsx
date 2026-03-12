@@ -14,6 +14,7 @@ import {
     ResponsiveContainer
 } from "recharts";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
+import Unauthorized from "../common/Unauthorized.jsx";
 
 const ExchangeRate = () => {
 
@@ -45,6 +46,11 @@ const ExchangeRate = () => {
             setShowErrorDialog(true);
         }
     };
+
+    const errors = [rateError, daysError];
+    const isUnauthorized = errors.some(e => e?.status === 401 || e?.status === 403);
+
+    if (isUnauthorized) return <Unauthorized />;
 
     const handleConvert = async () => {
         if (!usdAmount) return;
