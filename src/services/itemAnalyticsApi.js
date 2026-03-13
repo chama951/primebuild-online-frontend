@@ -1,7 +1,8 @@
-import {baseApi} from "./baseApi.js";
+import { baseApi } from "./baseApi.js";
 
 export const itemAnalyticsApi = baseApi.injectEndpoints({
     endpoints: (build) => ({
+
         incrementViewCount: build.mutation({
             query: (id) => ({
                 url: `/analytics/${id}`,
@@ -10,13 +11,12 @@ export const itemAnalyticsApi = baseApi.injectEndpoints({
         }),
 
         getAnalyticsByAttribute: build.query({
-            query: (attribute) => ({
-                url: `/analytics`,
+            query: ({ attribute, page = 1, size = 2 }) => ({
+                url: `/analytics?attribute=${attribute}&page=${page}&size=${size}`,
                 method: "GET",
-                params: {attribute},
             }),
-            providesTags: (result, error, attribute) => [
-                {type: "ItemAnalytics", id: attribute},
+            providesTags: (result, error, { attribute }) => [
+                { type: "ItemAnalytics", id: attribute },
             ],
         }),
 
@@ -25,7 +25,7 @@ export const itemAnalyticsApi = baseApi.injectEndpoints({
                 url: `/analytics`,
                 method: "GET",
             }),
-            providesTags: [{type: "ItemAnalytics", id: "trending"}],
+            providesTags: [{ type: "ItemAnalytics", id: "trending" }],
         }),
     }),
 });
