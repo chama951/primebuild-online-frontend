@@ -6,15 +6,12 @@ import {useGetCartQuery, useCreateOrUpdateCartMutation} from "../../services/car
 import {useGetTrendingItemsQuery, useGetAnalyticsByAttributeQuery} from "../../services/itemAnalyticsApi.js";
 import ItemDetails from "./ItemDetails.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
-import Unauthorized from "../common/Unauthorized.jsx";
 
 const TrendingProducts = () => {
-    const { data: components = [], error: componentsError } = useGetComponentsQuery();
-    const { data: items = [], error: itemsError } = useGetItemsQuery();
-    const { data: featureTypes = [], error: featureTypesError } = useGetFeatureTypesQuery();
-    const { data: cartData, error: cartError } = useGetCartQuery();
-    const { data: trendingData = [], error: trendingError } = useGetTrendingItemsQuery();
-    const { data: analyticsData = [], error: analyticsError } = useGetAnalyticsByAttributeQuery(selectedAttribute, {skip: selectedAttribute === null});
+    const {data: components = []} = useGetComponentsQuery();
+    const {data: items = []} = useGetItemsQuery();
+    const {data: featureTypes = []} = useGetFeatureTypesQuery();
+    const {data: cartData} = useGetCartQuery();
     const [updateCart] = useCreateOrUpdateCartMutation();
 
     const [selectedAttribute, setSelectedAttribute] = useState(null);
@@ -29,6 +26,9 @@ const TrendingProducts = () => {
     const [errorMessage, setErrorMessage] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 12;
+
+    const {data: trendingData = []} = useGetTrendingItemsQuery();
+    const {data: analyticsData = []} = useGetAnalyticsByAttributeQuery(selectedAttribute, {skip: selectedAttribute === null});
 
     const featureTypesById = useMemo(() => {
         const map = {};
@@ -126,17 +126,6 @@ const TrendingProducts = () => {
 
         return filtered;
     }, [analyticsData, trendingData, selectedAttribute, selectedCategory, selectedFeatures, selectedManufacturer, sortOrder, featureTypesById]);
-
-    const isUnauthorized = [
-        componentsError,
-        itemsError,
-        featureTypesError,
-        cartError,
-        trendingError,
-        analyticsError
-    ].some(err => err?.status === 401 || err?.status === 403);
-
-    if (isUnauthorized) return <Unauthorized />;
 
     const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
     const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
