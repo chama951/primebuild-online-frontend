@@ -53,6 +53,11 @@ const Categories = () => {
 
     const items = itemPage?.content || [];
     const totalPages = itemPage?.totalPages || 1;
+    const totalItems = itemPage?.totalElements || 0;
+
+    const start = currentPage * itemsPerPage + 1;
+    const end = start + items.length - 1;
+
     const isLoading = featureQuery.isLoading || manufacturerQuery.isLoading || defaultQuery.isLoading;
     const isError = featureQuery.isError || manufacturerQuery.isError || defaultQuery.isError;
 
@@ -63,7 +68,9 @@ const Categories = () => {
             const index = updatedItems.findIndex(i => i.id === item.id);
             if (index !== -1) updatedItems[index].quantity += 1;
             else updatedItems.push({id: item.id, quantity: 1});
+
             await updateCart({itemList: updatedItems}).unwrap();
+
             setSuccessMessage(`Added ${item.itemName} to cart`);
             setShowSuccessDialog(true);
         } catch (err) {
@@ -95,6 +102,7 @@ const Categories = () => {
         const featureId = feature.id || feature;
         if (selectedFeature === featureId) setSelectedFeature(null);
         else setSelectedFeature(featureId);
+
         setSelectedManufacturer(null);
         setSelectedComponent(null);
         setCurrentPage(0);
@@ -103,6 +111,7 @@ const Categories = () => {
     const toggleManufacturer = (manufacturerId) => {
         if (selectedManufacturer === manufacturerId) setSelectedManufacturer(null);
         else setSelectedManufacturer(manufacturerId);
+
         setSelectedFeature(null);
         setSelectedComponent(null);
         setCurrentPage(0);
@@ -123,13 +132,16 @@ const Categories = () => {
 
             <div
                 className="w-64 border-r pr-4 flex flex-col gap-3 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+
                 <h4 className="font-semibold">Components</h4>
+
                 <button
                     onClick={clearFilters}
                     className={`border rounded p-2 text-left hover:bg-blue-50 transition ${!selectedComponent ? "bg-blue-600 text-white font-semibold" : ""}`}
                 >
                     All
                 </button>
+
                 {components.map(c => (
                     <button
                         key={c.id}
@@ -147,9 +159,12 @@ const Categories = () => {
 
                 <div className="mt-4">
                     <h4 className="font-semibold mb-2">Features</h4>
+
                     {featureTypes.map(ft => (
                         <div key={ft.id} className="mb-2">
+
                             <p className="text-sm font-medium">{ft.featureTypeName}</p>
+
                             {ft.featureList?.map(f => (
                                 <button
                                     key={f.id}
@@ -165,6 +180,7 @@ const Categories = () => {
 
                 <div className="mt-4">
                     <h4 className="font-semibold mb-2">Manufacturer</h4>
+
                     {manufacturers.map(m => (
                         <button
                             key={m.id}
@@ -176,34 +192,56 @@ const Categories = () => {
                     ))}
                 </div>
             </div>
+
             <div className="flex-1">
+
+                <div className="mb-4 text-sm text-gray-600">
+                    Showing {items.length > 0 ? `${start}-${end}` : 0} of {totalItems} items
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+
                     {items.length > 0 ? items.map(item => {
+
                         const discountedPrice = item.price * (1 - (item.discountPercentage || 0) / 100);
+
                         return (
                             <div
                                 key={item.id}
                                 className="border rounded-lg p-3 shadow hover:shadow-md bg-white cursor-pointer flex flex-col justify-between"
                                 onClick={() => setSelectedItem(item)}
                             >
+
                                 <h3 className="font-semibold text-sm line-clamp-2">{item.itemName}</h3>
 
                                 <div>
+
                                     {item.discountPercentage > 0 ? (
                                         <>
-                                            <p className="text-xs line-through text-gray-400">LKR {item.price.toLocaleString()}</p>
-                                            <p className="text-green-600 font-semibold text-sm">LKR {discountedPrice.toLocaleString()}</p>
+                                            <p className="text-xs line-through text-gray-400">
+                                                LKR {item.price.toLocaleString()}
+                                            </p>
+
+                                            <p className="text-green-600 font-semibold text-sm">
+                                                LKR {discountedPrice.toLocaleString()}
+                                            </p>
                                         </>
                                     ) : (
-                                        <p className="text-sm text-gray-700">LKR {item.price.toLocaleString()}</p>
+                                        <p className="text-sm text-gray-700">
+                                            LKR {item.price.toLocaleString()}
+                                        </p>
                                     )}
 
                                     {item.itemFeatureList?.length > 0 && (
-                                        <p className="text-xs text-gray-500">{item.itemFeatureList.map(f => f.feature.featureName).join(", ")}</p>
+                                        <p className="text-xs text-gray-500">
+                                            {item.itemFeatureList.map(f => f.feature.featureName).join(", ")}
+                                        </p>
                                     )}
 
                                     {item.manufacturer && (
-                                        <p className="text-xs text-gray-500">{item.manufacturer.manufacturerName}</p>
+                                        <p className="text-xs text-gray-500">
+                                            {item.manufacturer.manufacturerName}
+                                        </p>
                                     )}
 
                                     <button
@@ -215,16 +253,22 @@ const Categories = () => {
                                     >
                                         Add to Cart
                                     </button>
+
                                 </div>
                             </div>
                         );
+
                     }) : (
-                        <div className="col-span-full text-gray-500">No items found</div>
+                        <div className="col-span-full text-gray-500">
+                            No items found
+                        </div>
                     )}
+
                 </div>
 
                 {totalPages > 1 && (
                     <div className="flex justify-center gap-2 mt-6">
+
                         <button
                             onClick={() => setCurrentPage(p => Math.max(p - 1, 0))}
                             disabled={currentPage === 0}
@@ -234,14 +278,19 @@ const Categories = () => {
                         </button>
 
                         {(() => {
+
                             const maxPagesToShow = 5;
+
                             let start = Math.max(currentPage - Math.floor(maxPagesToShow / 2), 0);
                             let end = start + maxPagesToShow - 1;
+
                             if (end >= totalPages) {
                                 end = totalPages - 1;
                                 start = Math.max(end - maxPagesToShow + 1, 0);
                             }
+
                             const pages = [];
+
                             for (let i = start; i <= end; i++) pages.push(i);
 
                             return pages.map(i => (
@@ -253,6 +302,7 @@ const Categories = () => {
                                     {i + 1}
                                 </button>
                             ));
+
                         })()}
 
                         <button
@@ -262,11 +312,18 @@ const Categories = () => {
                         >
                             Next
                         </button>
+
                     </div>
                 )}
+
             </div>
 
-            {selectedItem && <ItemDetails item={selectedItem} onClose={() => setSelectedItem(null)}/>}
+            {selectedItem && (
+                <ItemDetails
+                    item={selectedItem}
+                    onClose={() => setSelectedItem(null)}
+                />
+            )}
 
             <NotificationDialogs
                 showSuccessDialog={showSuccessDialog}
@@ -276,6 +333,7 @@ const Categories = () => {
                 setShowErrorDialog={() => setShowErrorDialog(false)}
                 errorMessage={errorMessage}
             />
+
         </div>
     );
 };
