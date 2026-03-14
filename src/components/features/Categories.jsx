@@ -1,29 +1,76 @@
 import React, {useState, useMemo} from "react";
 import {useGetComponentsQuery} from "../../services/componentApi.js";
-import {useGetItemsQuery} from "../../services/itemApi.js";
 import {useGetFeatureTypesQuery} from "../../services/featureTypeApi.js";
+import {
+    useGetPaginatedItemsQuery,
+    useGetPaginatedItemsByFeatureIdQuery,
+    useGetPaginatedItemsByManufacturerIdQuery
+} from "../../services/itemApi.js";
 import {useGetCartQuery, useCreateOrUpdateCartMutation} from "../../services/cartApi.js";
+import {useGetManufacturersQuery} from "../../services/manufacturerApi.js";
 import ItemDetails from "./ItemDetails.jsx";
 import NotificationDialogs from "../common/NotificationDialogs.jsx";
 
 const Categories = () => {
-    const {data: components = [], isLoading: compLoading, isError: compError} = useGetComponentsQuery();
-    const {data: items = [], isLoading: itemsLoading, isError: itemsError} = useGetItemsQuery();
+    const {data: components = []} = useGetComponentsQuery();
     const {data: featureTypes = []} = useGetFeatureTypesQuery();
+    const {data: manufacturers = []} = useGetManufacturersQuery();
     const {data: cartData} = useGetCartQuery();
     const [updateCart] = useCreateOrUpdateCartMutation();
 
-    const [selectedCategory, setSelectedCategory] = useState(null);
-    const [selectedFeatures, setSelectedFeatures] = useState({});
-    const [selectedManufacturer, setSelectedManufacturer] = useState("");
-    const [sortOrder, setSortOrder] = useState("");
+    const [selectedComponent, setSelectedComponent] = useState(null);
+    const [selectedFeature, setSelectedFeature] = useState(null);
+    const [selectedManufacturer, setSelectedManufacturer] = useState(null);
     const [selectedItem, setSelectedItem] = useState(null);
-    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-    const [successMessage, setSuccessMessage] = useState("");
-    const [showErrorDialog, setShowErrorDialog] = useState(false);
-    const [errorMessage, setErrorMessage] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(0);
     const itemsPerPage = 12;
+
+    const [successMessage, setSuccessMessage] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
+    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+    const [showErrorDialog, setShowErrorDialog] = useState(false);
+
+    const featureQuery = useGetPaginatedItemsByFeatureIdQuery(
+        {featureId: selectedFeature, page: currentPage, size: itemsPerPage},
+        {skip: !selectedFeature}
+    );
+
+    const manufacturerQuery = useGetPaginatedItemsByManufacturerIdQuery(
+        {manufacturerId: selectedManufacturer, page: currentPage, size: itemsPerPage},
+        {skip: !selectedManufacturer}
+    );
+
+    const defaultQuery = useGetPaginatedItemsQuery(
+        {componentId: selectedComponent, page: currentPage, size: itemsPerPage},
+        {skip: selectedFeature || selectedManufacturer}
+    );
+
+    const itemPage = selectedFeature
+        ? featureQuery.data
+        : selectedManufacturer
+            ? manufacturerQuery.data
+            : defaultQuery.data;
+
+    const items = itemPage?.content || [];
+    const totalPages = itemPage?.totalPages || 1;
+    const isLoading = featureQuery.isLoading || manufacturerQuery.isLoading || defaultQuery.isLoading;
+    const isError = featureQuery.isError || manufacturerQuery.isError || defaultQuery.isError;
+
+    const handleAddToCart = async (item) => {
+        try {
+            const existingItems = cartData?.cartItemList || [];
+            const updatedItems = existingItems.map(ci => ({id: ci.item.id, quantity: ci.cartQuantity}));
+            const index = updatedItems.findIndex(i => i.id === item.id);
+            if (index !== -1) updatedItems[index].quantity += 1;
+            else updatedItems.push({id: item.id, quantity: 1});
+            await updateCart({itemList: updatedItems}).unwrap();
+            setSuccessMessage(`Added ${item.itemName} to cart`);
+            setShowSuccessDialog(true);
+        } catch (err) {
+            setErrorMessage(err?.data?.message || "Failed to add to cart");
+            setShowErrorDialog(true);
+        }
+    };
 
     const featureTypesById = useMemo(() => {
         const map = {};
@@ -33,215 +80,138 @@ const Categories = () => {
 
     const featuresByType = useMemo(() => {
         const map = {};
-        items
-            .filter(item => !selectedCategory || item.component?.id === selectedCategory)
-            .forEach(item => {
-                item.itemFeatureList.forEach(f => {
-                    const typeName = featureTypesById[f.feature.featureType?.id] || "Other";
-                    if (!map[typeName]) map[typeName] = new Set();
-                    map[typeName].add(f.feature.featureName);
-                });
+        items.forEach(item => {
+            item.itemFeatureList.forEach(f => {
+                const typeName = featureTypesById[f.feature.featureType?.id] || "Other";
+                if (!map[typeName]) map[typeName] = new Set();
+                map[typeName].add(f.feature.featureName);
             });
+        });
         Object.keys(map).forEach(k => map[k] = Array.from(map[k]));
         return map;
-    }, [items, featureTypesById, selectedCategory]);
+    }, [items, featureTypesById]);
 
-    const manufacturers = useMemo(() => {
-        const set = new Set();
-        items
-            .filter(item => !selectedCategory || item.component?.id === selectedCategory)
-            .forEach(item => {
-                if (item.manufacturer?.manufacturerName) set.add(item.manufacturer.manufacturerName);
-            });
-        return Array.from(set);
-    }, [items, selectedCategory]);
-
-    const toggleFeature = (typeName, featureName) => {
-        setSelectedFeatures(prev => {
-            const newSelected = {...prev};
-            if (newSelected[typeName] === featureName) delete newSelected[typeName];
-            else newSelected[typeName] = featureName;
-            return newSelected;
-        });
-        setCurrentPage(1);
+    const toggleFeature = (typeName, feature) => {
+        const featureId = feature.id || feature;
+        if (selectedFeature === featureId) setSelectedFeature(null);
+        else setSelectedFeature(featureId);
+        setSelectedManufacturer(null);
+        setSelectedComponent(null);
+        setCurrentPage(0);
     };
 
-    const toggleManufacturer = (name) => {
-        setSelectedManufacturer(prev => (prev === name ? "" : name));
-        setCurrentPage(1);
+    const toggleManufacturer = (manufacturerId) => {
+        if (selectedManufacturer === manufacturerId) setSelectedManufacturer(null);
+        else setSelectedManufacturer(manufacturerId);
+        setSelectedFeature(null);
+        setSelectedComponent(null);
+        setCurrentPage(0);
     };
 
     const clearFilters = () => {
-        setSelectedFeatures({});
-        setSelectedManufacturer("");
-        setSortOrder("");
-        setCurrentPage(1);
+        setSelectedFeature(null);
+        setSelectedManufacturer(null);
+        setSelectedComponent(null);
+        setCurrentPage(0);
     };
 
-    const handleAddToCart = async (item) => {
-        try {
-            const existingItems = cartData?.cartItemList || [];
-            const updatedItemList = existingItems.map(ci => ({id: ci.item.id, quantity: ci.cartQuantity}));
-            const index = updatedItemList.findIndex(ci => ci.id === item.id);
-            if (index !== -1) updatedItemList[index].quantity += 1;
-            else updatedItemList.push({id: item.id, quantity: 1});
-            await updateCart({itemList: updatedItemList}).unwrap();
-            setSuccessMessage(`Added ${item.itemName} to cart`);
-            setShowSuccessDialog(true);
-        } catch (err) {
-            setErrorMessage(err?.data?.message || "Failed to add to cart");
-            setShowErrorDialog(true);
-        }
-    };
-
-    const filteredItems = useMemo(() => {
-        let filtered = items;
-        if (selectedCategory) filtered = filtered.filter(item => item.component?.id === selectedCategory);
-        const selectedTypes = Object.keys(selectedFeatures);
-        if (selectedTypes.length > 0) {
-            filtered = filtered.filter(item =>
-                selectedTypes.every(type =>
-                    item.itemFeatureList.some(f =>
-                        featureTypesById[f.feature.featureType?.id] === type &&
-                        selectedFeatures[type] === f.feature.featureName
-                    )
-                )
-            );
-        }
-        if (selectedManufacturer) filtered = filtered.filter(item => item.manufacturer?.manufacturerName === selectedManufacturer);
-        if (sortOrder === "asc") filtered.sort((a, b) => a.price - b.price);
-        if (sortOrder === "desc") filtered.sort((a, b) => b.price - a.price);
-        return filtered;
-    }, [items, selectedCategory, selectedFeatures, selectedManufacturer, sortOrder, featureTypesById]);
-
-    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-    const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-    if (compLoading || itemsLoading) return <div className="text-gray-500 py-4">Loading...</div>;
-    if (compError || itemsError) return <div className="text-red-500 py-4">Failed to load data.</div>;
+    if (isLoading) return <div className="py-4 text-gray-500">Loading...</div>;
+    if (isError) return <div className="py-4 text-red-500">Failed to load items</div>;
 
     return (
-        <div className="w-full px-4 py-4 flex gap-6">
+        <div className="flex gap-6 px-4 py-4">
+
             <div
-                className="w-64 flex-shrink-0 border-r pr-4 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto flex flex-col gap-6">
-                <div>
-                    <h4 className="font-semibold mb-2">Components</h4>
+                className="w-64 border-r pr-4 flex flex-col gap-3 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+                <h4 className="font-semibold">Components</h4>
+                <button
+                    onClick={clearFilters}
+                    className={`border rounded p-2 text-left hover:bg-blue-50 transition ${!selectedComponent ? "bg-blue-600 text-white font-semibold" : ""}`}
+                >
+                    All
+                </button>
+                {components.map(c => (
                     <button
+                        key={c.id}
                         onClick={() => {
-                            setSelectedCategory(null);
-                            clearFilters();
+                            setSelectedComponent(c.id);
+                            setSelectedFeature(null);
+                            setSelectedManufacturer(null);
+                            setCurrentPage(0);
                         }}
-                        className={`px-3 py-2 rounded-lg border text-left mb-2 w-full transition ${selectedCategory === null ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"}`}
+                        className={`border rounded p-2 text-left hover:bg-blue-50 transition ${selectedComponent === c.id ? "bg-blue-600 text-white font-semibold" : ""}`}
                     >
-                        All
+                        {c.componentName}
                     </button>
-                    {components.map(component => (
-                        <button
-                            key={component.id}
-                            onClick={() => {
-                                setSelectedCategory(component.id);
-                                setCurrentPage(1);
-                            }}
-                            className={`px-3 py-2 rounded-lg border text-left mb-2 w-full transition ${selectedCategory === component.id ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50"}`}
-                        >
-                            {component.componentName}
-                        </button>
-                    ))}
-                </div>
+                ))}
 
-                {Object.keys(featuresByType).length > 0 && (
-                    <div>
-                        <h4 className="font-semibold mb-2">Features</h4>
-                        {Object.entries(featuresByType).map(([typeName, featureArr]) => (
-                            <div key={typeName} className="mb-3">
-                                <h5 className="font-medium mb-1">{typeName}</h5>
-                                <div className="flex flex-col gap-1">
-                                    {featureArr.map(feature => (
-                                        <button
-                                            key={feature}
-                                            onClick={() => toggleFeature(typeName, feature)}
-                                            className={`px-3 py-1 rounded-lg border text-left transition ${selectedFeatures[typeName] === feature ? "bg-green-600 text-white border-green-600" : "bg-white border-gray-300 hover:bg-green-50"}`}
-                                        >
-                                            {feature}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {manufacturers.length > 0 && (
-                    <div>
-                        <h4 className="font-semibold mb-2">Manufacturer</h4>
-                        <div className="flex flex-col gap-1">
-                            {manufacturers.map(man => (
+                <div className="mt-4">
+                    <h4 className="font-semibold mb-2">Features</h4>
+                    {featureTypes.map(ft => (
+                        <div key={ft.id} className="mb-2">
+                            <p className="text-sm font-medium">{ft.featureTypeName}</p>
+                            {ft.featureList?.map(f => (
                                 <button
-                                    key={man}
-                                    onClick={() => toggleManufacturer(man)}
-                                    className={`px-3 py-1 rounded-lg border text-left transition ${selectedManufacturer === man ? "bg-blue-600 text-white border-blue-600" : "bg-white border-gray-300 hover:bg-blue-50"}`}
+                                    key={f.id}
+                                    onClick={() => toggleFeature(ft.featureTypeName, f)}
+                                    className={`block w-full text-left px-2 py-1 border rounded mt-1 text-sm transition ${selectedFeature === f.id ? "bg-green-600 text-white" : "hover:bg-green-50"}`}
                                 >
-                                    {man}
+                                    {f.featureName}
                                 </button>
                             ))}
                         </div>
-                    </div>
-                )}
-
-                {(Object.keys(selectedFeatures).length > 0 || selectedManufacturer || sortOrder) && (
-                    <button
-                        onClick={clearFilters}
-                        className="mt-2 px-3 py-1 rounded-lg border border-red-500 text-red-500 hover:bg-red-50 w-full"
-                    >
-                        Clear All Filters
-                    </button>
-                )}
+                    ))}
+                </div>
 
                 <div className="mt-4">
-                    <label className="font-medium mb-1 block">Sort by price:</label>
-                    <select
-                        value={sortOrder}
-                        onChange={e => setSortOrder(e.target.value)}
-                        className="p-2 border rounded shadow-sm w-full"
-                    >
-                        <option value="">Default</option>
-                        <option value="asc">Low → High</option>
-                        <option value="desc">High → Low</option>
-                    </select>
+                    <h4 className="font-semibold mb-2">Manufacturer</h4>
+                    {manufacturers.map(m => (
+                        <button
+                            key={m.id}
+                            onClick={() => toggleManufacturer(m.id)}
+                            className={`block w-full text-left px-2 py-1 border rounded mt-1 text-sm transition ${selectedManufacturer === m.id ? "bg-blue-600 text-white" : "hover:bg-blue-50"}`}
+                        >
+                            {m.manufacturerName}
+                        </button>
+                    ))}
                 </div>
             </div>
-
             <div className="flex-1">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {paginatedItems.length > 0 ? paginatedItems.map(item => {
-                        const discountedPrice = item.price * (1 - item.discountPercentage / 100);
+                    {items.length > 0 ? items.map(item => {
+                        const discountedPrice = item.price * (1 - (item.discountPercentage || 0) / 100);
                         return (
                             <div
                                 key={item.id}
-                                className="border rounded-lg p-3 shadow hover:shadow-md transition flex flex-col justify-between h-108 bg-white cursor-pointer"
+                                className="border rounded-lg p-3 shadow hover:shadow-md bg-white cursor-pointer flex flex-col justify-between"
                                 onClick={() => setSelectedItem(item)}
                             >
-                                <h3 className="font-semibold text-md line-clamp-2">{item.itemName}</h3>
-                                <div className="flex flex-col justify-end mt-2">
+                                <h3 className="font-semibold text-sm line-clamp-2">{item.itemName}</h3>
+
+                                <div>
                                     {item.discountPercentage > 0 ? (
-                                        <div className="mb-1">
-                                            <p className="text-sm text-gray-400 line-through">LKR {item.price.toLocaleString()}</p>
-                                            <p className="text-sm text-green-600 font-semibold">LKR {discountedPrice.toLocaleString()}</p>
-                                        </div>
+                                        <>
+                                            <p className="text-xs line-through text-gray-400">LKR {item.price.toLocaleString()}</p>
+                                            <p className="text-green-600 font-semibold text-sm">LKR {discountedPrice.toLocaleString()}</p>
+                                        </>
                                     ) : (
-                                        <p className="text-sm text-gray-600 mb-1">Price:
-                                            LKR {item.price.toLocaleString()}</p>
+                                        <p className="text-sm text-gray-700">LKR {item.price.toLocaleString()}</p>
                                     )}
-                                    {item.manufacturer &&
-                                        <p className="text-xs text-gray-500 mb-1">{item.manufacturer.manufacturerName}</p>}
-                                    {item.itemFeatureList.length > 0 &&
-                                        <p className="text-xs text-gray-500 mb-1">{item.itemFeatureList.map(f => f.feature.featureName).join(", ")}</p>}
+
+                                    {item.itemFeatureList?.length > 0 && (
+                                        <p className="text-xs text-gray-500">{item.itemFeatureList.map(f => f.feature.featureName).join(", ")}</p>
+                                    )}
+
+                                    {item.manufacturer && (
+                                        <p className="text-xs text-gray-500">{item.manufacturer.manufacturerName}</p>
+                                    )}
+
                                     <button
                                         onClick={e => {
                                             e.stopPropagation();
                                             handleAddToCart(item);
                                         }}
-                                        className="mt-1 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                                        className="mt-2 w-full bg-blue-600 text-white rounded py-1 hover:bg-blue-700 text-sm"
                                     >
                                         Add to Cart
                                     </button>
@@ -249,22 +219,48 @@ const Categories = () => {
                             </div>
                         );
                     }) : (
-                        <div className="text-gray-500 col-span-full py-4">No items match the selected filters.</div>
+                        <div className="col-span-full text-gray-500">No items found</div>
                     )}
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="flex justify-center gap-2 mt-4">
-                        <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}
-                                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50">Prev
+                    <div className="flex justify-center gap-2 mt-6">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(p - 1, 0))}
+                            disabled={currentPage === 0}
+                            className="border px-3 py-1 rounded"
+                        >
+                            Prev
                         </button>
-                        {[...Array(totalPages)].map((_, idx) => (
-                            <button key={idx} onClick={() => setCurrentPage(idx + 1)}
-                                    className={`px-3 py-1 border rounded ${currentPage === idx + 1 ? "bg-blue-600 text-white" : "hover:bg-gray-100"}`}>{idx + 1}</button>
-                        ))}
-                        <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
-                                disabled={currentPage === totalPages}
-                                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50">Next
+
+                        {(() => {
+                            const maxPagesToShow = 5;
+                            let start = Math.max(currentPage - Math.floor(maxPagesToShow / 2), 0);
+                            let end = start + maxPagesToShow - 1;
+                            if (end >= totalPages) {
+                                end = totalPages - 1;
+                                start = Math.max(end - maxPagesToShow + 1, 0);
+                            }
+                            const pages = [];
+                            for (let i = start; i <= end; i++) pages.push(i);
+
+                            return pages.map(i => (
+                                <button
+                                    key={i}
+                                    onClick={() => setCurrentPage(i)}
+                                    className={`border px-3 py-1 rounded ${currentPage === i ? "bg-blue-600 text-white" : ""}`}
+                                >
+                                    {i + 1}
+                                </button>
+                            ));
+                        })()}
+
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages - 1))}
+                            disabled={currentPage === totalPages - 1}
+                            className="border px-3 py-1 rounded"
+                        >
+                            Next
                         </button>
                     </div>
                 )}

@@ -4,6 +4,7 @@ import {useGetItemDataByItemIdQuery} from "../../services/itemDataApi.js";
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
+import Unauthorized from "../common/Unauthorized.jsx";
 
 const PrimeBuildPriceTrends = () => {
     const {data: items, isLoading: loadingItems, error: itemsError} = useGetItemsQuery();
@@ -25,6 +26,10 @@ const PrimeBuildPriceTrends = () => {
             ourPrice: d.ourPrice
         }));
     }, [itemData]);
+
+    if (dataError?.status === 401 || dataError?.status === 403) {
+        return <Unauthorized />;
+    }
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-LK', {

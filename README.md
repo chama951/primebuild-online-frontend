@@ -1,16 +1,5 @@
-# React + Vite
+Prime Build Online is a web-based PC building platform that allows users to select and customize computer components while ensuring compatibility between selected parts. The React frontend provides an interactive and responsive user interface where users can browse components, view product details, and build a complete PC configuration.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The application communicates with the backend API to retrieve component data, compatibility information, and pricing details. It is designed to provide a smooth user experience with dynamic updates as users select different components.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+This frontend is built using React, with modern state management and API integration to efficiently handle data and user interactions. The interface is designed to be clean, responsive, and easy to use, enabling users to assemble their ideal PC build step by step.

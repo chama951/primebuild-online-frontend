@@ -39,9 +39,6 @@ const InvoiceManagement = ({refetchFlag, resetFlag}) => {
     const [updateInvoice] = useUpdateInvoiceMutation();
     const [deleteInvoice] = useDeleteInvoiceMutation();
 
-    const isUnauthorized = error?.status === 401 || error?.status === 403;
-    if (isUnauthorized) return <Unauthorized/>;
-
     useEffect(() => {
         if (refetchFlag) {
             refetch();
@@ -52,9 +49,6 @@ const InvoiceManagement = ({refetchFlag, resetFlag}) => {
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, filterStatus, filterDate, filterUserType]);
-
-    if (error?.status === 401 || error?.status === 403)
-        return <Unauthorized/>;
 
     const filteredInvoices = useMemo(() => {
         const term = searchTerm.toLowerCase().trim();
@@ -77,6 +71,9 @@ const InvoiceManagement = ({refetchFlag, resetFlag}) => {
             return statusMatch && dateMatch && (userMatch || statusSearchMatch);
         });
     }, [invoices, searchTerm, filterStatus, filterDate]);
+
+    const isUnauthorized = error?.status === 401 || error?.status === 403;
+    if (isUnauthorized) return <Unauthorized/>;
 
     const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
     const paginatedInvoices = filteredInvoices.slice(

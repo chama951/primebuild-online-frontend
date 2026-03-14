@@ -83,10 +83,10 @@ const ItemManagement = ({refetchFlag, resetFlag}) => {
         }
     }, [paginatedItems, selectedItem]);
 
-    const isUnauthorized = () =>
-        [itemsError, componentsError, manufacturersError].some(err => err?.status === 401 || err?.status === 403);
+    const errors = [itemsError, componentsError, manufacturersError];
+    const isUnauthorized = errors.some(err => err?.status === 401 || err?.status === 403);
 
-    if (isUnauthorized()) return <Unauthorized/>;
+    if (isUnauthorized) return <Unauthorized />;
 
     const selectedComponent = components.find(c => c.id === parseInt(formData.componentId));
 

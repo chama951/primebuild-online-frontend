@@ -9,13 +9,13 @@ export const itemApi = baseApi.injectEndpoints({
         }),
 
         getPaginatedItems: builder.query({
-            query: ({ componentId = "", page = 0, size = 8, search = "" }) => {
+            query: ({componentId = "", page = 0, size = 8, search = ""}) => {
                 let url = `/item/paginated?page=${page}&size=${size}`;
                 if (componentId) url += `&component=${componentId}`;
                 if (search) url += `&search=${search}`;
                 return url;
             },
-            providesTags: (result, error, { componentId }) => [{ type: "ItemByComponent", id: componentId || "all" }],
+            providesTags: (result, error, {componentId}) => [{type: "ItemByComponent", id: componentId || "all"}],
         }),
 
         getItemById: builder.query({
@@ -50,17 +50,43 @@ export const itemApi = baseApi.injectEndpoints({
         }),
 
         getPaginatedItemsByComponentId: builder.query({
-            query: ({ componentId = "", page = 0, size = 8, search = null }) => {
+            query: ({componentId = "", page = 0, size = 8, search = null}) => {
                 const params = new URLSearchParams();
-                params.append("component", componentId);  // always include component
+                params.append("component", componentId);
                 params.append("page", page);
                 params.append("size", size);
-                if (search) params.append("search", search); // only append if search term exists
+                if (search) params.append("search", search);
 
                 return `/item/paginated?${params.toString()}`;
             },
-            providesTags: (result, error, { componentId }) => [
-                { type: "ItemByComponent", id: componentId },
+            providesTags: (result, error, {componentId}) => [
+                {type: "ItemByComponent", id: componentId},
+            ],
+        }),
+        getPaginatedItemsByFeatureId: builder.query({
+            query: ({featureId = "", page = 0, size = 8}) => {
+                const params = new URLSearchParams();
+                params.append("feature", featureId);
+                params.append("page", page);
+                params.append("size", size);
+
+                return `/item/paginated?${params.toString()}`;
+            },
+            providesTags: (result, error, {featureId}) => [
+                {type: "ItemByFeature", id: featureId},
+            ],
+        }),
+        getPaginatedItemsByManufacturerId: builder.query({
+            query: ({ manufacturerId = "", page = 0, size = 8 }) => {
+                const params = new URLSearchParams();
+                params.append("manufacturer", manufacturerId);
+                params.append("page", page);
+                params.append("size", size);
+
+                return `/item/paginated?${params.toString()}`;
+            },
+            providesTags: (result, error, { manufacturerId }) => [
+                { type: "ItemByManufacturer", id: manufacturerId },
             ],
         }),
     }),
@@ -69,6 +95,8 @@ export const itemApi = baseApi.injectEndpoints({
 export const {
     useGetPaginatedItemsQuery,
     useGetPaginatedItemsByComponentIdQuery,
+    useGetPaginatedItemsByFeatureIdQuery,
+    useGetPaginatedItemsByManufacturerIdQuery,
     useGetItemsQuery,
     useCreateItemMutation,
     useUpdateItemMutation,

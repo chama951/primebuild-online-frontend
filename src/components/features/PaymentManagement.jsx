@@ -85,8 +85,7 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
         }
     };
 
-    const error = errorAll || errorByDate || errorByStatus;
-    if (error?.status === 401 || error?.status === 403) return <Unauthorized/>;
+
 
     const filteredPayments = useMemo(() => {
         const term = searchTerm.toLowerCase().trim();
@@ -97,6 +96,9 @@ const PaymentManagement = ({refetchFlag, resetFlag}) => {
             return username.includes(term) || email.includes(term);
         });
     }, [basePayments, searchTerm]);
+
+    const error = errorAll || errorByDate || errorByStatus;
+    if (error?.status === 401 || error?.status === 403) return <Unauthorized/>;
 
     const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
     const paginatedPayments = filteredPayments.slice(

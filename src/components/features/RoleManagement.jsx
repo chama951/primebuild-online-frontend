@@ -50,12 +50,8 @@ const RoleManagement = ({refetchFlag, resetFlag}) => {
         setCurrentPage(1);
     }, [searchTerm]);
 
-    const isUnauthorized = () => {
-        return rolesError?.isUnauthorized;
-    };
-
-    if (isUnauthorized()) {
-        return <Unauthorized/>;
+    if (rolesError?.status === 401 || rolesError?.status === 403) {
+        return <Unauthorized />;
     }
 
     const transformedRoles = roles.map(role => ({
